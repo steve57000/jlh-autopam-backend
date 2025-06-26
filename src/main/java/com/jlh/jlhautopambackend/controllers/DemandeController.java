@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import com.jlh.jlhautopambackend.modeles.Demande;
 import com.jlh.jlhautopambackend.repositories.DemandeRepository;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/api/demandes")
 public class DemandeController {

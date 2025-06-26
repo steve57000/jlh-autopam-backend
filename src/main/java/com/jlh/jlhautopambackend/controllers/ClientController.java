@@ -6,25 +6,25 @@ import org.springframework.web.bind.annotation.*;
 import com.jlh.jlhautopambackend.modeles.Client;
 import com.jlh.jlhautopambackend.repositories.ClientRepository;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/api/clients")
 public class ClientController {
 
     private final ClientRepository repo;
 
-    // Injectez bien ClientRepository
     public ClientController(ClientRepository repo) {
         this.repo = repo;
     }
 
     @GetMapping
     public List<Client> getAll() {
-        return repo.findAll();             // List<Client>
+        return repo.findAll();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Client> getById(@PathVariable Integer id) {
-        return repo.findById(id)           // Optional<Client>
+        return repo.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

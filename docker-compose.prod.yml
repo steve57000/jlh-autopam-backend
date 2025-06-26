@@ -1,11 +1,27 @@
+version: '3.8'
 services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: jlh_autopam
+      MYSQL_USER:    prod_user
+      MYSQL_PASSWORD: prod_secret
+      MYSQL_ROOT_PASSWORD: root
+    healthcheck:
+      test: ["CMD","mysqladmin","ping","-h","localhost","-pprod_secret"]
+      interval: 5s
+      retries: 10
+
   backend:
     image: steve57/jlh-autopam-backend:latest
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     ports:
-      - '8080:8080'
+      - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      DB_URL: jdbc:mysql://prod-db-host:3307/jlh_autopam
+      DB_URL:      jdbc:mysql://db:3306/jlh_autopam
       DB_USERNAME: prod_user
       DB_PASSWORD: prod_secret

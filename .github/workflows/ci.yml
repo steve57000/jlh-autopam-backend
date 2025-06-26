@@ -65,11 +65,14 @@ jobs:
     runs-on: self-hosted
     if: github.ref_name == 'main'
 
+    defaults:
+      run:
+        working-directory: jlh-appli
+
     steps:
       - uses: actions/checkout@v3
 
       - name: Déployer en local
         run: |
-          cd jlh-appli
           docker-compose -f docker-compose.prod.yml pull backend
           docker-compose -f docker-compose.prod.yml up -d backend

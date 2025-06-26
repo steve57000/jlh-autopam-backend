@@ -19,6 +19,7 @@ public class SecurityConfig {
                 // Règles d'autorisation
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/**").permitAll()   // ouvre  l'API REST
+                        .requestMatchers("/api/demandes").permitAll()
                         .anyRequest().authenticated()             // protège le reste
                 )
 

@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: jlh    # on se place dans jlh/ pour Maven et Dockerfile
+        working-directory: .
 
     steps:
       - name: Checkout repo
@@ -57,7 +57,7 @@ jobs:
       - name: Build & push backend image
         uses: docker/build-push-action@v4
         with:
-          context: .
+          context: ./jlh
           file: Dockerfile
           push: true
           tags: |
@@ -69,7 +69,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     defaults:
       run:
-        working-directory: .     # on est déjà à la racine jlh-appli/
+        working-directory: .
 
     steps:
       - name: Checkout repo

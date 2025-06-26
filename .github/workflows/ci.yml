@@ -75,10 +75,6 @@ jobs:
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
 
-    defaults:
-      run:
-        working-directory: jlh   # pointe vers jlh-appli/jlh où est docker-compose.prod.yml
-
     steps:
       - uses: actions/checkout@v3
 

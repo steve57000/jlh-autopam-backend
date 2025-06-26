@@ -2,20 +2,14 @@ name: CI/CD Backend
 
 on:
   push:
-    branches:
-      - main
-      - dev
+    branches: [ main, dev ]
 
 env:
   DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: .
-
+    runs-on: self-hosted
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -30,7 +24,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-m2-${{ hashFiles('pom.xml') }}
           restore-keys: ${{ runner.os }}-m2-
 
       - name: Run tests
@@ -45,8 +39,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Determine image tag
-        id: tag
+      - name: Set image tag
+        id: set-tag
         run: |
           if [[ "${GITHUB_REF#refs/heads/}" == "main" ]]; then
             echo "TAG=latest" >> $GITHUB_ENV
@@ -54,28 +48,22 @@ jobs:
             echo "TAG=dev-${GITHUB_SHA::8}" >> $GITHUB_ENV
           fi
 
-      - name: Build & push backend image
+      - name: Build & push Docker image
         uses: docker/build-push-action@v4
         with:
-          context: ./jlh
+          context: .
           file: Dockerfile
           push: true
-          tags: |
-            ${{ env.DOCKERHUB_USER }}/jlh-autopam-backend:${{ env.TAG }}
+          tags: ${{ env.DOCKERHUB_USER }}/jlh-autopam-backend:${{ env.TAG }}
 
   deploy-production:
     needs: build-and-push
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
-    defaults:
-      run:
-        working-directory: .
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Deploy to local prod
+      - name: Deploy backend
         run: |
           docker-compose -f docker-compose.prod.yml pull backend
           docker-compose -f docker-compose.prod.yml up -d backend

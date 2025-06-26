@@ -1,0 +1,11 @@
+services:
+  backend:
+    image: steve57/jlh-autopam-backend:latest
+    restart: unless-stopped
+    ports:
+      - '8080:8080'
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:mysql://prod-db-host:3306/jlh_autopam
+      DB_USERNAME: prod_user
+      DB_PASSWORD: prod_secret

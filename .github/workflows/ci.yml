@@ -64,15 +64,12 @@ jobs:
     needs: build-and-push
     runs-on: self-hosted
     if: github.ref_name == 'main'
-    defaults:
-      run:
-        working-directory: C:\Users\steve\OneDrive\Bureau\jlh-auto\jlh-appli  # si nécessaire
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Déployer en local
         run: |
-          cd ..
-          docker-compose -f docker-compose.prod.yml pull jlh
-          docker-compose -f docker-compose.prod.yml up -d jlh
+          cd jlh-appli
+          docker-compose -f docker-compose.prod.yml pull backend
+          docker-compose -f docker-compose.prod.yml up -d backend

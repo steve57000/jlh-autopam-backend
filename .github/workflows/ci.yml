@@ -14,7 +14,8 @@ jobs:
       TAG: ''
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
@@ -54,8 +55,8 @@ jobs:
       - name: Build & push Backend image
         uses: docker/build-push-action@v4
         with:
-          context: ./jlh
-          file: ./jlh/Dockerfile
+          context: .
+          file: .Dockerfile
           push: true
           tags: |
             ${{ env.DOCKERHUB_USER }}/jlh-autopam-backend:${{ env.TAG }}

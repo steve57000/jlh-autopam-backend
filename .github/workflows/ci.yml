@@ -1,4 +1,4 @@
-name: CI/CD Backend & Frontend
+name: CI/CD Backend
 
 on:
   push:
@@ -6,15 +6,18 @@ on:
       - main
       - dev
 
+env:
+  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    env:
-      DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
-      TAG: ''
+    defaults:
+      run:
+        working-directory: jlh    # on se place dans jlh/ pour Maven et Dockerfile
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
       - name: Set up JDK 17
@@ -23,7 +26,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Cache Maven dependencies
+      - name: Cache Maven deps
         uses: actions/cache@v3
         with:
           path: ~/.m2/repository
@@ -51,8 +54,7 @@ jobs:
             echo "TAG=dev-${GITHUB_SHA::8}" >> $GITHUB_ENV
           fi
 
-      # --- Backend ---
-      - name: Build & push Backend image
+      - name: Build & push backend image
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -61,26 +63,19 @@ jobs:
           tags: |
             ${{ env.DOCKERHUB_USER }}/jlh-autopam-backend:${{ env.TAG }}
 
-      # --- Frontend ---
-      - name: Build & push Frontend image
-        uses: docker/build-push-action@v4
-        with:
-          context: ../frontend
-          file: ./frontend/Dockerfile
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_USER }}/jlh-autopam-frontend:${{ env.TAG }}
-
   deploy-production:
     needs: build-and-push
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: .     # on est déjà à la racine jlh-appli/
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: Déployer en local (prod)
+      - name: Deploy to local prod
         run: |
           docker-compose -f docker-compose.prod.yml pull backend
-          docker-compose -f docker-compose.prod.yml pull frontend
-          docker-compose -f docker-compose.prod.yml up -d
+          docker-compose -f docker-compose.prod.yml up -d backend

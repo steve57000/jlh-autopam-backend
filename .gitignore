@@ -37,4 +37,4 @@ build/
 .vscode/
 
 # Self-hosted GitHub Actions runner
-actions-runner/
+../actions-runner/

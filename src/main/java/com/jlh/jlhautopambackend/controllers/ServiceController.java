@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/services")
+@CrossOrigin
 public class ServiceController {
     private final ServiceRepository repo;
     public ServiceController(ServiceRepository repo) { this.repo = repo; }

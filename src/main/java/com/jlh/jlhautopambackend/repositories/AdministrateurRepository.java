@@ -1,6 +1,10 @@
 package com.jlh.jlhautopambackend.repositories;
 
-import com.jlh.jlhautopambackend.modeles.Client;
+import com.jlh.jlhautopambackend.modeles.Administrateur;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface AdministrateurRepository extends JpaRepository<Client, Integer> { }
+import java.util.Optional;
+
+public interface AdministrateurRepository extends JpaRepository<Administrateur, Integer> {
+    Optional<Administrateur> findByUsername(String username);
+}

@@ -51,8 +51,7 @@ INSERT INTO client (id_client, nom, prenom, email, telephone, adresse) VALUES
 -- --------------------------------------------------
 
 INSERT INTO administrateur (id_admin, username, mot_de_passe, nom, prenom) VALUES
-    (1, 'admin1', 'password1', 'Admin', 'Un'),
-    (2, 'admin2', 'password2', 'Admin', 'Deux');
+    (1, 'admin1', '$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW', 'Bongeot', 'Michael');
 
 
 -- --------------------------------------------------
@@ -76,8 +75,8 @@ INSERT INTO disponibilite (id_admin, id_creneau) VALUES
     (1, 1),
     (1, 2),
     (1, 3),
-    (2, 5),
-    (2, 6);
+    (1, 5),
+    (1, 6);
 
 
 -- --------------------------------------------------
@@ -85,27 +84,27 @@ INSERT INTO disponibilite (id_admin, id_creneau) VALUES
 -- --------------------------------------------------
 
 -- Devis: Alice (En attente), multiple services
-INSERT INTO demande (id_demande, id_client, date_soumission, code_type, code_statut) VALUES
+INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut) VALUES
     (1, 1, '2025-06-20 08:15:00', 'Devis',     'En_attente');
 
 -- Devis: Bob (Traitée)
-INSERT INTO demande (id_demande, id_client, date_soumission, code_type, code_statut) VALUES
+INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut) VALUES
     (2, 2, '2025-06-19 09:30:00', 'Devis',     'Traitee');
 
 -- RDV: Claire (Confirmé)
-INSERT INTO demande (id_demande, id_client, date_soumission, code_type, code_statut) VALUES
+INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut) VALUES
     (3, 3, '2025-06-18 10:45:00', 'RendezVous','En_attente');
 
 -- RDV: David (Reporté)
-INSERT INTO demande (id_demande, id_client, date_soumission, code_type, code_statut) VALUES
+INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut) VALUES
     (4, 4, '2025-06-17 11:00:00', 'RendezVous','Traitee');
 
 -- Devis: Eva (Annulée)
-INSERT INTO demande (id_demande, id_client, date_soumission, code_type, code_statut) VALUES
+INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut) VALUES
     (5, 5, '2025-06-16 12:00:00', 'Devis',     'Annulee');
 
 -- RDV: Alice (Annulé)
-INSERT INTO demande (id_demande, id_client, date_soumission, code_type, code_statut) VALUES
+INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut) VALUES
     (6, 1, '2025-06-15 13:00:00', 'RendezVous','Annulee');
 
 
@@ -146,7 +145,7 @@ INSERT INTO devis (id_devis, id_demande, date_devis, montant_total) VALUES
 
 INSERT INTO rendez_vous (id_rdv, id_demande, id_admin, id_creneau, code_statut) VALUES
     (1, 3, 1, 1, 'Confirme'),   -- Claire sur créneau 1
-    (2, 4, 2, 3, 'Reporte'),    -- David déplacé sur créneau 3
+    (2, 4, 1, 3, 'Reporte'),    -- David déplacé sur créneau 3
     (3, 6, 1, 6, 'Annule');     -- Alice annulé, créneau 6
 
 

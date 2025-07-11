@@ -1,5 +1,6 @@
 package com.jlh.jlhautopambackend.modeles;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;
@@ -13,7 +14,7 @@ public class Demande {
     private Integer idDemande;
 
     @Column(nullable = false)
-    private Instant dateSoumission;
+    private Instant dateDemande;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "id_client", nullable = false)
@@ -28,5 +29,6 @@ public class Demande {
     private StatutDemande statutDemande;
 
     @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<DemandeService> services;
 }

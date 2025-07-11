@@ -1,5 +1,8 @@
 package com.jlh.jlhautopambackend.controllers;
 
+import com.jlh.jlhautopambackend.dto.DemandeServiceRequest;
+import com.jlh.jlhautopambackend.dto.DemandeServiceResponse;
+import com.jlh.jlhautopambackend.mapper.DemandeServiceMapper;
 import com.jlh.jlhautopambackend.modeles.DemandeService;
 import com.jlh.jlhautopambackend.modeles.DemandeServiceKey;
 import com.jlh.jlhautopambackend.repositories.DemandeServiceRepository;
@@ -12,80 +15,58 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 
-@CrossOrigin
 @RestController
 @RequestMapping("/api/demandes-services")
+@CrossOrigin
 public class DemandeServiceController {
 
-    private final DemandeServiceRepository dsRepo;
+    private final DemandeServiceRepository repo;
     private final DemandeRepository demandeRepo;
     private final ServiceRepository serviceRepo;
+    private final DemandeServiceMapper mapper;
 
-    public DemandeServiceController(DemandeServiceRepository dsRepo,
+    public DemandeServiceController(DemandeServiceRepository repo,
                                     DemandeRepository demandeRepo,
-                                    ServiceRepository serviceRepo) {
-        this.dsRepo = dsRepo;
+                                    ServiceRepository serviceRepo,
+                                    DemandeServiceMapper mapper) {
+        this.repo = repo;
         this.demandeRepo = demandeRepo;
         this.serviceRepo = serviceRepo;
+        this.mapper = mapper;
     }
 
-    // GET all
     @GetMapping
-    public List<DemandeService> getAll() {
-        return dsRepo.findAll();
+    public List<DemandeServiceResponse> getAll() {
+        return repo.findAll().stream()
+                .map(mapper::toResponse)
+                .toList();
     }
 
-    // GET by composite key
-    @GetMapping("/{demandeId}/{serviceId}")
-    public ResponseEntity<DemandeService> getById(@PathVariable Integer demandeId,
-                                                  @PathVariable Integer serviceId) {
-        DemandeServiceKey key = new DemandeServiceKey(demandeId, serviceId);
-        return dsRepo.findById(key)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // POST create
     @PostMapping
-    public ResponseEntity<DemandeService> create(@Valid @RequestBody DemandeService ds) {
-        Integer demandeId = ds.getDemande().getIdDemande();
-        Integer serviceId = ds.getService().getIdService();
+    public ResponseEntity<DemandeServiceResponse> create(
+            @Valid @RequestBody DemandeServiceRequest req) {
+        DemandeService ent = mapper.toEntity(req);
 
-        return demandeRepo.findById(demandeId).flatMap(demande ->
-                serviceRepo.findById(serviceId).map(service -> {
-                    ds.setDemande(demande);
-                    ds.setService(service);
-                    ds.setId(new DemandeServiceKey(demandeId, serviceId));
-                    DemandeService saved = dsRepo.save(ds);
-                    return ResponseEntity
-                            .created(URI.create("/api/demandes-services/" + demandeId + "/" + serviceId))
-                            .body(saved);
-                })
-        ).orElseGet(() -> ResponseEntity.badRequest().build());
+        // lier clef composite
+        ent.setId(new DemandeServiceKey(req.getIdDemande(), req.getIdService()));
+        ent.setDemande(demandeRepo.findById(req.getIdDemande())
+                .orElseThrow(() -> new IllegalArgumentException("Demande introuvable")));
+        ent.setService(serviceRepo.findById(req.getIdService())
+                .orElseThrow(() -> new IllegalArgumentException("Service introuvable")));
+
+        DemandeService saved = repo.save(ent);
+        return ResponseEntity
+                .created(URI.create("/api/demandes-services/" + saved.getId()))
+                .body(mapper.toResponse(saved));
     }
 
-    // PUT update (only quantite)
-    @PutMapping("/{demandeId}/{serviceId}")
-    public ResponseEntity<DemandeService> update(@PathVariable Integer demandeId,
-                                                 @PathVariable Integer serviceId,
-                                                 @Valid @RequestBody DemandeService dto) {
-        DemandeServiceKey key = new DemandeServiceKey(demandeId, serviceId);
-        return dsRepo.findById(key).map(existing -> {
-            existing.setQuantite(dto.getQuantite());
-            DemandeService updated = dsRepo.save(existing);
-            return ResponseEntity.ok(updated);
-        }).orElse(ResponseEntity.notFound().build());
-    }
-
-    // DELETE by composite key
     @DeleteMapping("/{demandeId}/{serviceId}")
-    public ResponseEntity<Void> delete(@PathVariable Integer demandeId,
-                                       @PathVariable Integer serviceId) {
+    public ResponseEntity<Void> delete(
+            @PathVariable Integer demandeId,
+            @PathVariable Integer serviceId) {
         DemandeServiceKey key = new DemandeServiceKey(demandeId, serviceId);
-        if (!dsRepo.existsById(key)) {
-            return ResponseEntity.notFound().build();
-        }
-        dsRepo.deleteById(key);
+        if (!repo.existsById(key)) return ResponseEntity.notFound().build();
+        repo.deleteById(key);
         return ResponseEntity.noContent().build();
     }
 }

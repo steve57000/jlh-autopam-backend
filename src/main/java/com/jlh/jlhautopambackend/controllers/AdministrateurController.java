@@ -1,9 +1,13 @@
 package com.jlh.jlhautopambackend.controllers;
 
+import com.jlh.jlhautopambackend.dto.AdministrateurRequest;
+import com.jlh.jlhautopambackend.dto.AdministrateurResponse;
+import com.jlh.jlhautopambackend.mapper.AdministrateurMapper;
 import com.jlh.jlhautopambackend.modeles.Administrateur;
 import com.jlh.jlhautopambackend.repositories.AdministrateurRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -14,63 +18,71 @@ import java.util.List;
 @RequestMapping("/api/administrateurs")
 public class AdministrateurController {
 
-    private final AdministrateurRepository administrateurRepo;
+    private final AdministrateurRepository repo;
+    private final AdministrateurMapper mapper;
+    private final PasswordEncoder passwordEncoder;
 
-    public AdministrateurController(AdministrateurRepository administrateurRepo) {
-        this.administrateurRepo = administrateurRepo;
+    public AdministrateurController(AdministrateurRepository repo,
+                                    AdministrateurMapper mapper,
+                                    PasswordEncoder passwordEncoder) {
+        this.repo = repo;
+        this.mapper = mapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    // GET /api/administrateurs
     @GetMapping
-    public List<Administrateur> getAll() {
-        return administrateurRepo.findAll();
+    public List<AdministrateurResponse> getAll() {
+        return repo.findAll()
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
     }
 
-    // GET /api/administrateurs/{id}
     @GetMapping("/{id}")
-    public ResponseEntity<Administrateur> getById(@PathVariable Integer id) {
-        return administrateurRepo.findById(id)
-                .map(ResponseEntity::ok)
+    public ResponseEntity<AdministrateurResponse> getById(@PathVariable Integer id) {
+        return repo.findById(id)
+                .map(entity -> ResponseEntity.ok(mapper.toResponse(entity)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // POST /api/administrateurs
     @PostMapping
-    public ResponseEntity<Administrateur> create(@Valid @RequestBody Administrateur admin) {
-        Administrateur saved = administrateurRepo.save(admin);
+    public ResponseEntity<AdministrateurResponse> create(
+            @Valid @RequestBody AdministrateurRequest request) {
+        Administrateur entity = mapper.toEntity(request);
+        // hash du mot de passe avant persistance
+        entity.setMotDePasse(passwordEncoder.encode(request.getMotDePasse()));
+        Administrateur saved = repo.save(entity);
         return ResponseEntity
                 .created(URI.create("/api/administrateurs/" + saved.getIdAdmin()))
-                .body(saved);
+                .body(mapper.toResponse(saved));
     }
 
-    // PUT /api/administrateurs/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<Administrateur> update(
+    public ResponseEntity<AdministrateurResponse> update(
             @PathVariable Integer id,
-            @Valid @RequestBody Administrateur adminDetails
-    ) {
-        return administrateurRepo.findById(id)
+            @Valid @RequestBody AdministrateurRequest request) {
+
+        return repo.findById(id)
                 .map(existing -> {
-                    existing.setUsername(adminDetails.getUsername());
-                    existing.setMotDePasse(adminDetails.getMotDePasse());
-                    existing.setNom(adminDetails.getNom());
-                    existing.setPrenom(adminDetails.getPrenom());
-                    // Gérer les disponibilités si besoin
-                    existing.getDisponibilites().clear();
-                    existing.getDisponibilites().addAll(adminDetails.getDisponibilites());
-                    Administrateur updated = administrateurRepo.save(existing);
-                    return ResponseEntity.ok(updated);
+                    // mapping partiel : mettre à jour champs propres
+                    existing.setUsername(request.getUsername());
+                    existing.setNom(request.getNom());
+                    existing.setPrenom(request.getPrenom());
+                    if (request.getMotDePasse() != null && !request.getMotDePasse().isBlank()) {
+                        existing.setMotDePasse(passwordEncoder.encode(request.getMotDePasse()));
+                    }
+                    Administrateur updated = repo.save(existing);
+                    return ResponseEntity.ok(mapper.toResponse(updated));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // DELETE /api/administrateurs/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
-        if (!administrateurRepo.existsById(id)) {
+        if (!repo.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
-        administrateurRepo.deleteById(id);
+        repo.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 }

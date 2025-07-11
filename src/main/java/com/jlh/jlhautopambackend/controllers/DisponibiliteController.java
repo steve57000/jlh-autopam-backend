@@ -2,8 +2,6 @@ package com.jlh.jlhautopambackend.controllers;
 
 import com.jlh.jlhautopambackend.modeles.Disponibilite;
 import com.jlh.jlhautopambackend.modeles.DisponibiliteKey;
-import com.jlh.jlhautopambackend.modeles.Administrateur;
-import com.jlh.jlhautopambackend.modeles.Creneau;
 import com.jlh.jlhautopambackend.repositories.DisponibiliteRepository;
 import com.jlh.jlhautopambackend.repositories.AdministrateurRepository;
 import com.jlh.jlhautopambackend.repositories.CreneauRepository;
@@ -14,9 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 
-@CrossOrigin
 @RestController
 @RequestMapping("/api/disponibilites")
+@CrossOrigin
 public class DisponibiliteController {
 
     private final DisponibiliteRepository dispoRepo;

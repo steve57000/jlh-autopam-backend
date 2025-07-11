@@ -7,9 +7,9 @@ import com.jlh.jlhautopambackend.modeles.Service;
 import com.jlh.jlhautopambackend.repositories.ServiceRepository;
 import jakarta.validation.Valid;
 
-@CrossOrigin
 @RestController
 @RequestMapping("/api/services")
+@CrossOrigin
 public class ServiceController {
     private final ServiceRepository repo;
     public ServiceController(ServiceRepository repo) { this.repo = repo; }

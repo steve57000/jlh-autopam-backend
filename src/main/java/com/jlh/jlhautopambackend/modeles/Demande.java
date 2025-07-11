@@ -14,7 +14,7 @@ public class Demande {
     private Integer idDemande;
 
     @Column(nullable = false)
-    private Instant dateSoumission;
+    private Instant dateDemande;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "id_client", nullable = false)

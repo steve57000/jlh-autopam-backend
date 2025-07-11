@@ -31,8 +31,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-m2-
 
-      - name: Build with Maven
-        run: mvn --batch-mode --errors --fail-at-end clean verify
+      - name: Build with Maven (debug)
+        run: mvn -B -X -e clean verify
 
       - name: Archive build artifacts
         if: success()

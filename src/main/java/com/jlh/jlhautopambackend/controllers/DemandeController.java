@@ -1,77 +1,45 @@
 package com.jlh.jlhautopambackend.controllers;
 
-import java.net.URI;
-import java.util.List;
-
 import com.jlh.jlhautopambackend.dto.DemandeRequest;
 import com.jlh.jlhautopambackend.dto.DemandeResponse;
-import com.jlh.jlhautopambackend.mapper.DemandeMapper;
-import com.jlh.jlhautopambackend.modeles.Client;
-import com.jlh.jlhautopambackend.repositories.ClientRepository;
-import com.jlh.jlhautopambackend.repositories.StatutDemandeRepository;
-import com.jlh.jlhautopambackend.repositories.TypeDemandeRepository;
+import com.jlh.jlhautopambackend.services.DemandeService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.jlh.jlhautopambackend.modeles.Demande;
-import com.jlh.jlhautopambackend.repositories.DemandeRepository;
+
+import java.net.URI;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/demandes")
 @CrossOrigin
 public class DemandeController {
 
-    private final DemandeRepository repo;
-    private final ClientRepository clientRepo;
-    private final TypeDemandeRepository typeRepo;
-    private final StatutDemandeRepository statutRepo;
-    private final DemandeMapper mapper;
+    private final DemandeService service;
 
-    public DemandeController(DemandeRepository repo,
-                             ClientRepository clientRepo,
-                             TypeDemandeRepository typeRepo,
-                             StatutDemandeRepository statutRepo,
-                             DemandeMapper mapper) {
-        this.repo = repo;
-        this.clientRepo = clientRepo;
-        this.typeRepo = typeRepo;
-        this.statutRepo = statutRepo;
-        this.mapper = mapper;
+    public DemandeController(DemandeService service) {
+        this.service = service;
     }
 
     @GetMapping
     public List<DemandeResponse> getAll() {
-        return repo.findAll().stream()
-                .map(mapper::toResponse)
-                .toList();
+        return service.findAll();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<DemandeResponse> getById(@PathVariable Integer id) {
-        return repo.findById(id)
-                .map(e -> ResponseEntity.ok(mapper.toResponse(e)))
+        Optional<DemandeResponse> opt = service.findById(id);
+        return opt.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     public ResponseEntity<DemandeResponse> create(@Valid @RequestBody DemandeRequest req) {
-        Demande ent = mapper.toEntity(req);
-
-        // lier le client
-        Client client = clientRepo.findById(req.getClientId())
-                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
-        ent.setClient(client);
-
-        // lier type & statut
-        ent.setTypeDemande(typeRepo.findById(req.getCodeType())
-                .orElseThrow(() -> new IllegalArgumentException("Type introuvable")));
-        ent.setStatutDemande(statutRepo.findById(req.getCodeStatut())
-                .orElseThrow(() -> new IllegalArgumentException("Statut introuvable")));
-
-        Demande saved = repo.save(ent);
+        DemandeResponse created = service.create(req);
         return ResponseEntity
-                .created(URI.create("/api/demandes/" + saved.getIdDemande()))
-                .body(mapper.toResponse(saved));
+                .created(URI.create("/api/demandes/" + created.getIdDemande()))
+                .body(created);
     }
 
     @PutMapping("/{id}")
@@ -79,27 +47,16 @@ public class DemandeController {
             @PathVariable Integer id,
             @Valid @RequestBody DemandeRequest req) {
 
-        return repo.findById(id)
-                .map(existing -> {
-                    existing.setDateDemande(req.getDateDemande());
-
-                    existing.setClient(clientRepo.findById(req.getClientId())
-                            .orElseThrow(() -> new IllegalArgumentException("Client introuvable")));
-                    existing.setTypeDemande(typeRepo.findById(req.getCodeType())
-                            .orElseThrow(() -> new IllegalArgumentException("Type introuvable")));
-                    existing.setStatutDemande(statutRepo.findById(req.getCodeStatut())
-                            .orElseThrow(() -> new IllegalArgumentException("Statut introuvable")));
-
-                    Demande updated = repo.save(existing);
-                    return ResponseEntity.ok(mapper.toResponse(updated));
-                })
+        Optional<DemandeResponse> opt = service.update(id, req);
+        return opt.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
-        if (!repo.existsById(id)) return ResponseEntity.notFound().build();
-        repo.deleteById(id);
-        return ResponseEntity.noContent().build();
+        boolean deleted = service.delete(id);
+        return deleted
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
     }
 }

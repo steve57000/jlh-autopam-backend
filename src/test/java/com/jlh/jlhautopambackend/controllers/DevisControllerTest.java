@@ -1,10 +1,11 @@
 package com.jlh.jlhautopambackend.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jlh.jlhautopambackend.modeles.Devis;
-import com.jlh.jlhautopambackend.modeles.Demande;
-import com.jlh.jlhautopambackend.repositories.DevisRepository;
-import com.jlh.jlhautopambackend.repositories.DemandeRepository;
+import com.jlh.jlhautopambackend.dto.DevisRequest;
+import com.jlh.jlhautopambackend.dto.DevisResponse;
+import com.jlh.jlhautopambackend.services.DevisService;
+import com.jlh.jlhautopambackend.utils.JwtUtil;
+import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -19,7 +20,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -40,30 +40,32 @@ class DevisControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private DevisRepository devisRepo;
+    private DevisService devisService;
+
+    // JWT mocks
+    @MockitoBean
+    private JwtUtil jwtUtil;
 
     @MockitoBean
-    private DemandeRepository demandeRepo;
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     @DisplayName("GET /api/devis ➔ 200, json list")
     void testGetAll() throws Exception {
-        Demande d1 = Demande.builder().idDemande(1).build();
-        Demande d2 = Demande.builder().idDemande(2).build();
-        Devis dv1 = Devis.builder()
+        DevisResponse r1 = DevisResponse.builder()
                 .idDevis(10)
-                .demande(d1)
+                .demandeId(1)
                 .dateDevis(Instant.parse("2025-01-01T10:00:00Z"))
                 .montantTotal(new BigDecimal("100.00"))
                 .build();
-        Devis dv2 = Devis.builder()
+        DevisResponse r2 = DevisResponse.builder()
                 .idDevis(20)
-                .demande(d2)
+                .demandeId(2)
                 .dateDevis(Instant.parse("2025-01-02T11:00:00Z"))
                 .montantTotal(new BigDecimal("200.00"))
                 .build();
 
-        Mockito.when(devisRepo.findAll()).thenReturn(Arrays.asList(dv1, dv2));
+        Mockito.when(devisService.findAll()).thenReturn(Arrays.asList(r1, r2));
 
         mvc.perform(get("/api/devis").accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -75,15 +77,13 @@ class DevisControllerTest {
     @Test
     @DisplayName("GET /api/devis/{id} ➔ 200")
     void testGetByIdFound() throws Exception {
-        Demande d = Demande.builder().idDemande(3).build();
-        Devis dv = Devis.builder()
+        DevisResponse resp = DevisResponse.builder()
                 .idDevis(30)
-                .demande(d)
+                .demandeId(3)
                 .dateDevis(Instant.parse("2025-01-03T12:00:00Z"))
                 .montantTotal(new BigDecimal("300.50"))
                 .build();
-
-        Mockito.when(devisRepo.findById(30)).thenReturn(Optional.of(dv));
+        Mockito.when(devisService.findById(30)).thenReturn(Optional.of(resp));
 
         mvc.perform(get("/api/devis/30").accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -95,7 +95,7 @@ class DevisControllerTest {
     @Test
     @DisplayName("GET /api/devis/{id} ➔ 404")
     void testGetByIdNotFound() throws Exception {
-        Mockito.when(devisRepo.findById(99)).thenReturn(Optional.empty());
+        Mockito.when(devisService.findById(99)).thenReturn(Optional.empty());
 
         mvc.perform(get("/api/devis/99").accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -103,28 +103,25 @@ class DevisControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/devis ➔ 201 when demande exists and no conflict")
-    void testCreateSuccess() throws Exception {
-        int demandeId = 4;
-        Devis input = Devis.builder()
-                .demande(Demande.builder().idDemande(demandeId).build())
+    @DisplayName("POST /api/devis ➔ 201, JSON retourné")
+    void testCreate() throws Exception {
+        DevisRequest req = DevisRequest.builder()
+                .demandeId(4)
                 .dateDevis(Instant.parse("2025-01-04T08:00:00Z"))
                 .montantTotal(new BigDecimal("400.00"))
                 .build();
-        Devis saved = Devis.builder()
+        DevisResponse created = DevisResponse.builder()
                 .idDevis(40)
-                .demande(input.getDemande())
-                .dateDevis(input.getDateDevis())
-                .montantTotal(input.getMontantTotal())
+                .demandeId(4)
+                .dateDevis(req.getDateDevis())
+                .montantTotal(req.getMontantTotal())
                 .build();
 
-        Mockito.when(demandeRepo.findById(demandeId)).thenReturn(Optional.of(input.getDemande()));
-        Mockito.when(devisRepo.findAll()).thenReturn(Collections.emptyList());
-        Mockito.when(devisRepo.save(Mockito.any())).thenReturn(saved);
+        Mockito.when(devisService.create(Mockito.any(DevisRequest.class))).thenReturn(created);
 
         mvc.perform(post("/api/devis")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(input)))
+                        .content(objectMapper.writeValueAsString(req)))
                 .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/api/devis/40"))
@@ -134,154 +131,59 @@ class DevisControllerTest {
     @Test
     @DisplayName("POST /api/devis ➔ 400 when demande missing")
     void testCreateBadRequest() throws Exception {
-        int demandeId = 5;
-        Devis input = Devis.builder()
-                .demande(Demande.builder().idDemande(demandeId).build())
+        DevisRequest req = DevisRequest.builder()
+                .demandeId(5)
                 .dateDevis(Instant.now())
                 .montantTotal(new BigDecimal("500.00"))
                 .build();
 
-        Mockito.when(demandeRepo.findById(demandeId)).thenReturn(Optional.empty());
+        Mockito.doThrow(new IllegalArgumentException("Demande introuvable"))
+                .when(devisService).create(Mockito.any(DevisRequest.class));
 
         mvc.perform(post("/api/devis")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(input)))
+                        .content(objectMapper.writeValueAsString(req)))
                 .andDo(print())
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    @DisplayName("POST /api/devis ➔ 409 when conflict")
-    void testCreateConflict() throws Exception {
-        int demandeId = 6;
-        Devis input = Devis.builder()
-                .demande(Demande.builder().idDemande(demandeId).build())
-                .dateDevis(Instant.now())
-                .montantTotal(new BigDecimal("600.00"))
-                .build();
-        Devis existing = Devis.builder()
-                .idDevis(60)
-                .demande(input.getDemande())
-                .dateDevis(Instant.parse("2025-01-01T00:00:00Z"))
-                .montantTotal(BigDecimal.ZERO)
-                .build();
-
-        Mockito.when(demandeRepo.findById(demandeId)).thenReturn(Optional.of(input.getDemande()));
-        Mockito.when(devisRepo.findAll()).thenReturn(Collections.singletonList(existing));
-
-        mvc.perform(post("/api/devis")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(input)))
-                .andDo(print())
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    @DisplayName("PUT /api/devis/{id} ➔ 200 when exists and no conflict")
-    void testUpdateSuccess() throws Exception {
-        int id = 7;
-        int oldDemId = 7, newDemId = 8;
-        Devis existing = Devis.builder()
-                .idDevis(id)
-                .demande(Demande.builder().idDemande(oldDemId).build())
-                .dateDevis(Instant.parse("2025-01-07T07:00:00Z"))
-                .montantTotal(new BigDecimal("700.00"))
-                .build();
-        Devis dto = Devis.builder()
-                .demande(Demande.builder().idDemande(newDemId).build())
+    @DisplayName("PUT /api/devis/{id} ➔ 200, JSON mis à jour")
+    void testUpdateFound() throws Exception {
+        DevisRequest req = DevisRequest.builder()
+                .demandeId(8)
                 .dateDevis(Instant.parse("2025-02-07T07:00:00Z"))
                 .montantTotal(new BigDecimal("800.00"))
                 .build();
-        Devis updated = Devis.builder()
-                .idDevis(id)
-                .demande(dto.getDemande())
-                .dateDevis(dto.getDateDevis())
-                .montantTotal(dto.getMontantTotal())
+        DevisResponse updated = DevisResponse.builder()
+                .idDevis(7)
+                .demandeId(8)
+                .dateDevis(req.getDateDevis())
+                .montantTotal(req.getMontantTotal())
                 .build();
 
-        Mockito.when(devisRepo.findById(id)).thenReturn(Optional.of(existing));
-        Mockito.when(demandeRepo.findById(newDemId)).thenReturn(Optional.of(dto.getDemande()));
-        Mockito.when(devisRepo.findAll()).thenReturn(Collections.emptyList());
-        Mockito.when(devisRepo.save(Mockito.any())).thenReturn(updated);
+        Mockito.when(devisService.update(Mockito.eq(7), Mockito.any(DevisRequest.class)))
+                .thenReturn(Optional.of(updated));
 
-        mvc.perform(put("/api/devis/" + id)
+        mvc.perform(put("/api/devis/7")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+                        .content(objectMapper.writeValueAsString(req)))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.dateDevis").value(dto.getDateDevis().toString()))
+                .andExpect(jsonPath("$.dateDevis").value(req.getDateDevis().toString()))
                 .andExpect(jsonPath("$.montantTotal").value(800.00));
-    }
-
-    @Test
-    @DisplayName("PUT /api/devis/{id} ➔ 400 when new demande missing")
-    void testUpdateBadRequest() throws Exception {
-        int id = 8;
-        int newDemId = 9;
-        Devis existing = Devis.builder()
-                .idDevis(id)
-                .demande(Demande.builder().idDemande(8).build())
-                .dateDevis(Instant.now())
-                .montantTotal(BigDecimal.ZERO)
-                .build();
-        Devis dto = Devis.builder()
-                .demande(Demande.builder().idDemande(newDemId).build())
-                .dateDevis(Instant.now())
-                .montantTotal(BigDecimal.ZERO)
-                .build();
-
-        Mockito.when(devisRepo.findById(id)).thenReturn(Optional.of(existing));
-        Mockito.when(demandeRepo.findById(newDemId)).thenReturn(Optional.empty());
-
-        mvc.perform(put("/api/devis/" + id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andDo(print())
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("PUT /api/devis/{id} ➔ 409 when conflict on update")
-    void testUpdateConflict() throws Exception {
-        int id = 9;
-        int oldDemId = 9, newDemId = 10;
-        Devis existing = Devis.builder()
-                .idDevis(id)
-                .demande(Demande.builder().idDemande(oldDemId).build())
-                .dateDevis(Instant.now())
-                .montantTotal(BigDecimal.ZERO)
-                .build();
-        Devis dto = Devis.builder()
-                .demande(Demande.builder().idDemande(newDemId).build())
-                .dateDevis(Instant.now())
-                .montantTotal(BigDecimal.ZERO)
-                .build();
-        Devis conflict = Devis.builder()
-                .idDevis(100)
-                .demande(dto.getDemande())
-                .dateDevis(Instant.now())
-                .montantTotal(BigDecimal.ZERO)
-                .build();
-
-        Mockito.when(devisRepo.findById(id)).thenReturn(Optional.of(existing));
-        Mockito.when(demandeRepo.findById(newDemId)).thenReturn(Optional.of(dto.getDemande()));
-        Mockito.when(devisRepo.findAll()).thenReturn(Collections.singletonList(conflict));
-
-        mvc.perform(put("/api/devis/" + id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andDo(print())
-                .andExpect(status().isConflict());
     }
 
     @Test
     @DisplayName("PUT /api/devis/{id} ➔ 404 when not found")
     void testUpdateNotFound() throws Exception {
-        Mockito.when(devisRepo.findById(42)).thenReturn(Optional.empty());
+        DevisRequest req = DevisRequest.builder().build();
+        Mockito.when(devisService.update(Mockito.eq(99), Mockito.any(DevisRequest.class)))
+                .thenReturn(Optional.empty());
 
-        mvc.perform(put("/api/devis/42")
+        mvc.perform(put("/api/devis/99")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(objectMapper.writeValueAsString(req)))
                 .andDo(print())
                 .andExpect(status().isNotFound());
     }
@@ -289,7 +191,7 @@ class DevisControllerTest {
     @Test
     @DisplayName("DELETE /api/devis/{id} ➔ 204 when exists")
     void testDeleteFound() throws Exception {
-        Mockito.when(devisRepo.existsById(11)).thenReturn(true);
+        Mockito.when(devisService.delete(11)).thenReturn(true);
 
         mvc.perform(delete("/api/devis/11"))
                 .andDo(print())
@@ -299,7 +201,7 @@ class DevisControllerTest {
     @Test
     @DisplayName("DELETE /api/devis/{id} ➔ 404 when not found")
     void testDeleteNotFound() throws Exception {
-        Mockito.when(devisRepo.existsById(99)).thenReturn(false);
+        Mockito.when(devisService.delete(99)).thenReturn(false);
 
         mvc.perform(delete("/api/devis/99"))
                 .andDo(print())

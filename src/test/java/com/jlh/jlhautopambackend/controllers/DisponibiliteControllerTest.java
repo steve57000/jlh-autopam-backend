@@ -5,9 +5,9 @@ import com.jlh.jlhautopambackend.modeles.Administrateur;
 import com.jlh.jlhautopambackend.modeles.Creneau;
 import com.jlh.jlhautopambackend.modeles.Disponibilite;
 import com.jlh.jlhautopambackend.modeles.DisponibiliteKey;
-import com.jlh.jlhautopambackend.repositories.AdministrateurRepository;
-import com.jlh.jlhautopambackend.repositories.CreneauRepository;
-import com.jlh.jlhautopambackend.repositories.DisponibiliteRepository;
+import com.jlh.jlhautopambackend.services.DisponibiliteService;
+import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
+import com.jlh.jlhautopambackend.utils.JwtUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(
@@ -40,26 +39,26 @@ class DisponibiliteControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private DisponibiliteRepository dispoRepo;
+    private DisponibiliteService service;
 
+    // mocks JWT
     @MockitoBean
-    private AdministrateurRepository adminRepo;
-
+    private JwtUtil jwtUtil;
     @MockitoBean
-    private CreneauRepository creneauRepo;
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     @DisplayName("GET /api/disponibilites ➔ 200, json list")
     void testGetAll() throws Exception {
-        DisponibiliteKey key1 = new DisponibiliteKey(1, 100);
-        DisponibiliteKey key2 = new DisponibiliteKey(2, 200);
-        Disponibilite d1 = Disponibilite.builder().id(key1).build();
-        Disponibilite d2 = Disponibilite.builder().id(key2).build();
+        Disponibilite d1 = Disponibilite.builder()
+                .id(new DisponibiliteKey(1,100)).build();
+        Disponibilite d2 = Disponibilite.builder()
+                .id(new DisponibiliteKey(2,200)).build();
 
-        Mockito.when(dispoRepo.findAll()).thenReturn(Arrays.asList(d1, d2));
+        Mockito.when(service.findAll()).thenReturn(Arrays.asList(d1, d2));
 
-        mvc.perform(get("/api/disponibilites").accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
+        mvc.perform(get("/api/disponibilites")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id.idAdmin").value(1))
                 .andExpect(jsonPath("$[1].id.idCreneau").value(200));
@@ -68,13 +67,12 @@ class DisponibiliteControllerTest {
     @Test
     @DisplayName("GET /api/disponibilites/{adminId}/{creneauId} ➔ 200")
     void testGetByIdFound() throws Exception {
-        DisponibiliteKey key = new DisponibiliteKey(3, 300);
+        DisponibiliteKey key = new DisponibiliteKey(3,300);
         Disponibilite d = Disponibilite.builder().id(key).build();
+        Mockito.when(service.findByKey(3,300)).thenReturn(Optional.of(d));
 
-        Mockito.when(dispoRepo.findById(key)).thenReturn(Optional.of(d));
-
-        mvc.perform(get("/api/disponibilites/3/300").accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
+        mvc.perform(get("/api/disponibilites/3/300")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id.idAdmin").value(3))
                 .andExpect(jsonPath("$.id.idCreneau").value(300));
@@ -83,11 +81,10 @@ class DisponibiliteControllerTest {
     @Test
     @DisplayName("GET /api/disponibilites/{adminId}/{creneauId} ➔ 404")
     void testGetByIdNotFound() throws Exception {
-        DisponibiliteKey key = new DisponibiliteKey(9, 900);
-        Mockito.when(dispoRepo.findById(key)).thenReturn(Optional.empty());
+        Mockito.when(service.findByKey(9,900)).thenReturn(Optional.empty());
 
-        mvc.perform(get("/api/disponibilites/9/900").accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
+        mvc.perform(get("/api/disponibilites/9/900")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
 
@@ -95,28 +92,21 @@ class DisponibiliteControllerTest {
     @DisplayName("POST /api/disponibilites ➔ 201 when both exist")
     void testCreateSuccess() throws Exception {
         int adminId = 4, creneauId = 400;
-        Administrateur admin = Administrateur.builder().idAdmin(adminId).build();
-        Creneau creneau = Creneau.builder().idCreneau(creneauId).build();
-        DisponibiliteKey key = new DisponibiliteKey(adminId, creneauId);
-        Disponibilite saved = Disponibilite.builder()
-                .id(key)
-                .administrateur(admin)
-                .creneau(creneau)
-                .build();
-
         Disponibilite input = Disponibilite.builder()
                 .administrateur(Administrateur.builder().idAdmin(adminId).build())
                 .creneau(Creneau.builder().idCreneau(creneauId).build())
                 .build();
+        Disponibilite saved = Disponibilite.builder()
+                .id(new DisponibiliteKey(adminId, creneauId))
+                .administrateur(input.getAdministrateur())
+                .creneau(input.getCreneau())
+                .build();
 
-        Mockito.when(adminRepo.findById(adminId)).thenReturn(Optional.of(admin));
-        Mockito.when(creneauRepo.findById(creneauId)).thenReturn(Optional.of(creneau));
-        Mockito.when(dispoRepo.save(Mockito.any())).thenReturn(saved);
+        Mockito.when(service.create(Mockito.eq(input))).thenReturn(saved);
 
         mvc.perform(post("/api/disponibilites")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(input)))
-                .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/api/disponibilites/4/400"))
                 .andExpect(jsonPath("$.id.idAdmin").value(4))
@@ -126,60 +116,52 @@ class DisponibiliteControllerTest {
     @Test
     @DisplayName("POST /api/disponibilites ➔ 400 when admin missing")
     void testCreateBadRequestAdminMissing() throws Exception {
-        int adminId = 5, creneauId = 500;
         Disponibilite input = Disponibilite.builder()
-                .administrateur(Administrateur.builder().idAdmin(adminId).build())
-                .creneau(Creneau.builder().idCreneau(creneauId).build())
+                .administrateur(Administrateur.builder().idAdmin(5).build())
+                .creneau(Creneau.builder().idCreneau(500).build())
                 .build();
 
-        Mockito.when(adminRepo.findById(adminId)).thenReturn(Optional.empty());
+        Mockito.when(service.create(Mockito.any()))
+                .thenThrow(new IllegalArgumentException("Administrateur introuvable"));
 
         mvc.perform(post("/api/disponibilites")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(input)))
-                .andDo(print())
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("POST /api/disponibilites ➔ 400 when creneau missing")
     void testCreateBadRequestCreneauMissing() throws Exception {
-        int adminId = 6, creneauId = 600;
-        Administrateur admin = Administrateur.builder().idAdmin(adminId).build();
         Disponibilite input = Disponibilite.builder()
-                .administrateur(admin)
-                .creneau(Creneau.builder().idCreneau(creneauId).build())
+                .administrateur(Administrateur.builder().idAdmin(6).build())
+                .creneau(Creneau.builder().idCreneau(600).build())
                 .build();
 
-        Mockito.when(adminRepo.findById(adminId)).thenReturn(Optional.of(admin));
-        Mockito.when(creneauRepo.findById(creneauId)).thenReturn(Optional.empty());
+        Mockito.when(service.create(Mockito.any()))
+                .thenThrow(new IllegalArgumentException("Créneau introuvable"));
 
         mvc.perform(post("/api/disponibilites")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(input)))
-                .andDo(print())
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("DELETE /api/disponibilites/{adminId}/{creneauId} ➔ 204 when exists")
     void testDeleteFound() throws Exception {
-        DisponibiliteKey key = new DisponibiliteKey(7, 700);
-        Mockito.when(dispoRepo.existsById(key)).thenReturn(true);
+        Mockito.when(service.delete(7,700)).thenReturn(true);
 
         mvc.perform(delete("/api/disponibilites/7/700"))
-                .andDo(print())
                 .andExpect(status().isNoContent());
     }
 
     @Test
     @DisplayName("DELETE /api/disponibilites/{adminId}/{creneauId} ➔ 404 when not found")
     void testDeleteNotFound() throws Exception {
-        DisponibiliteKey key = new DisponibiliteKey(8, 800);
-        Mockito.when(dispoRepo.existsById(key)).thenReturn(false);
+        Mockito.when(service.delete(8,800)).thenReturn(false);
 
         mvc.perform(delete("/api/disponibilites/8/800"))
-                .andDo(print())
                 .andExpect(status().isNotFound());
     }
 }

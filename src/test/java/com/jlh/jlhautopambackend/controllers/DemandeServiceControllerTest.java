@@ -1,13 +1,12 @@
 package com.jlh.jlhautopambackend.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jlh.jlhautopambackend.modeles.Demande;
-import com.jlh.jlhautopambackend.modeles.DemandeService;
-import com.jlh.jlhautopambackend.modeles.DemandeServiceKey;
-import com.jlh.jlhautopambackend.modeles.Service;
-import com.jlh.jlhautopambackend.repositories.DemandeRepository;
-import com.jlh.jlhautopambackend.repositories.DemandeServiceRepository;
-import com.jlh.jlhautopambackend.repositories.ServiceRepository;
+import com.jlh.jlhautopambackend.dto.DemandeServiceRequest;
+import com.jlh.jlhautopambackend.dto.DemandeServiceResponse;
+import com.jlh.jlhautopambackend.dto.DemandeServiceKeyDto;
+import com.jlh.jlhautopambackend.services.DemandeServiceService;
+import com.jlh.jlhautopambackend.utils.JwtUtil;
+import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -23,7 +22,6 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(
@@ -40,30 +38,30 @@ class DemandeServiceControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private DemandeServiceRepository dsRepo;
+    private DemandeServiceService service;
 
+    // mocks pour JWT
     @MockitoBean
-    private DemandeRepository demandeRepo;
-
+    private JwtUtil jwtUtil;
     @MockitoBean
-    private ServiceRepository serviceRepo;
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     @DisplayName("GET /api/demandes-services ➔ 200, json list")
     void testGetAll() throws Exception {
-        DemandeService ds1 = DemandeService.builder()
-                .id(new DemandeServiceKey(1, 10))
+        DemandeServiceResponse ds1 = DemandeServiceResponse.builder()
+                .id(DemandeServiceKeyDto.builder().idDemande(1).idService(10).build())
                 .quantite(2)
                 .build();
-        DemandeService ds2 = DemandeService.builder()
-                .id(new DemandeServiceKey(2, 20))
+        DemandeServiceResponse ds2 = DemandeServiceResponse.builder()
+                .id(DemandeServiceKeyDto.builder().idDemande(2).idService(20).build())
                 .quantite(5)
                 .build();
 
-        Mockito.when(dsRepo.findAll()).thenReturn(Arrays.asList(ds1, ds2));
+        Mockito.when(service.findAll()).thenReturn(Arrays.asList(ds1, ds2));
 
-        mvc.perform(get("/api/demandes-services").accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
+        mvc.perform(get("/api/demandes-services")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id.idDemande").value(1))
                 .andExpect(jsonPath("$[1].id.idService").value(20));
@@ -72,15 +70,15 @@ class DemandeServiceControllerTest {
     @Test
     @DisplayName("GET /api/demandes-services/{demandeId}/{serviceId} ➔ 200")
     void testGetByIdFound() throws Exception {
-        DemandeServiceKey key = new DemandeServiceKey(3, 30);
-        DemandeService ds = DemandeService.builder()
-                .id(key)
+        DemandeServiceResponse ds = DemandeServiceResponse.builder()
+                .id(DemandeServiceKeyDto.builder().idDemande(3).idService(30).build())
                 .quantite(7)
                 .build();
-        Mockito.when(dsRepo.findById(key)).thenReturn(Optional.of(ds));
 
-        mvc.perform(get("/api/demandes-services/3/30").accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
+        Mockito.when(service.findByKey(3, 30)).thenReturn(Optional.of(ds));
+
+        mvc.perform(get("/api/demandes-services/3/30")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.quantite").value(7));
     }
@@ -88,41 +86,29 @@ class DemandeServiceControllerTest {
     @Test
     @DisplayName("GET /api/demandes-services/{demandeId}/{serviceId} ➔ 404")
     void testGetByIdNotFound() throws Exception {
-        DemandeServiceKey key = new DemandeServiceKey(9, 90);
-        Mockito.when(dsRepo.findById(key)).thenReturn(Optional.empty());
+        Mockito.when(service.findByKey(9, 90)).thenReturn(Optional.empty());
 
-        mvc.perform(get("/api/demandes-services/9/90").accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
+        mvc.perform(get("/api/demandes-services/9/90")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("POST /api/demandes-services ➔ 201 when both exist")
     void testCreateSuccess() throws Exception {
-        int demandeId = 5, serviceId = 50;
-        DemandeService input = DemandeService.builder()
-                .demande(Demande.builder().idDemande(demandeId).build())
-                .service(Service.builder().idService(serviceId).build())
+        DemandeServiceRequest req = new DemandeServiceRequest(5, 50, 3);
+
+        DemandeServiceResponse created = DemandeServiceResponse.builder()
+                .id(DemandeServiceKeyDto.builder().idDemande(5).idService(50).build())
                 .quantite(3)
                 .build();
 
-        Demande demande = Demande.builder().idDemande(demandeId).build();
-        Service service = Service.builder().idService(serviceId).build();
-        DemandeService saved = DemandeService.builder()
-                .id(new DemandeServiceKey(demandeId, serviceId))
-                .demande(demande)
-                .service(service)
-                .quantite(3)
-                .build();
-
-        Mockito.when(demandeRepo.findById(demandeId)).thenReturn(Optional.of(demande));
-        Mockito.when(serviceRepo.findById(serviceId)).thenReturn(Optional.of(service));
-        Mockito.when(dsRepo.save(Mockito.any())).thenReturn(saved);
+        Mockito.when(service.create(Mockito.any(DemandeServiceRequest.class)))
+                .thenReturn(created);
 
         mvc.perform(post("/api/demandes-services")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(input)))
-                .andDo(print())
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/api/demandes-services/5/50"))
                 .andExpect(jsonPath("$.id.idDemande").value(5))
@@ -132,45 +118,32 @@ class DemandeServiceControllerTest {
     @Test
     @DisplayName("POST /api/demandes-services ➔ 400 when missing linked entity")
     void testCreateBadRequest() throws Exception {
-        int demandeId = 6, serviceId = 60;
-        DemandeService input = DemandeService.builder()
-                .demande(Demande.builder().idDemande(demandeId).build())
-                .service(Service.builder().idService(serviceId).build())
-                .quantite(1)
-                .build();
+        DemandeServiceRequest req = new DemandeServiceRequest(6, 60, 1);
 
-        Mockito.when(demandeRepo.findById(demandeId)).thenReturn(Optional.empty());
+        Mockito.when(service.create(Mockito.any(DemandeServiceRequest.class)))
+                .thenThrow(new IllegalArgumentException("Demande ou Service introuvable"));
 
         mvc.perform(post("/api/demandes-services")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(input)))
-                .andDo(print())
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("PUT /api/demandes-services/{demandeId}/{serviceId} ➔ 200 when exists")
     void testUpdateFound() throws Exception {
-        DemandeServiceKey key = new DemandeServiceKey(7, 70);
-        DemandeService existing = DemandeService.builder()
-                .id(key)
-                .quantite(4)
-                .build();
-        DemandeService dto = DemandeService.builder()
-                .quantite(9)
-                .build();
-        DemandeService updated = DemandeService.builder()
-                .id(key)
+        DemandeServiceRequest req = new DemandeServiceRequest(null, null, 9);
+        DemandeServiceResponse updated = DemandeServiceResponse.builder()
+                .id(DemandeServiceKeyDto.builder().idDemande(7).idService(70).build())
                 .quantite(9)
                 .build();
 
-        Mockito.when(dsRepo.findById(key)).thenReturn(Optional.of(existing));
-        Mockito.when(dsRepo.save(Mockito.any())).thenReturn(updated);
+        Mockito.when(service.update(7, 70, req))
+                .thenReturn(Optional.of(updated));
 
         mvc.perform(put("/api/demandes-services/7/70")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andDo(print())
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.quantite").value(9));
     }
@@ -178,38 +151,32 @@ class DemandeServiceControllerTest {
     @Test
     @DisplayName("PUT /api/demandes-services/{demandeId}/{serviceId} ➔ 404 when not found")
     void testUpdateNotFound() throws Exception {
-        DemandeServiceKey key = new DemandeServiceKey(8, 80);
-        DemandeService dto = DemandeService.builder()
-                .quantite(2)
-                .build();
-        Mockito.when(dsRepo.findById(key)).thenReturn(Optional.empty());
+        DemandeServiceRequest req = new DemandeServiceRequest(null, null, 2);
+
+        Mockito.when(service.update(8, 80, req))
+                .thenReturn(Optional.empty());
 
         mvc.perform(put("/api/demandes-services/8/80")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andDo(print())
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("DELETE /api/demandes-services/{demandeId}/{serviceId} ➔ 204 when exists")
     void testDeleteFound() throws Exception {
-        DemandeServiceKey key = new DemandeServiceKey(11, 110);
-        Mockito.when(dsRepo.existsById(key)).thenReturn(true);
+        Mockito.when(service.delete(11, 110)).thenReturn(true);
 
         mvc.perform(delete("/api/demandes-services/11/110"))
-                .andDo(print())
                 .andExpect(status().isNoContent());
     }
 
     @Test
     @DisplayName("DELETE /api/demandes-services/{demandeId}/{serviceId} ➔ 404 when not found")
     void testDeleteNotFound() throws Exception {
-        DemandeServiceKey key = new DemandeServiceKey(12, 120);
-        Mockito.when(dsRepo.existsById(key)).thenReturn(false);
+        Mockito.when(service.delete(12, 120)).thenReturn(false);
 
         mvc.perform(delete("/api/demandes-services/12/120"))
-                .andDo(print())
                 .andExpect(status().isNotFound());
     }
 }

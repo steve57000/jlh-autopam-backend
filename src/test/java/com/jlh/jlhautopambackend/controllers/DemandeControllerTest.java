@@ -1,8 +1,11 @@
 package com.jlh.jlhautopambackend.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jlh.jlhautopambackend.modeles.*;
-import com.jlh.jlhautopambackend.repositories.DemandeRepository;
+import com.jlh.jlhautopambackend.dto.DemandeRequest;
+import com.jlh.jlhautopambackend.dto.DemandeResponse;
+import com.jlh.jlhautopambackend.services.DemandeService;
+import com.jlh.jlhautopambackend.utils.JwtUtil;
+import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -15,12 +18,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(
@@ -37,26 +38,31 @@ class DemandeControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private DemandeRepository repo;
+    private DemandeService service;
+
+    // **Ajout des beans pour désactiver la sécurité JWT**
+    @MockitoBean
+    private JwtUtil jwtUtil;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     @DisplayName("GET /api/demandes ➔ 200, json list")
     void testGetAll() throws Exception {
-        Demande d1 = Demande.builder()
+        DemandeResponse r1 = DemandeResponse.builder()
                 .idDemande(1)
                 .dateDemande(Instant.parse("2025-01-01T10:00:00Z"))
-                .services(Collections.emptyList())
+                .services(List.of())
                 .build();
-        Demande d2 = Demande.builder()
+        DemandeResponse r2 = DemandeResponse.builder()
                 .idDemande(2)
                 .dateDemande(Instant.parse("2025-01-02T11:00:00Z"))
-                .services(Collections.emptyList())
+                .services(List.of())
                 .build();
-
-        Mockito.when(repo.findAll()).thenReturn(Arrays.asList(d1, d2));
+        Mockito.when(service.findAll()).thenReturn(List.of(r1, r2));
 
         mvc.perform(get("/api/demandes").accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idDemande").value(1))
                 .andExpect(jsonPath("$[1].idDemande").value(2));
@@ -65,134 +71,114 @@ class DemandeControllerTest {
     @Test
     @DisplayName("GET /api/demandes/{id} ➔ 200")
     void testGetByIdFound() throws Exception {
-        Demande d = Demande.builder()
-                .idDemande(1)
+        DemandeResponse resp = DemandeResponse.builder()
+                .idDemande(3)
                 .dateDemande(Instant.parse("2025-01-03T12:00:00Z"))
-                .services(Collections.emptyList())
+                .services(List.of())
                 .build();
-        Mockito.when(repo.findById(1)).thenReturn(Optional.of(d));
+        Mockito.when(service.findById(3)).thenReturn(Optional.of(resp));
 
-        mvc.perform(get("/api/demandes/1").accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
+        mvc.perform(get("/api/demandes/3").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idDemande").value(1))
-                .andExpect(jsonPath("$.dateSoumission").value("2025-01-03T12:00:00Z"));
+                .andExpect(jsonPath("$.idDemande").value(3));
     }
 
     @Test
     @DisplayName("GET /api/demandes/{id} ➔ 404")
     void testGetByIdNotFound() throws Exception {
-        Mockito.when(repo.findById(99)).thenReturn(Optional.empty());
+        Mockito.when(service.findById(99)).thenReturn(Optional.empty());
 
         mvc.perform(get("/api/demandes/99").accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("POST /api/demandes ➔ 201 with nested client/type/statut")
-    void testCreateWithNested() throws Exception {
-        Client client = Client.builder().idClient(10).build();
-        TypeDemande type = TypeDemande.builder().codeType("T1").build();
-        StatutDemande statut = StatutDemande.builder().codeStatut("S1").build();
-
-        Demande input = Demande.builder()
+    @DisplayName("POST /api/demandes ➔ 201, JSON retourné")
+    void testCreate() throws Exception {
+        DemandeRequest req = DemandeRequest.builder()
                 .dateDemande(Instant.parse("2025-01-04T08:00:00Z"))
-                .client(client)
-                .typeDemande(type)
-                .statutDemande(statut)
-                .services(Collections.emptyList())
+                .clientId(10)
+                .codeType("T1")
+                .codeStatut("S1")
                 .build();
-
-        Demande saved = Demande.builder()
-                .idDemande(3)
-                .dateDemande(input.getDateDemande())
-                .client(client)
-                .typeDemande(type)
-                .statutDemande(statut)
-                .services(Collections.emptyList())
+        DemandeResponse created = DemandeResponse.builder()
+                .idDemande(10)
+                .dateDemande(req.getDateDemande())
+                .clientId(10)
+                .typeDemande(null)
+                .statutDemande(null)
+                .services(List.of())
                 .build();
-
-        Mockito.when(repo.save(Mockito.any())).thenReturn(saved);
+        Mockito.when(service.create(Mockito.any(DemandeRequest.class))).thenReturn(created);
 
         mvc.perform(post("/api/demandes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(input)))
-                .andDo(print())
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.idDemande").value(3))
-                .andExpect(jsonPath("$.client.idClient").value(10))
-                .andExpect(jsonPath("$.typeDemande.codeType").value("T1"))
-                .andExpect(jsonPath("$.statutDemande.codeStatut").value("S1"))
-                // le champ services n'existe pas dans la réponse
-                .andExpect(jsonPath("$.services").doesNotExist());
+                .andExpect(header().string("Location", "/api/demandes/10"))
+                .andExpect(jsonPath("$.idDemande").value(10));
     }
 
     @Test
-    @DisplayName("PUT /api/demandes/{id} ➔ 200 when exists")
+    @DisplayName("PUT /api/demandes/{id} ➔ 200, JSON mis à jour")
     void testUpdateFound() throws Exception {
-        Demande existing = Demande.builder()
-                .idDemande(4)
-                .dateDemande(Instant.parse("2025-01-05T09:00:00Z"))
-                .services(Collections.emptyList())
-                .build();
-        Demande updates = Demande.builder()
+        DemandeRequest req = DemandeRequest.builder()
                 .dateDemande(Instant.parse("2025-02-05T09:00:00Z"))
-                .services(Collections.emptyList())
+                .clientId(4)
+                .codeType("T4")
+                .codeStatut("S4")
                 .build();
-        Demande saved = Demande.builder()
-                .idDemande(4)
-                .dateDemande(updates.getDateDemande())
-                .services(Collections.emptyList())
+        DemandeResponse updated = DemandeResponse.builder()
+                .idDemande(5)
+                .dateDemande(req.getDateDemande())
+                .clientId(4)
+                .typeDemande(null)
+                .statutDemande(null)
+                .services(List.of())
                 .build();
+        Mockito.when(service.update(Mockito.eq(5), Mockito.any(DemandeRequest.class)))
+                .thenReturn(Optional.of(updated));
 
-        Mockito.when(repo.findById(4)).thenReturn(Optional.of(existing));
-        Mockito.when(repo.save(Mockito.any())).thenReturn(saved);
-
-        mvc.perform(put("/api/demandes/4")
+        mvc.perform(put("/api/demandes/5")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updates)))
-                .andDo(print())
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idDemande").value(4))
-                .andExpect(jsonPath("$.dateSoumission").value("2025-02-05T09:00:00Z"))
-                .andExpect(jsonPath("$.services").doesNotExist());
+                .andExpect(jsonPath("$.dateDemande").value("2025-02-05T09:00:00Z"));
     }
 
     @Test
-    @DisplayName("PUT /api/demandes/{id} ➔ 404 when not found")
+    @DisplayName("PUT /api/demandes/{id} ➔ 404")
     void testUpdateNotFound() throws Exception {
-        Demande updates = Demande.builder()
+        DemandeRequest req = DemandeRequest.builder()
                 .dateDemande(Instant.parse("2025-03-01T07:00:00Z"))
-                .services(Collections.emptyList())
+                .clientId(1)
+                .codeType("T1")
+                .codeStatut("S1")
                 .build();
-        Mockito.when(repo.findById(99)).thenReturn(Optional.empty());
+        Mockito.when(service.update(Mockito.eq(99), Mockito.any(DemandeRequest.class)))
+                .thenReturn(Optional.empty());
 
         mvc.perform(put("/api/demandes/99")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updates)))
-                .andDo(print())
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("DELETE /api/demandes/{id} ➔ 204 when exists")
+    @DisplayName("DELETE /api/demandes/{id} ➔ 204")
     void testDeleteFound() throws Exception {
-        Demande d = Demande.builder().idDemande(5).build();
-        Mockito.when(repo.findById(5)).thenReturn(Optional.of(d));
+        Mockito.when(service.delete(1)).thenReturn(true);
 
-        mvc.perform(delete("/api/demandes/5"))
-                .andDo(print())
+        mvc.perform(delete("/api/demandes/1"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    @DisplayName("DELETE /api/demandes/{id} ➔ 404 when not found")
+    @DisplayName("DELETE /api/demandes/{id} ➔ 404")
     void testDeleteNotFound() throws Exception {
-        Mockito.when(repo.findById(99)).thenReturn(Optional.empty());
+        Mockito.when(service.delete(99)).thenReturn(false);
 
         mvc.perform(delete("/api/demandes/99"))
-                .andDo(print())
                 .andExpect(status().isNotFound());
     }
 }

@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(
@@ -42,10 +41,9 @@ class DevisControllerTest {
     @MockitoBean
     private DevisService devisService;
 
-    // JWT mocks
+    // Mocks pour JWT
     @MockitoBean
     private JwtUtil jwtUtil;
-
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -68,7 +66,6 @@ class DevisControllerTest {
         Mockito.when(devisService.findAll()).thenReturn(Arrays.asList(r1, r2));
 
         mvc.perform(get("/api/devis").accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idDevis").value(10))
                 .andExpect(jsonPath("$[1].montantTotal").value(200.00));
@@ -86,7 +83,6 @@ class DevisControllerTest {
         Mockito.when(devisService.findById(30)).thenReturn(Optional.of(resp));
 
         mvc.perform(get("/api/devis/30").accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idDevis").value(30))
                 .andExpect(jsonPath("$.montantTotal").value(300.50));
@@ -98,7 +94,6 @@ class DevisControllerTest {
         Mockito.when(devisService.findById(99)).thenReturn(Optional.empty());
 
         mvc.perform(get("/api/devis/99").accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
                 .andExpect(status().isNotFound());
     }
 
@@ -122,7 +117,6 @@ class DevisControllerTest {
         mvc.perform(post("/api/devis")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/api/devis/40"))
                 .andExpect(jsonPath("$.idDevis").value(40));
@@ -143,7 +137,6 @@ class DevisControllerTest {
         mvc.perform(post("/api/devis")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andDo(print())
                 .andExpect(status().isBadRequest());
     }
 
@@ -168,10 +161,28 @@ class DevisControllerTest {
         mvc.perform(put("/api/devis/7")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dateDevis").value(req.getDateDevis().toString()))
                 .andExpect(jsonPath("$.montantTotal").value(800.00));
+    }
+
+    @Test
+    @DisplayName("PUT /api/devis/{id} ➔ 400 when update invalid")
+    void testUpdateBadRequest() throws Exception {
+        int id = 58;
+        DevisRequest req = DevisRequest.builder()
+                .demandeId(99)
+                .dateDevis(Instant.now())
+                .montantTotal(new BigDecimal("123.45"))
+                .build();
+
+        Mockito.doThrow(new IllegalArgumentException("Demande introuvable"))
+                .when(devisService).update(Mockito.eq(id), Mockito.any(DevisRequest.class));
+
+        mvc.perform(put("/api/devis/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -184,7 +195,6 @@ class DevisControllerTest {
         mvc.perform(put("/api/devis/99")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andDo(print())
                 .andExpect(status().isNotFound());
     }
 
@@ -194,7 +204,6 @@ class DevisControllerTest {
         Mockito.when(devisService.delete(11)).thenReturn(true);
 
         mvc.perform(delete("/api/devis/11"))
-                .andDo(print())
                 .andExpect(status().isNoContent());
     }
 
@@ -204,7 +213,6 @@ class DevisControllerTest {
         Mockito.when(devisService.delete(99)).thenReturn(false);
 
         mvc.perform(delete("/api/devis/99"))
-                .andDo(print())
                 .andExpect(status().isNotFound());
     }
 }

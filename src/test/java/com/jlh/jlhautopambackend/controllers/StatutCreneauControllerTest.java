@@ -95,6 +95,19 @@ class StatutCreneauControllerTest {
     }
 
     @Test
+    @DisplayName("POST /api/statuts-creneau ➔ 409 when conflict")
+    void testCreateConflict() throws Exception {
+        StatutCreneauDto req = StatutCreneauDto.builder().codeStatut("DUP").libelle("Duplicate").build();
+        Mockito.when(service.create(Mockito.any(StatutCreneauDto.class)))
+                .thenThrow(new IllegalStateException("Conflit"));
+
+        mvc.perform(post("/api/statuts-creneau")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     @DisplayName("PUT /api/statuts-creneau/{code} ➔ 200 when exists")
     void testUpdateFound() throws Exception {
         StatutCreneauDto req = StatutCreneauDto.builder().codeStatut("EX").libelle("Updated").build();

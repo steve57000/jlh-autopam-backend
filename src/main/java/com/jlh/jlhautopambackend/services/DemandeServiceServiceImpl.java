@@ -1,22 +1,24 @@
 package com.jlh.jlhautopambackend.services;
 
-import com.jlh.jlhautopambackend.dto.DemandeServiceRequest;
-import com.jlh.jlhautopambackend.dto.DemandeServiceResponse;
-import com.jlh.jlhautopambackend.mapper.DemandeServiceMapper;
-import com.jlh.jlhautopambackend.modeles.DemandeService;
-import com.jlh.jlhautopambackend.modeles.DemandeServiceKey;
-import com.jlh.jlhautopambackend.modeles.Demande;
-import com.jlh.jlhautopambackend.modeles.Service;
-import com.jlh.jlhautopambackend.repositories.DemandeServiceRepository;
-import com.jlh.jlhautopambackend.repositories.DemandeRepository;
-import com.jlh.jlhautopambackend.repositories.ServiceRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-// On précise l’annotation en full-qualifier pour lever l’ambiguïté avec com.jlh.jlhautopambackend.modeles.Service
-@org.springframework.stereotype.Service
+import com.jlh.jlhautopambackend.modeles.Demande;
+import com.jlh.jlhautopambackend.modeles.DemandeService;
+import com.jlh.jlhautopambackend.modeles.DemandeServiceKey;
+import com.jlh.jlhautopambackend.repositories.DemandeRepository;
+import com.jlh.jlhautopambackend.repositories.DemandeServiceRepository;
+import com.jlh.jlhautopambackend.repositories.ServiceRepository;
+import com.jlh.jlhautopambackend.dto.DemandeServiceRequest;
+import com.jlh.jlhautopambackend.dto.DemandeServiceResponse;
+import com.jlh.jlhautopambackend.mapper.DemandeServiceMapper;
+
+@Service
+@Transactional
 public class DemandeServiceServiceImpl implements DemandeServiceService {
 
     private final DemandeServiceRepository dsRepo;
@@ -24,10 +26,12 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
     private final ServiceRepository serviceRepo;
     private final DemandeServiceMapper mapper;
 
-    public DemandeServiceServiceImpl(DemandeServiceRepository dsRepo,
-                                     DemandeRepository demandeRepo,
-                                     ServiceRepository serviceRepo,
-                                     DemandeServiceMapper mapper) {
+    public DemandeServiceServiceImpl(
+            DemandeServiceRepository dsRepo,
+            DemandeRepository demandeRepo,
+            ServiceRepository serviceRepo,
+            DemandeServiceMapper mapper
+    ) {
         this.dsRepo = dsRepo;
         this.demandeRepo = demandeRepo;
         this.serviceRepo = serviceRepo;
@@ -37,7 +41,7 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
     @Override
     public List<DemandeServiceResponse> findAll() {
         return dsRepo.findAll().stream()
-                .map(mapper::toResponse)
+                .map(mapper::toDto)
                 .collect(Collectors.toList());
     }
 
@@ -45,39 +49,33 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
     public Optional<DemandeServiceResponse> findByKey(Integer demandeId, Integer serviceId) {
         DemandeServiceKey key = new DemandeServiceKey(demandeId, serviceId);
         return dsRepo.findById(key)
-                .map(mapper::toResponse);
+                .map(mapper::toDto);
     }
 
     @Override
-    public DemandeServiceResponse create(DemandeServiceRequest request) {
-        // construction de la clé composite
-        DemandeServiceKey key = new DemandeServiceKey(
-                request.getIdDemande(),
-                request.getIdService()
-        );
-        DemandeService ent = mapper.toEntity(request);
-        ent.setId(key);
-
-        Demande demande = demandeRepo.findById(request.getIdDemande())
+    public DemandeServiceResponse create(DemandeServiceRequest req) {
+        Demande demande = demandeRepo.findById(req.getDemandeId())
                 .orElseThrow(() -> new IllegalArgumentException("Demande introuvable"));
-        ent.setDemande(demande);
+        com.jlh.jlhautopambackend.modeles.Service serviceEntity =
+                serviceRepo.findById(req.getServiceId())
+                        .orElseThrow(() -> new IllegalArgumentException("Service introuvable"));
 
-        Service service = serviceRepo.findById(request.getIdService())
-                .orElseThrow(() -> new IllegalArgumentException("Service introuvable"));
-        ent.setService(service);
+        DemandeService entity = mapper.toEntity(req);
+        entity.setDemande(demande);
+        entity.setService(serviceEntity);
 
-        DemandeService saved = dsRepo.save(ent);
-        return mapper.toResponse(saved);
+        DemandeService saved = dsRepo.save(entity);
+        return mapper.toDto(saved);
     }
 
     @Override
-    public Optional<DemandeServiceResponse> update(Integer demandeId, Integer serviceId, DemandeServiceRequest request) {
+    public Optional<DemandeServiceResponse> update(Integer demandeId, Integer serviceId, DemandeServiceRequest req) {
         DemandeServiceKey key = new DemandeServiceKey(demandeId, serviceId);
         return dsRepo.findById(key)
-                .map(existing -> {
-                    existing.setQuantite(request.getQuantite());
-                    DemandeService saved = dsRepo.save(existing);
-                    return mapper.toResponse(saved);
+                .map(entity -> {
+                    entity.setQuantite(req.getQuantite());
+                    DemandeService saved = dsRepo.save(entity);
+                    return mapper.toDto(saved);
                 });
     }
 

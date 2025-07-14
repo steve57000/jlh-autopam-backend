@@ -7,7 +7,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class DemandeServiceRequest {
-    private Integer idDemande;
-    private Integer idService;
+    private Integer demandeId;
+    private Integer serviceId;
     private Integer quantite;
 }

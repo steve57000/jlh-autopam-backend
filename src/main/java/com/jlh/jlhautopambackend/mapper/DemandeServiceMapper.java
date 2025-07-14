@@ -7,12 +7,12 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring")
 public interface DemandeServiceMapper {
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "demande", ignore = true)
-    @Mapping(target = "service", ignore = true)
-    DemandeService toEntity(DemandeServiceRequest dto);
+    @Mapping(source = "request.demandeId", target = "demande.idDemande")
+    @Mapping(source = "request.serviceId", target = "service.idService")
+    @Mapping(source = "request.quantite", target = "quantite")
+    DemandeService toEntity(DemandeServiceRequest request);
 
-    @Mapping(target = "id", source = "entity.id")
-    @Mapping(target = "quantite", source = "entity.quantite")
-    DemandeServiceResponse toResponse(DemandeService entity);
+    @Mapping(source = "entity.id.idDemande", target = "id.idDemande")
+    @Mapping(source = "entity.id.idService", target = "id.idService")
+    DemandeServiceResponse toDto(DemandeService entity);
 }

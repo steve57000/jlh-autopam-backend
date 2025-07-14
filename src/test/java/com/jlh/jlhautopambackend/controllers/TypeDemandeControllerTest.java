@@ -1,8 +1,10 @@
 package com.jlh.jlhautopambackend.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jlh.jlhautopambackend.modeles.TypeDemande;
-import com.jlh.jlhautopambackend.repositories.TypeDemandeRepository;
+import com.jlh.jlhautopambackend.dto.TypeDemandeDto;
+import com.jlh.jlhautopambackend.services.TypeDemandeService;
+import com.jlh.jlhautopambackend.utils.JwtUtil;
+import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -14,7 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -34,14 +36,21 @@ class TypeDemandeControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private TypeDemandeRepository typeRepo;
+    private TypeDemandeService service;
+
+    // ---- Mocks pour désactiver l'authentification JWT ----
+    @MockitoBean
+    private JwtUtil jwtUtil;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     @DisplayName("GET /api/types-demande ➔ 200, liste non vide")
     void testGetAll() throws Exception {
-        TypeDemande t1 = TypeDemande.builder().codeType("A").libelle("Alpha").build();
-        TypeDemande t2 = TypeDemande.builder().codeType("B").libelle("Beta").build();
-        Mockito.when(typeRepo.findAll()).thenReturn(Arrays.asList(t1, t2));
+        TypeDemandeDto t1 = TypeDemandeDto.builder().codeType("A").libelle("Alpha").build();
+        TypeDemandeDto t2 = TypeDemandeDto.builder().codeType("B").libelle("Beta").build();
+        Mockito.when(service.findAll()).thenReturn(List.of(t1, t2));
 
         mvc.perform(get("/api/types-demande").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -52,8 +61,8 @@ class TypeDemandeControllerTest {
     @Test
     @DisplayName("GET /api/types-demande/{code} ➔ 200 si existant")
     void testGetByCodeFound() throws Exception {
-        TypeDemande t = TypeDemande.builder().codeType("X").libelle("Xray").build();
-        Mockito.when(typeRepo.findById("X")).thenReturn(Optional.of(t));
+        TypeDemandeDto dto = TypeDemandeDto.builder().codeType("X").libelle("Xray").build();
+        Mockito.when(service.findById("X")).thenReturn(Optional.of(dto));
 
         mvc.perform(get("/api/types-demande/X").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -63,7 +72,7 @@ class TypeDemandeControllerTest {
     @Test
     @DisplayName("GET /api/types-demande/{code} ➔ 404 si absent")
     void testGetByCodeNotFound() throws Exception {
-        Mockito.when(typeRepo.findById("Z")).thenReturn(Optional.empty());
+        Mockito.when(service.findById("Z")).thenReturn(Optional.empty());
 
         mvc.perform(get("/api/types-demande/Z").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
@@ -72,10 +81,9 @@ class TypeDemandeControllerTest {
     @Test
     @DisplayName("POST /api/types-demande ➔ 201 quand nouveau")
     void testCreateSuccess() throws Exception {
-        TypeDemande in = TypeDemande.builder().codeType("C").libelle("Charlie").build();
-        TypeDemande saved = TypeDemande.builder().codeType("C").libelle("Charlie").build();
-        Mockito.when(typeRepo.existsById("C")).thenReturn(false);
-        Mockito.when(typeRepo.save(Mockito.any())).thenReturn(saved);
+        TypeDemandeDto in = TypeDemandeDto.builder().codeType("C").libelle("Charlie").build();
+        TypeDemandeDto saved = TypeDemandeDto.builder().codeType("C").libelle("Charlie").build();
+        Mockito.when(service.create(Mockito.any())).thenReturn(saved);
 
         mvc.perform(post("/api/types-demande")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -88,8 +96,9 @@ class TypeDemandeControllerTest {
     @Test
     @DisplayName("POST /api/types-demande ➔ 409 si déjà existant")
     void testCreateConflict() throws Exception {
-        TypeDemande in = TypeDemande.builder().codeType("D").libelle("Delta").build();
-        Mockito.when(typeRepo.existsById("D")).thenReturn(true);
+        TypeDemandeDto in = TypeDemandeDto.builder().codeType("D").libelle("Delta").build();
+        Mockito.doThrow(new IllegalArgumentException())
+                .when(service).create(Mockito.any());
 
         mvc.perform(post("/api/types-demande")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -100,11 +109,10 @@ class TypeDemandeControllerTest {
     @Test
     @DisplayName("PUT /api/types-demande/{code} ➔ 200 si existant")
     void testUpdateFound() throws Exception {
-        TypeDemande existing = TypeDemande.builder().codeType("E").libelle("Echo").build();
-        TypeDemande updates  = TypeDemande.builder().libelle("EchoUpdated").build();
-        TypeDemande saved    = TypeDemande.builder().codeType("E").libelle("EchoUpdated").build();
-        Mockito.when(typeRepo.findById("E")).thenReturn(Optional.of(existing));
-        Mockito.when(typeRepo.save(Mockito.any())).thenReturn(saved);
+        TypeDemandeDto updates = TypeDemandeDto.builder().libelle("EchoUpdated").build();
+        TypeDemandeDto saved   = TypeDemandeDto.builder().codeType("E").libelle("EchoUpdated").build();
+        Mockito.when(service.update(Mockito.eq("E"), Mockito.any()))
+                .thenReturn(Optional.of(saved));
 
         mvc.perform(put("/api/types-demande/E")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -116,8 +124,9 @@ class TypeDemandeControllerTest {
     @Test
     @DisplayName("PUT /api/types-demande/{code} ➔ 404 si absent")
     void testUpdateNotFound() throws Exception {
-        TypeDemande updates = TypeDemande.builder().libelle("Nope").build();
-        Mockito.when(typeRepo.findById("F")).thenReturn(Optional.empty());
+        TypeDemandeDto updates = TypeDemandeDto.builder().libelle("Nope").build();
+        Mockito.when(service.update(Mockito.eq("F"), Mockito.any()))
+                .thenReturn(Optional.empty());
 
         mvc.perform(put("/api/types-demande/F")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -128,7 +137,7 @@ class TypeDemandeControllerTest {
     @Test
     @DisplayName("DELETE /api/types-demande/{code} ➔ 204 si existant")
     void testDeleteFound() throws Exception {
-        Mockito.when(typeRepo.existsById("G")).thenReturn(true);
+        Mockito.when(service.delete("G")).thenReturn(true);
 
         mvc.perform(delete("/api/types-demande/G"))
                 .andExpect(status().isNoContent());
@@ -137,7 +146,7 @@ class TypeDemandeControllerTest {
     @Test
     @DisplayName("DELETE /api/types-demande/{code} ➔ 404 si absent")
     void testDeleteNotFound() throws Exception {
-        Mockito.when(typeRepo.existsById("H")).thenReturn(false);
+        Mockito.when(service.delete("H")).thenReturn(false);
 
         mvc.perform(delete("/api/types-demande/H"))
                 .andExpect(status().isNotFound());

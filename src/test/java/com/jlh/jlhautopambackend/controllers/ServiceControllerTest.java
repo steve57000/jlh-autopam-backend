@@ -1,8 +1,11 @@
 package com.jlh.jlhautopambackend.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jlh.jlhautopambackend.modeles.Service;
-import com.jlh.jlhautopambackend.repositories.ServiceRepository;
+import com.jlh.jlhautopambackend.dto.ServiceRequest;
+import com.jlh.jlhautopambackend.dto.ServiceResponse;
+import com.jlh.jlhautopambackend.services.ServiceService;
+import com.jlh.jlhautopambackend.utils.JwtUtil;
+import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -35,27 +38,32 @@ class ServiceControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private ServiceRepository repo;
+    private ServiceService service;
+
+    // mocks pour désactiver l'authent
+    @MockitoBean private JwtUtil jwtUtil;
+    @MockitoBean private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
-    @DisplayName("GET /api/services ➔ 200, json list")
+    @DisplayName("GET /api/services ➔ 200, JSON list")
     void testGetAll() throws Exception {
-        Service s1 = Service.builder()
+        ServiceResponse r1 = ServiceResponse.builder()
                 .idService(1)
                 .libelle("S1")
                 .description("Desc1")
                 .prixUnitaire(new BigDecimal("12.34"))
                 .build();
-        Service s2 = Service.builder()
+        ServiceResponse r2 = ServiceResponse.builder()
                 .idService(2)
                 .libelle("S2")
                 .description("Desc2")
                 .prixUnitaire(new BigDecimal("56.78"))
                 .build();
 
-        Mockito.when(repo.findAll()).thenReturn(Arrays.asList(s1, s2));
+        Mockito.when(service.findAll()).thenReturn(Arrays.asList(r1, r2));
 
-        mvc.perform(get("/api/services").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/services")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idService").value(1))
                 .andExpect(jsonPath("$[1].libelle").value("S2"));
@@ -64,15 +72,16 @@ class ServiceControllerTest {
     @Test
     @DisplayName("GET /api/services/{id} ➔ 200")
     void testGetByIdFound() throws Exception {
-        Service s = Service.builder()
+        ServiceResponse resp = ServiceResponse.builder()
                 .idService(1)
                 .libelle("S1")
                 .description("Desc1")
                 .prixUnitaire(new BigDecimal("12.34"))
                 .build();
-        Mockito.when(repo.findById(1)).thenReturn(Optional.of(s));
+        Mockito.when(service.findById(1)).thenReturn(Optional.of(resp));
 
-        mvc.perform(get("/api/services/1").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/services/1")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.description").value("Desc1"));
     }
@@ -80,59 +89,57 @@ class ServiceControllerTest {
     @Test
     @DisplayName("GET /api/services/{id} ➔ 404")
     void testGetByIdNotFound() throws Exception {
-        Mockito.when(repo.findById(99)).thenReturn(Optional.empty());
+        Mockito.when(service.findById(99)).thenReturn(Optional.empty());
 
-        mvc.perform(get("/api/services/99").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/services/99")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("POST /api/services ➔ 200 with saved entity")
+    @DisplayName("POST /api/services ➔ 201, retourne JSON + Location")
     void testCreate() throws Exception {
-        Service in = Service.builder()
+        ServiceRequest req = ServiceRequest.builder()
                 .libelle("New")
                 .description("NewDesc")
                 .prixUnitaire(new BigDecimal("99.99"))
                 .build();
-        Service saved = Service.builder()
+        ServiceResponse saved = ServiceResponse.builder()
                 .idService(3)
                 .libelle("New")
                 .description("NewDesc")
                 .prixUnitaire(new BigDecimal("99.99"))
                 .build();
-        Mockito.when(repo.save(Mockito.any())).thenReturn(saved);
+
+        Mockito.when(service.create(Mockito.any(ServiceRequest.class)))
+                .thenReturn(saved);
 
         mvc.perform(post("/api/services")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(in)))
-                .andExpect(status().isOk())
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", "/api/services/3"))
                 .andExpect(jsonPath("$.idService").value(3))
                 .andExpect(jsonPath("$.prixUnitaire").value(99.99));
     }
 
     @Test
-    @DisplayName("PUT /api/services/{id} ➔ 200 when exists")
+    @DisplayName("PUT /api/services/{id} ➔ 200, JSON mis à jour")
     void testUpdateFound() throws Exception {
-        Service existing = Service.builder()
-                .idService(1)
-                .libelle("Old")
-                .description("OldDesc")
-                .prixUnitaire(new BigDecimal("10.00"))
-                .build();
-        Service updates = Service.builder()
+        ServiceRequest updates = ServiceRequest.builder()
                 .libelle("Updated")
                 .description("UpdDesc")
                 .prixUnitaire(new BigDecimal("20.00"))
                 .build();
-        Service saved = Service.builder()
+        ServiceResponse saved = ServiceResponse.builder()
                 .idService(1)
                 .libelle("Updated")
                 .description("UpdDesc")
                 .prixUnitaire(new BigDecimal("20.00"))
                 .build();
 
-        Mockito.when(repo.findById(1)).thenReturn(Optional.of(existing));
-        Mockito.when(repo.save(Mockito.any())).thenReturn(saved);
+        Mockito.when(service.update(Mockito.eq(1), Mockito.any(ServiceRequest.class)))
+                .thenReturn(Optional.of(saved));
 
         mvc.perform(put("/api/services/1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -143,14 +150,15 @@ class ServiceControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /api/services/{id} ➔ 404 when not found")
+    @DisplayName("PUT /api/services/{id} ➔ 404")
     void testUpdateNotFound() throws Exception {
-        Service updates = Service.builder()
+        ServiceRequest updates = ServiceRequest.builder()
                 .libelle("X")
                 .description("X")
                 .prixUnitaire(new BigDecimal("1.00"))
                 .build();
-        Mockito.when(repo.findById(99)).thenReturn(Optional.empty());
+        Mockito.when(service.update(Mockito.eq(99), Mockito.any(ServiceRequest.class)))
+                .thenReturn(Optional.empty());
 
         mvc.perform(put("/api/services/99")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -159,19 +167,18 @@ class ServiceControllerTest {
     }
 
     @Test
-    @DisplayName("DELETE /api/services/{id} ➔ 204 when exists")
+    @DisplayName("DELETE /api/services/{id} ➔ 204")
     void testDeleteFound() throws Exception {
-        Service s = Service.builder().idService(1).build();
-        Mockito.when(repo.findById(1)).thenReturn(Optional.of(s));
+        Mockito.when(service.delete(1)).thenReturn(true);
 
         mvc.perform(delete("/api/services/1"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    @DisplayName("DELETE /api/services/{id} ➔ 404 when not found")
+    @DisplayName("DELETE /api/services/{id} ➔ 404")
     void testDeleteNotFound() throws Exception {
-        Mockito.when(repo.findById(99)).thenReturn(Optional.empty());
+        Mockito.when(service.delete(99)).thenReturn(false);
 
         mvc.perform(delete("/api/services/99"))
                 .andExpect(status().isNotFound());

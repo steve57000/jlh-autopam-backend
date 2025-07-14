@@ -1,8 +1,11 @@
 package com.jlh.jlhautopambackend.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jlh.jlhautopambackend.modeles.*;
-import com.jlh.jlhautopambackend.repositories.*;
+import com.jlh.jlhautopambackend.dto.RendezVousRequest;
+import com.jlh.jlhautopambackend.dto.RendezVousResponse;
+import com.jlh.jlhautopambackend.services.RendezVousService;
+import com.jlh.jlhautopambackend.utils.JwtUtil;
+import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -14,7 +17,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -27,51 +30,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 class RendezVousControllerTest {
 
-    @Autowired
-    private MockMvc mvc;
+    @Autowired private MockMvc mvc;
+    @Autowired private ObjectMapper objectMapper;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @MockitoBean private RendezVousService service;
+    // mocks JWT pour bypasser le filtre
+    @MockitoBean private JwtUtil jwtUtil;
+    @MockitoBean private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @MockitoBean
-    private RendezVousRepository rvRepo;
-
-    @MockitoBean
-    private DemandeRepository demandeRepo;
-
-    @MockitoBean
-    private AdministrateurRepository adminRepo;
-
-    @MockitoBean
-    private CreneauRepository creneauRepo;
-
-    @MockitoBean
-    private StatutRendezVousRepository statutRepo;
-
-    @Test
-    @DisplayName("GET /api/rendezvous ➔ 200, json list")
+    @Test @DisplayName("GET /api/rendezvous ➔ 200, json list")
     void testGetAll() throws Exception {
-        Demande d = Demande.builder().idDemande(1).build();
-        Administrateur a = Administrateur.builder().idAdmin(2).username("u").motDePasse("p").build();
-        Creneau c = Creneau.builder().idCreneau(3).build();
-        StatutRendezVous s = StatutRendezVous.builder().codeStatut("S").libelle("lib").build();
-
-        RendezVous r1 = RendezVous.builder()
-                .idRdv(10)
-                .demande(d)
-                .administrateur(a)
-                .creneau(c)
-                .statut(s)
-                .build();
-        RendezVous r2 = RendezVous.builder()
-                .idRdv(20)
-                .demande(d)
-                .administrateur(a)
-                .creneau(c)
-                .statut(s)
-                .build();
-
-        Mockito.when(rvRepo.findAll()).thenReturn(Arrays.asList(r1, r2));
+        RendezVousResponse r1 = RendezVousResponse.builder().idRdv(10).build();
+        RendezVousResponse r2 = RendezVousResponse.builder().idRdv(20).build();
+        Mockito.when(service.findAll()).thenReturn(List.of(r1, r2));
 
         mvc.perform(get("/api/rendezvous").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -79,183 +50,79 @@ class RendezVousControllerTest {
                 .andExpect(jsonPath("$[1].idRdv").value(20));
     }
 
-    @Test
-    @DisplayName("GET /api/rendezvous/{id} ➔ 200")
+    @Test @DisplayName("GET /api/rendezvous/{id} ➔ 200")
     void testGetByIdFound() throws Exception {
-        RendezVous r = RendezVous.builder().idRdv(5).build();
-        Mockito.when(rvRepo.findById(5)).thenReturn(Optional.of(r));
+        RendezVousResponse resp = RendezVousResponse.builder().idRdv(5).build();
+        Mockito.when(service.findById(5)).thenReturn(Optional.of(resp));
 
         mvc.perform(get("/api/rendezvous/5").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idRdv").value(5));
     }
 
-    @Test
-    @DisplayName("GET /api/rendezvous/{id} ➔ 404")
+    @Test @DisplayName("GET /api/rendezvous/{id} ➔ 404")
     void testGetByIdNotFound() throws Exception {
-        Mockito.when(rvRepo.findById(99)).thenReturn(Optional.empty());
+        Mockito.when(service.findById(99)).thenReturn(Optional.empty());
 
         mvc.perform(get("/api/rendezvous/99").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
 
-    @Test
-    @DisplayName("POST /api/rendezvous ➔ 201 when all links valid")
-    void testCreateSuccess() throws Exception {
-        Demande d = Demande.builder().idDemande(1).build();
-        Administrateur a = Administrateur.builder().idAdmin(2).build();
-        Creneau c = Creneau.builder().idCreneau(3).build();
-        StatutRendezVous s = StatutRendezVous.builder().codeStatut("OK").build();
-
-        RendezVous input = RendezVous.builder()
-                .demande(d).administrateur(a).creneau(c).statut(s).build();
-        RendezVous saved = RendezVous.builder()
-                .idRdv(100)
-                .demande(d).administrateur(a).creneau(c).statut(s)
+    @Test @DisplayName("POST /api/rendezvous ➔ 201, JSON retour")
+    void testCreate() throws Exception {
+        RendezVousRequest req = new RendezVousRequest(1, 2, 3, "S");
+        RendezVousResponse created = RendezVousResponse.builder()
+                .idRdv(7)
                 .build();
-
-        Mockito.when(demandeRepo.findById(1)).thenReturn(Optional.of(d));
-        Mockito.when(adminRepo.findById(2)).thenReturn(Optional.of(a));
-        Mockito.when(creneauRepo.findById(3)).thenReturn(Optional.of(c));
-        Mockito.when(statutRepo.findById("OK")).thenReturn(Optional.of(s));
-        Mockito.when(rvRepo.existsByDemandeIdDemande(1)).thenReturn(false);
-        Mockito.when(rvRepo.existsByCreneauIdCreneau(3)).thenReturn(false);
-        Mockito.when(rvRepo.save(Mockito.any())).thenReturn(saved);
+        Mockito.when(service.create(Mockito.any(RendezVousRequest.class)))
+                .thenReturn(created);
 
         mvc.perform(post("/api/rendezvous")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(input)))
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "/api/rendezvous/100"))
-                .andExpect(jsonPath("$.idRdv").value(100));
+                .andExpect(header().string("Location", "/api/rendezvous/7"))
+                .andExpect(jsonPath("$.idRdv").value(7));
     }
 
-    @Test
-    @DisplayName("POST /api/rendezvous ➔ 400 when a linked entity missing")
-    void testCreateBadRequest() throws Exception {
-        RendezVous input = RendezVous.builder()
-                .demande(Demande.builder().idDemande(1).build())
-                .administrateur(Administrateur.builder().idAdmin(2).build())
-                .creneau(Creneau.builder().idCreneau(3).build())
-                .statut(StatutRendezVous.builder().codeStatut("X").build())
-                .build();
-        Mockito.when(demandeRepo.findById(1)).thenReturn(Optional.empty());
+    @Test @DisplayName("PUT /api/rendezvous/{id} ➔ 200")
+    void testUpdateFound() throws Exception {
+        RendezVousRequest req = new RendezVousRequest(1, 2, 3, "S");
+        RendezVousResponse updated = RendezVousResponse.builder().idRdv(8).build();
+        Mockito.when(service.update(Mockito.eq(8), Mockito.any(RendezVousRequest.class)))
+                .thenReturn(Optional.of(updated));
 
-        mvc.perform(post("/api/rendezvous")
+        mvc.perform(put("/api/rendezvous/8")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(input)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("POST /api/rendezvous ➔ 409 on uniqueness conflict")
-    void testCreateConflict() throws Exception {
-        Demande d = Demande.builder().idDemande(1).build();
-        Administrateur a = Administrateur.builder().idAdmin(2).build();
-        Creneau c = Creneau.builder().idCreneau(3).build();
-        StatutRendezVous s = StatutRendezVous.builder().codeStatut("OK").build();
-
-        RendezVous input = RendezVous.builder()
-                .demande(d).administrateur(a).creneau(c).statut(s).build();
-
-        Mockito.when(demandeRepo.findById(1)).thenReturn(Optional.of(d));
-        Mockito.when(adminRepo.findById(2)).thenReturn(Optional.of(a));
-        Mockito.when(creneauRepo.findById(3)).thenReturn(Optional.of(c));
-        Mockito.when(statutRepo.findById("OK")).thenReturn(Optional.of(s));
-        Mockito.when(rvRepo.existsByDemandeIdDemande(1)).thenReturn(true);
-
-        mvc.perform(post("/api/rendezvous")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(input)))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    @DisplayName("PUT /api/rendezvous/{id} ➔ 200 when update valid")
-    void testUpdateSuccess() throws Exception {
-        Demande oldD = Demande.builder().idDemande(1).build();
-        Administrateur oldA = Administrateur.builder().idAdmin(2).build();
-        Creneau oldC = Creneau.builder().idCreneau(3).build();
-        StatutRendezVous oldS = StatutRendezVous.builder().codeStatut("OLD").build();
-        RendezVous existing = RendezVous.builder()
-                .idRdv(50).demande(oldD).administrateur(oldA).creneau(oldC).statut(oldS).build();
-
-        Demande newD = Demande.builder().idDemande(10).build();
-        Administrateur newA = Administrateur.builder().idAdmin(20).build();
-        Creneau newC = Creneau.builder().idCreneau(30).build();
-        StatutRendezVous newS = StatutRendezVous.builder().codeStatut("NEW").build();
-        RendezVous dto = RendezVous.builder()
-                .demande(newD).administrateur(newA).creneau(newC).statut(newS).build();
-        RendezVous updated = RendezVous.builder()
-                .idRdv(50).demande(newD).administrateur(newA).creneau(newC).statut(newS).build();
-
-        Mockito.when(rvRepo.findById(50)).thenReturn(Optional.of(existing));
-        Mockito.when(demandeRepo.findById(10)).thenReturn(Optional.of(newD));
-        Mockito.when(rvRepo.existsByDemandeIdDemande(10)).thenReturn(false);
-        Mockito.when(adminRepo.findById(20)).thenReturn(Optional.of(newA));
-        Mockito.when(creneauRepo.findById(30)).thenReturn(Optional.of(newC));
-        Mockito.when(rvRepo.existsByCreneauIdCreneau(30)).thenReturn(false);
-        Mockito.when(statutRepo.findById("NEW")).thenReturn(Optional.of(newS));
-        Mockito.when(rvRepo.save(Mockito.any())).thenReturn(updated);
-
-        mvc.perform(put("/api/rendezvous/50")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.demande.idDemande").value(10))
-                .andExpect(jsonPath("$.statut.codeStatut").value("NEW"));
+                .andExpect(jsonPath("$.idRdv").value(8));
     }
 
-    @Test
-    @DisplayName("PUT /api/rendezvous/{id} ➔ 400 on bad request (new link missing or conflict)")
-    void testUpdateBadRequest() throws Exception {
-        RendezVous dto = RendezVous.builder()
-                .demande(Demande.builder().idDemande(99).build())
-                .administrateur(Administrateur.builder().idAdmin(2).build())
-                .creneau(Creneau.builder().idCreneau(3).build())
-                .statut(StatutRendezVous.builder().codeStatut("OK").build())
-                .build();
-        Mockito.when(rvRepo.findById(60)).thenReturn(Optional.of(
-                RendezVous.builder().idRdv(60)
-                        .demande(Demande.builder().idDemande(1).build())
-                        .administrateur(Administrateur.builder().idAdmin(2).build())
-                        .creneau(Creneau.builder().idCreneau(3).build())
-                        .statut(StatutRendezVous.builder().codeStatut("OK").build())
-                        .build()));
-        Mockito.when(demandeRepo.findById(99)).thenReturn(Optional.empty());
-
-        mvc.perform(put("/api/rendezvous/60")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("PUT /api/rendezvous/{id} ➔ 404 when not found")
+    @Test @DisplayName("PUT /api/rendezvous/{id} ➔ 404")
     void testUpdateNotFound() throws Exception {
-        Mockito.when(rvRepo.findById(999)).thenReturn(Optional.empty());
+        Mockito.when(service.update(Mockito.eq(99), Mockito.any(RendezVousRequest.class)))
+                .thenReturn(Optional.empty());
 
-        mvc.perform(put("/api/rendezvous/999")
+        mvc.perform(put("/api/rendezvous/99")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isNotFound());
     }
 
-    @Test
-    @DisplayName("DELETE /api/rendezvous/{id} ➔ 204 when exists")
+    @Test @DisplayName("DELETE /api/rendezvous/{id} ➔ 204")
     void testDeleteFound() throws Exception {
-        Mockito.when(rvRepo.existsById(7)).thenReturn(true);
+        Mockito.when(service.delete(11)).thenReturn(true);
 
-        mvc.perform(delete("/api/rendezvous/7"))
+        mvc.perform(delete("/api/rendezvous/11"))
                 .andExpect(status().isNoContent());
     }
 
-    @Test
-    @DisplayName("DELETE /api/rendezvous/{id} ➔ 404 when not found")
+    @Test @DisplayName("DELETE /api/rendezvous/{id} ➔ 404")
     void testDeleteNotFound() throws Exception {
-        Mockito.when(rvRepo.existsById(8)).thenReturn(false);
+        Mockito.when(service.delete(99)).thenReturn(false);
 
-        mvc.perform(delete("/api/rendezvous/8"))
+        mvc.perform(delete("/api/rendezvous/99"))
                 .andExpect(status().isNotFound());
     }
 }

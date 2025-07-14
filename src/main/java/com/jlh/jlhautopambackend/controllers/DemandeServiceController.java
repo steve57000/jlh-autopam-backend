@@ -1,72 +1,66 @@
 package com.jlh.jlhautopambackend.controllers;
 
-import com.jlh.jlhautopambackend.dto.DemandeServiceRequest;
-import com.jlh.jlhautopambackend.dto.DemandeServiceResponse;
-import com.jlh.jlhautopambackend.mapper.DemandeServiceMapper;
-import com.jlh.jlhautopambackend.modeles.DemandeService;
-import com.jlh.jlhautopambackend.modeles.DemandeServiceKey;
-import com.jlh.jlhautopambackend.repositories.DemandeServiceRepository;
-import com.jlh.jlhautopambackend.repositories.DemandeRepository;
-import com.jlh.jlhautopambackend.repositories.ServiceRepository;
+import com.jlh.jlhautopambackend.dto.*;
+import com.jlh.jlhautopambackend.services.DemandeServiceService;
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-
 import java.net.URI;
-import java.util.List;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/demandes-services")
 @CrossOrigin
 public class DemandeServiceController {
 
-    private final DemandeServiceRepository repo;
-    private final DemandeRepository demandeRepo;
-    private final ServiceRepository serviceRepo;
-    private final DemandeServiceMapper mapper;
+    private final DemandeServiceService service;
 
-    public DemandeServiceController(DemandeServiceRepository repo,
-                                    DemandeRepository demandeRepo,
-                                    ServiceRepository serviceRepo,
-                                    DemandeServiceMapper mapper) {
-        this.repo = repo;
-        this.demandeRepo = demandeRepo;
-        this.serviceRepo = serviceRepo;
-        this.mapper = mapper;
+    public DemandeServiceController(DemandeServiceService service) {
+        this.service = service;
     }
 
     @GetMapping
     public List<DemandeServiceResponse> getAll() {
-        return repo.findAll().stream()
-                .map(mapper::toResponse)
-                .toList();
+        return service.findAll();
+    }
+
+    @GetMapping("/{demandeId}/{serviceId}")
+    public ResponseEntity<DemandeServiceResponse> getByKey(
+            @PathVariable Integer demandeId,
+            @PathVariable Integer serviceId) {
+        return service.findByKey(demandeId, serviceId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     public ResponseEntity<DemandeServiceResponse> create(
             @Valid @RequestBody DemandeServiceRequest req) {
-        DemandeService ent = mapper.toEntity(req);
-
-        // lier clef composite
-        ent.setId(new DemandeServiceKey(req.getIdDemande(), req.getIdService()));
-        ent.setDemande(demandeRepo.findById(req.getIdDemande())
-                .orElseThrow(() -> new IllegalArgumentException("Demande introuvable")));
-        ent.setService(serviceRepo.findById(req.getIdService())
-                .orElseThrow(() -> new IllegalArgumentException("Service introuvable")));
-
-        DemandeService saved = repo.save(ent);
+        DemandeServiceResponse resp = service.create(req);
+        String path = String.format("/api/demandes-services/%d/%d",
+                resp.getId().getIdDemande(),
+                resp.getId().getIdService());
         return ResponseEntity
-                .created(URI.create("/api/demandes-services/" + saved.getId()))
-                .body(mapper.toResponse(saved));
+                .created(URI.create(path))
+                .body(resp);
+    }
+
+    @PutMapping("/{demandeId}/{serviceId}")
+    public ResponseEntity<DemandeServiceResponse> update(
+            @PathVariable Integer demandeId,
+            @PathVariable Integer serviceId,
+            @Valid @RequestBody DemandeServiceRequest req) {
+        return service.update(demandeId, serviceId, req)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{demandeId}/{serviceId}")
     public ResponseEntity<Void> delete(
             @PathVariable Integer demandeId,
             @PathVariable Integer serviceId) {
-        DemandeServiceKey key = new DemandeServiceKey(demandeId, serviceId);
-        if (!repo.existsById(key)) return ResponseEntity.notFound().build();
-        repo.deleteById(key);
-        return ResponseEntity.noContent().build();
+        return service.delete(demandeId, serviceId)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
     }
 }

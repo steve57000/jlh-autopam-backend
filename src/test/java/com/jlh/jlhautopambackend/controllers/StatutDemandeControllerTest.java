@@ -1,8 +1,10 @@
 package com.jlh.jlhautopambackend.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jlh.jlhautopambackend.modeles.StatutDemande;
-import com.jlh.jlhautopambackend.repositories.StatutDemandeRepository;
+import com.jlh.jlhautopambackend.dto.StatutDemandeDto;
+import com.jlh.jlhautopambackend.services.StatutDemandeService;
+import com.jlh.jlhautopambackend.utils.JwtUtil;
+import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -34,144 +36,105 @@ class StatutDemandeControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private StatutDemandeRepository statutRepo;
+    private StatutDemandeService service;
+
+    @MockitoBean
+    private JwtUtil jwtUtil;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
-    @DisplayName("GET /api/statuts-demande ➔ 200, json list")
+    @DisplayName("GET /api/statut-demandes ➔ 200")
     void testGetAll() throws Exception {
-        StatutDemande s1 = StatutDemande.builder()
-                .codeStatut("A")
-                .libelle("Alpha")
-                .build();
-        StatutDemande s2 = StatutDemande.builder()
-                .codeStatut("B")
-                .libelle("Beta")
-                .build();
+        StatutDemandeDto sd1 = new StatutDemandeDto("S1", "Lib1");
+        StatutDemandeDto sd2 = new StatutDemandeDto("S2", "Lib2");
+        Mockito.when(service.findAll()).thenReturn(Arrays.asList(sd1, sd2));
 
-        Mockito.when(statutRepo.findAll()).thenReturn(Arrays.asList(s1, s2));
-
-        mvc.perform(get("/api/statuts-demande").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/statut-demandes").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].codeStatut").value("A"))
-                .andExpect(jsonPath("$[1].libelle").value("Beta"));
+                .andExpect(jsonPath("$[0].codeStatut").value("S1"))
+                .andExpect(jsonPath("$[1].libelle").value("Lib2"));
     }
 
     @Test
-    @DisplayName("GET /api/statuts-demande/{code} ➔ 200 if exists")
+    @DisplayName("GET /api/statut-demandes/{code} ➔ 200")
     void testGetByCodeFound() throws Exception {
-        StatutDemande s = StatutDemande.builder()
-                .codeStatut("X")
-                .libelle("Xray")
-                .build();
-        Mockito.when(statutRepo.findById("X")).thenReturn(Optional.of(s));
+        StatutDemandeDto dto = new StatutDemandeDto("S3", "Lib3");
+        Mockito.when(service.findByCode("S3")).thenReturn(Optional.of(dto));
 
-        mvc.perform(get("/api/statuts-demande/X").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/statut-demandes/S3").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.libelle").value("Xray"));
+                .andExpect(jsonPath("$.codeStatut").value("S3"));
     }
 
     @Test
-    @DisplayName("GET /api/statuts-demande/{code} ➔ 404 if not found")
+    @DisplayName("GET /api/statut-demandes/{code} ➔ 404")
     void testGetByCodeNotFound() throws Exception {
-        Mockito.when(statutRepo.findById("Z")).thenReturn(Optional.empty());
+        Mockito.when(service.findByCode("NX")).thenReturn(Optional.empty());
 
-        mvc.perform(get("/api/statuts-demande/Z").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/statut-demandes/NX").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("POST /api/statuts-demande ➔ 201 when new")
-    void testCreateSuccess() throws Exception {
-        StatutDemande in = StatutDemande.builder()
-                .codeStatut("C")
-                .libelle("Charlie")
-                .build();
-        StatutDemande saved = StatutDemande.builder()
-                .codeStatut("C")
-                .libelle("Charlie")
-                .build();
+    @DisplayName("POST /api/statut-demandes ➔ 201")
+    void testCreate() throws Exception {
+        StatutDemandeDto in = new StatutDemandeDto("N1", "Nouveau");
+        StatutDemandeDto out = new StatutDemandeDto("N1", "Nouveau");
+        Mockito.when(service.create(Mockito.any())).thenReturn(out);
 
-        Mockito.when(statutRepo.existsById("C")).thenReturn(false);
-        Mockito.when(statutRepo.save(Mockito.any())).thenReturn(saved);
-
-        mvc.perform(post("/api/statuts-demande")
+        mvc.perform(post("/api/statut-demandes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(in)))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "/api/statuts-demande/C"))
-                .andExpect(jsonPath("$.codeStatut").value("C"));
+                .andExpect(header().string("Location", "/api/statut-demandes/N1"))
+                .andExpect(jsonPath("$.codeStatut").value("N1"));
     }
 
     @Test
-    @DisplayName("POST /api/statuts-demande ➔ 409 when exists")
-    void testCreateConflict() throws Exception {
-        StatutDemande in = StatutDemande.builder()
-                .codeStatut("D")
-                .libelle("Delta")
-                .build();
+    @DisplayName("PUT /api/statut-demandes/{code} ➔ 200")
+    void testUpdateFound() throws Exception {
+        StatutDemandeDto in = new StatutDemandeDto("U1", "Upd");
+        StatutDemandeDto out = new StatutDemandeDto("U1", "Upd");
+        Mockito.when(service.update(Mockito.eq("U1"), Mockito.any()))
+                .thenReturn(Optional.of(out));
 
-        Mockito.when(statutRepo.existsById("D")).thenReturn(true);
-
-        mvc.perform(post("/api/statuts-demande")
+        mvc.perform(put("/api/statut-demandes/U1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(in)))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    @DisplayName("PUT /api/statuts-demande/{code} ➔ 200 when exists")
-    void testUpdateFound() throws Exception {
-        StatutDemande existing = StatutDemande.builder()
-                .codeStatut("E")
-                .libelle("Echo")
-                .build();
-        StatutDemande updates = StatutDemande.builder()
-                .libelle("EchoUpdated")
-                .build();
-        StatutDemande saved = StatutDemande.builder()
-                .codeStatut("E")
-                .libelle("EchoUpdated")
-                .build();
-
-        Mockito.when(statutRepo.findById("E")).thenReturn(Optional.of(existing));
-        Mockito.when(statutRepo.save(Mockito.any())).thenReturn(saved);
-
-        mvc.perform(put("/api/statuts-demande/E")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updates)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.libelle").value("EchoUpdated"));
+                .andExpect(jsonPath("$.libelle").value("Upd"));
     }
 
     @Test
-    @DisplayName("PUT /api/statuts-demande/{code} ➔ 404 when not found")
+    @DisplayName("PUT /api/statut-demandes/{code} ➔ 404")
     void testUpdateNotFound() throws Exception {
-        StatutDemande updates = StatutDemande.builder()
-                .libelle("Nope")
-                .build();
-        Mockito.when(statutRepo.findById("F")).thenReturn(Optional.empty());
+        StatutDemandeDto in = new StatutDemandeDto("X1", "X");
+        Mockito.when(service.update(Mockito.eq("X1"), Mockito.any()))
+                .thenReturn(Optional.empty());
 
-        mvc.perform(put("/api/statuts-demande/F")
+        mvc.perform(put("/api/statut-demandes/X1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updates)))
+                        .content(objectMapper.writeValueAsString(in)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("DELETE /api/statuts-demande/{code} ➔ 204 when exists")
+    @DisplayName("DELETE /api/statut-demandes/{code} ➔ 204")
     void testDeleteFound() throws Exception {
-        Mockito.when(statutRepo.existsById("G")).thenReturn(true);
+        Mockito.when(service.delete("D1")).thenReturn(true);
 
-        mvc.perform(delete("/api/statuts-demande/G"))
+        mvc.perform(delete("/api/statut-demandes/D1"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    @DisplayName("DELETE /api/statuts-demande/{code} ➔ 404 if not found")
+    @DisplayName("DELETE /api/statut-demandes/{code} ➔ 404")
     void testDeleteNotFound() throws Exception {
-        Mockito.when(statutRepo.existsById("H")).thenReturn(false);
+        Mockito.when(service.delete("D2")).thenReturn(false);
 
-        mvc.perform(delete("/api/statuts-demande/H"))
+        mvc.perform(delete("/api/statut-demandes/D2"))
                 .andExpect(status().isNotFound());
     }
 }

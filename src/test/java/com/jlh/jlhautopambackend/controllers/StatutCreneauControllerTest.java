@@ -1,8 +1,10 @@
 package com.jlh.jlhautopambackend.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jlh.jlhautopambackend.modeles.StatutCreneau;
-import com.jlh.jlhautopambackend.repositories.StatutCreneauRepository;
+import com.jlh.jlhautopambackend.dto.StatutCreneauDto;
+import com.jlh.jlhautopambackend.services.StatutCreneauService;
+import com.jlh.jlhautopambackend.utils.JwtUtil;
+import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -14,7 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -34,144 +36,120 @@ class StatutCreneauControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private StatutCreneauRepository statutRepo;
+    private StatutCreneauService service;
+
+    @MockitoBean
+    private JwtUtil jwtUtil;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     @DisplayName("GET /api/statuts-creneau ➔ 200, json list")
     void testGetAll() throws Exception {
-        StatutCreneau s1 = StatutCreneau.builder()
-                .codeStatut("A")
-                .libelle("Alpha")
-                .build();
-        StatutCreneau s2 = StatutCreneau.builder()
-                .codeStatut("B")
-                .libelle("Beta")
-                .build();
-
-        Mockito.when(statutRepo.findAll()).thenReturn(Arrays.asList(s1, s2));
+        StatutCreneauDto s1 = StatutCreneauDto.builder().codeStatut("OK").libelle("Valid").build();
+        StatutCreneauDto s2 = StatutCreneauDto.builder().codeStatut("KO").libelle("Invalid").build();
+        Mockito.when(service.findAll()).thenReturn(List.of(s1, s2));
 
         mvc.perform(get("/api/statuts-creneau").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].codeStatut").value("A"))
-                .andExpect(jsonPath("$[1].libelle").value("Beta"));
+                .andExpect(jsonPath("$[0].codeStatut").value("OK"))
+                .andExpect(jsonPath("$[0].libelle").value("Valid"))
+                .andExpect(jsonPath("$[1].codeStatut").value("KO"));
     }
 
     @Test
-    @DisplayName("GET /api/statuts-creneau/{code} ➔ 200")
-    void testGetByIdFound() throws Exception {
-        StatutCreneau s = StatutCreneau.builder()
-                .codeStatut("X")
-                .libelle("Xray")
-                .build();
-        Mockito.when(statutRepo.findById("X")).thenReturn(Optional.of(s));
+    @DisplayName("GET /api/statuts-creneau/{code} ➔ 200 when found")
+    void testGetByCodeFound() throws Exception {
+        StatutCreneauDto dto = StatutCreneauDto.builder().codeStatut("EX").libelle("Example").build();
+        Mockito.when(service.findByCode("EX")).thenReturn(Optional.of(dto));
 
-        mvc.perform(get("/api/statuts-creneau/X").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/statuts-creneau/EX").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.libelle").value("Xray"));
+                .andExpect(jsonPath("$.codeStatut").value("EX"))
+                .andExpect(jsonPath("$.libelle").value("Example"));
     }
 
     @Test
-    @DisplayName("GET /api/statuts-creneau/{code} ➔ 404")
-    void testGetByIdNotFound() throws Exception {
-        Mockito.when(statutRepo.findById("Z")).thenReturn(Optional.empty());
+    @DisplayName("GET /api/statuts-creneau/{code} ➔ 404 when not found")
+    void testGetByCodeNotFound() throws Exception {
+        Mockito.when(service.findByCode("NONE")).thenReturn(Optional.empty());
 
-        mvc.perform(get("/api/statuts-creneau/Z").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/statuts-creneau/NONE").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("POST /api/statuts-creneau ➔ 201 when new")
-    void testCreateSuccess() throws Exception {
-        StatutCreneau in = StatutCreneau.builder()
-                .codeStatut("C")
-                .libelle("Charlie")
-                .build();
-        StatutCreneau saved = StatutCreneau.builder()
-                .codeStatut("C")
-                .libelle("Charlie")
-                .build();
-
-        Mockito.when(statutRepo.existsById("C")).thenReturn(false);
-        Mockito.when(statutRepo.save(Mockito.any())).thenReturn(saved);
+    @DisplayName("POST /api/statuts-creneau ➔ 201, JSON returned")
+    void testCreate() throws Exception {
+        StatutCreneauDto req = StatutCreneauDto.builder().codeStatut("NEW").libelle("NewEtat").build();
+        StatutCreneauDto created = StatutCreneauDto.builder().codeStatut("NEW").libelle("NewEtat").build();
+        Mockito.when(service.create(Mockito.any(StatutCreneauDto.class))).thenReturn(created);
 
         mvc.perform(post("/api/statuts-creneau")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(in)))
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "/api/statuts-creneau/C"))
-                .andExpect(jsonPath("$.codeStatut").value("C"));
+                .andExpect(header().string("Location", "/api/statuts-creneau/NEW"))
+                .andExpect(jsonPath("$.codeStatut").value("NEW"));
     }
 
     @Test
-    @DisplayName("POST /api/statuts-creneau ➔ 409 when exists")
+    @DisplayName("POST /api/statuts-creneau ➔ 409 when conflict")
     void testCreateConflict() throws Exception {
-        StatutCreneau in = StatutCreneau.builder()
-                .codeStatut("D")
-                .libelle("Delta")
-                .build();
-
-        Mockito.when(statutRepo.existsById("D")).thenReturn(true);
+        StatutCreneauDto req = StatutCreneauDto.builder().codeStatut("DUP").libelle("Duplicate").build();
+        Mockito.when(service.create(Mockito.any(StatutCreneauDto.class)))
+                .thenThrow(new IllegalStateException("Conflit"));
 
         mvc.perform(post("/api/statuts-creneau")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(in)))
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isConflict());
     }
 
     @Test
     @DisplayName("PUT /api/statuts-creneau/{code} ➔ 200 when exists")
     void testUpdateFound() throws Exception {
-        StatutCreneau existing = StatutCreneau.builder()
-                .codeStatut("E")
-                .libelle("Echo")
-                .build();
-        StatutCreneau updates = StatutCreneau.builder()
-                .libelle("EchoUpdated")
-                .build();
-        StatutCreneau saved = StatutCreneau.builder()
-                .codeStatut("E")
-                .libelle("EchoUpdated")
-                .build();
+        StatutCreneauDto req = StatutCreneauDto.builder().codeStatut("EX").libelle("Updated").build();
+        StatutCreneauDto updated = StatutCreneauDto.builder().codeStatut("EX").libelle("Updated").build();
+        Mockito.when(service.update(Mockito.eq("EX"), Mockito.any(StatutCreneauDto.class)))
+                .thenReturn(Optional.of(updated));
 
-        Mockito.when(statutRepo.findById("E")).thenReturn(Optional.of(existing));
-        Mockito.when(statutRepo.save(Mockito.any())).thenReturn(saved);
-
-        mvc.perform(put("/api/statuts-creneau/E")
+        mvc.perform(put("/api/statuts-creneau/EX")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updates)))
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.libelle").value("EchoUpdated"));
+                .andExpect(jsonPath("$.libelle").value("Updated"));
     }
 
     @Test
     @DisplayName("PUT /api/statuts-creneau/{code} ➔ 404 when not found")
     void testUpdateNotFound() throws Exception {
-        StatutCreneau updates = StatutCreneau.builder()
-                .libelle("Nope")
-                .build();
-        Mockito.when(statutRepo.findById("F")).thenReturn(Optional.empty());
+        StatutCreneauDto req = StatutCreneauDto.builder().codeStatut("NF").libelle("X").build();
+        Mockito.when(service.update(Mockito.eq("NF"), Mockito.any(StatutCreneauDto.class)))
+                .thenReturn(Optional.empty());
 
-        mvc.perform(put("/api/statuts-creneau/F")
+        mvc.perform(put("/api/statuts-creneau/NF")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updates)))
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("DELETE /api/statuts-creneau/{code} ➔ 204 when exists")
     void testDeleteFound() throws Exception {
-        Mockito.when(statutRepo.existsById("G")).thenReturn(true);
+        Mockito.when(service.delete("DEL")).thenReturn(true);
 
-        mvc.perform(delete("/api/statuts-creneau/G"))
+        mvc.perform(delete("/api/statuts-creneau/DEL"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     @DisplayName("DELETE /api/statuts-creneau/{code} ➔ 404 when not found")
     void testDeleteNotFound() throws Exception {
-        Mockito.when(statutRepo.existsById("H")).thenReturn(false);
+        Mockito.when(service.delete("XX")).thenReturn(false);
 
-        mvc.perform(delete("/api/statuts-creneau/H"))
+        mvc.perform(delete("/api/statuts-creneau/XX"))
                 .andExpect(status().isNotFound());
     }
 }

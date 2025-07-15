@@ -71,6 +71,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Debug runner environment
+        run: |
+          echo "==> Current dir = $(pwd)"
+          echo "==> Listing files:"
+          ls -al .
+          echo "==> Docker version:" 
+          docker version
+          echo "==> Docker info:"
+          docker info
+          echo "==> Docker-compose version:"
+          docker-compose version
+
       - name: Pull & run prod container
         run: |
           docker-compose -f docker-compose.prod.yml pull backend

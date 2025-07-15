@@ -11,13 +11,12 @@ services:
       interval: 5s
       retries: 10
 
-
   backend:
     image: steve57/jlh-autopam-backend:latest
     depends_on:
       db:
         condition: service_healthy
-    restart: no
+    restart: unless-stopped
     ports:
       - "8080:8080"
     environment:

@@ -41,7 +41,6 @@ jobs:
       - name: Debug Docker credentials
         run: |
           echo "→ USER = '${{ secrets.DOCKERHUB_USERNAME }}'"
-          # Test de la connexion sans révéler le token en clair
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login docker.io --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker logout docker.io
 
@@ -76,7 +75,7 @@ jobs:
   deploy-production:
     needs: build-and-push
     runs-on: self-hosted
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+    if: github.ref == 'refs/heads/main'
     defaults:
       run:
         working-directory: .

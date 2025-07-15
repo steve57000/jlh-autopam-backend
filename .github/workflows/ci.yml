@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
 
 env:
   DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -75,14 +76,14 @@ jobs:
   deploy-production:
     needs: build-and-push
     runs-on: self-hosted
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
     defaults:
       run:
         working-directory: .
-
     steps:
+      - name: Debug GITHUB_REF
+        run: echo "This workflow was triggered on '$GITHUB_REF'"
       - uses: actions/checkout@v3
-
       - name: Pull & run prod container
         run: |
           docker-compose -f docker-compose.prod.yml pull backend

@@ -2,9 +2,9 @@ package com.jlh.jlhautopambackend.mapper;
 
 import com.jlh.jlhautopambackend.dto.StatutRendezVousDto;
 import com.jlh.jlhautopambackend.modeles.StatutRendezVous;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 
-@Component
+@Mapper(componentModel = "spring")
 public class StatutRendezVousMapper {
 
     public StatutRendezVousDto toDto(StatutRendezVous e) {

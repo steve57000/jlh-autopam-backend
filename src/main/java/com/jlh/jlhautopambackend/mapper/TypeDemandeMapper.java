@@ -2,9 +2,9 @@ package com.jlh.jlhautopambackend.mapper;
 
 import com.jlh.jlhautopambackend.dto.TypeDemandeDto;
 import com.jlh.jlhautopambackend.modeles.TypeDemande;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 
-@Component
+@Mapper(componentModel = "spring")
 public class TypeDemandeMapper {
 
     public TypeDemandeDto toDto(TypeDemande entity) {

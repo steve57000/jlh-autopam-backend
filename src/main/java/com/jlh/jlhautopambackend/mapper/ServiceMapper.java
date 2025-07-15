@@ -2,9 +2,9 @@ package com.jlh.jlhautopambackend.mapper;
 
 import com.jlh.jlhautopambackend.dto.*;
 import com.jlh.jlhautopambackend.modeles.Service;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 
-@Component
+@Mapper(componentModel = "spring")
 public class ServiceMapper {
 
     public ServiceResponse toResponse(Service s) {

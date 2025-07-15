@@ -62,7 +62,7 @@ jobs:
   # 2) deploy-production sur le self-hosted (qui n'a pas Maven, mais uniquement Docker)
   deploy-production:
     needs: build-and-push
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     defaults:
       run:

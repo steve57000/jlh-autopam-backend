@@ -9,6 +9,7 @@ import java.time.Instant;
 @Table(name = "Promotion")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class Promotion {
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idPromotion;
 

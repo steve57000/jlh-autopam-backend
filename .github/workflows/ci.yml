@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
 
 env:
   DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -40,7 +41,6 @@ jobs:
       - name: Debug Docker credentials
         run: |
           echo "→ USER = '${{ secrets.DOCKERHUB_USERNAME }}'"
-          # Test de la connexion sans révéler le token en clair
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login docker.io --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker logout docker.io
 
@@ -79,10 +79,10 @@ jobs:
     defaults:
       run:
         working-directory: .
-
     steps:
+      - name: Debug GITHUB_REF
+        run: echo "This workflow was triggered on '$GITHUB_REF'"
       - uses: actions/checkout@v3
-
       - name: Pull & run prod container
         run: |
           docker-compose -f docker-compose.prod.yml pull backend

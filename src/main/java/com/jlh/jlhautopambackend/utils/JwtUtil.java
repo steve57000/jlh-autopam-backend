@@ -3,73 +3,76 @@ package com.jlh.jlhautopambackend.utils;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
-import java.util.function.Function;
 
 @Component
 public class JwtUtil {
 
     @Value("${jwt.secret}")
-    private String secret;
+    private String secretBase64;
 
-    /**
-     * Durée de validité du token en millisecondes.
-     */
+    /** Durée de validité du token en millisecondes. */
     @Value("${jwt.expiration}")
     private long expirationMs;
 
-    private Key getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
-        return Keys.hmacShaKeyFor(keyBytes);
+    private Key signingKey;
+
+    /**
+     * Initialise la clé de signature une seule fois.
+     */
+    @PostConstruct
+    private void initSigningKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(secretBase64);
+        signingKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
+    /**
+     * Génère un JWT à partir du nom d’utilisateur.
+     */
     public String generateToken(String username) {
         Instant now = Instant.now();
+        Instant expiry = now.plus(Duration.ofMillis(expirationMs));
+
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(now.plusMillis(expirationMs)))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .setExpiration(Date.from(expiry))
+                .signWith(signingKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
+    /**
+     * Valide la signature et la date d’expiration du token.
+     */
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
+                    .setSigningKey(signingKey)
                     .build()
                     .parseClaimsJws(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
+            // signature invalide, token expiré, etc.
             return false;
         }
     }
 
+    /**
+     * Extrait le nom d’utilisateur (sub) du JWT.
+     */
     public String getUsernameFromToken(String token) {
         Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+                .setSigningKey(signingKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
         return claims.getSubject();
-    }
-
-    // --- méthodes privées utilitaires ---
-
-    private Claims getAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-    }
-
-    private <T> T getClaim(String token, Function<Claims, T> resolver) {
-        return resolver.apply(getAllClaims(token));
     }
 }

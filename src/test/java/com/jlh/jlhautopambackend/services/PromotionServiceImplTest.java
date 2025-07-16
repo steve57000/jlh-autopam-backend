@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -142,7 +143,7 @@ class PromotionServiceImplTest {
     }
 
     @Test
-    void testCreate_ShouldSetAdminAndReturnResponse() {
+    void testCreate_ShouldSetAdminAndReturnResponse() throws IOException {
         when(adminRepo.findById(5)).thenReturn(Optional.of(admin));
         when(mapper.toEntity(request)).thenReturn(entityWithoutRel);
         when(promoRepo.save(entityWithoutRel)).thenReturn(savedEntity);
@@ -163,7 +164,7 @@ class PromotionServiceImplTest {
     }
 
     @Test
-    void testCreate_ShouldThrowWhenAdminNotFound() {
+    void testCreate_ShouldThrowWhenAdminNotFound() throws IOException {
         when(adminRepo.findById(5)).thenReturn(Optional.empty());
 
         IllegalArgumentException ex = assertThrows(
@@ -176,15 +177,14 @@ class PromotionServiceImplTest {
     }
 
     @Test
-    void testUpdate_ShouldThrowWhenValidFromAfterValidTo() {
+    void testUpdate_ShouldThrowWhenValidFromAfterValidTo() throws IOException {
         PromotionRequest badReq = PromotionRequest.builder()
                 .administrateurId(5)
                 .imageUrl(request.getImageUrl())
                 .validFrom(invalidFrom)
                 .validTo(invalidTo)
                 .build();
-        Promotion existing = savedEntity;
-        when(promoRepo.findById(10)).thenReturn(Optional.of(existing));
+        when(promoRepo.findById(10)).thenReturn(Optional.of(savedEntity));
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
@@ -195,7 +195,7 @@ class PromotionServiceImplTest {
     }
 
     @Test
-    void testUpdate_WhenAdminUnchanged() {
+    void testUpdate_WhenAdminUnchanged() throws IOException {
         PromotionRequest sameAdminReq = PromotionRequest.builder()
                 .administrateurId(5)
                 .imageUrl("newUrl")
@@ -239,7 +239,7 @@ class PromotionServiceImplTest {
     }
 
     @Test
-    void testUpdate_WhenAdminChanged() {
+    void testUpdate_WhenAdminChanged() throws IOException {
         PromotionRequest changeAdminReq = PromotionRequest.builder()
                 .administrateurId(6)
                 .imageUrl("urlX")

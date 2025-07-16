@@ -63,4 +63,10 @@ public class PromotionController {
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
     }
+
+    // Ajout du handler pour IllegalArgumentException
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Void> handleBadRequest(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().build();
+    }
 }

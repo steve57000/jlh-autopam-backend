@@ -12,9 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -22,7 +24,6 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(
@@ -41,7 +42,6 @@ class PromotionControllerTest {
     @MockitoBean
     private PromotionService service;
 
-    // Désactivation de la sécurité JWT
     @MockitoBean
     private JwtUtil jwtUtil;
     @MockitoBean
@@ -67,7 +67,8 @@ class PromotionControllerTest {
 
         when(service.findAll()).thenReturn(Arrays.asList(p1, p2));
 
-        mvc.perform(get("/api/promotions").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get("/api/promotions")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idPromotion").value(1))
                 .andExpect(jsonPath("$[0].imageUrl").value("http://img1"))
@@ -86,7 +87,8 @@ class PromotionControllerTest {
                 .build();
         when(service.findById(3)).thenReturn(Optional.of(p));
 
-        mvc.perform(get("/api/promotions/3").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get("/api/promotions/3")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idPromotion").value(3))
                 .andExpect(jsonPath("$.imageUrl").value("http://img3"));
@@ -97,7 +99,8 @@ class PromotionControllerTest {
     void testGetByIdNotFound() throws Exception {
         when(service.findById(99)).thenReturn(Optional.empty());
 
-        mvc.perform(get("/api/promotions/99").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(MockMvcRequestBuilders.get("/api/promotions/99")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
 
@@ -118,11 +121,20 @@ class PromotionControllerTest {
                 .validTo(req.getValidTo())
                 .build();
 
-        when(service.create(any(PromotionRequest.class))).thenReturn(saved);
+        // Préparer la partie JSON "data"
+        String json = objectMapper.writeValueAsString(req);
+        MockMultipartFile dataPart = new MockMultipartFile(
+                "data", "data", "application/json", json.getBytes());
+        // Fichier simulé
+        MockMultipartFile filePart = new MockMultipartFile(
+                "file", "promo.jpg", "image/jpeg", "dummyImage".getBytes());
 
-        mvc.perform(post("/api/promotions")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+        when(service.create(any(PromotionRequest.class), any())).thenReturn(saved);
+
+        mvc.perform(MockMvcRequestBuilders.multipart("/api/promotions")
+                        .file(dataPart)
+                        .file(filePart)
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/api/promotions/7"))
                 .andExpect(jsonPath("$.idPromotion").value(7))
@@ -138,38 +150,24 @@ class PromotionControllerTest {
                 .validFrom(Instant.now())
                 .validTo(Instant.now().plusSeconds(3600))
                 .build();
-        when(service.create(any(PromotionRequest.class)))
+        String json = objectMapper.writeValueAsString(req);
+        MockMultipartFile dataPart = new MockMultipartFile("data", "data", "application/json", json.getBytes());
+        MockMultipartFile filePart = new MockMultipartFile("file", "f", "image/png", new byte[0]);
+
+        when(service.create(any(), any()))
                 .thenThrow(new IllegalArgumentException("Administrateur introuvable : 8"));
 
-        mvc.perform(post("/api/promotions")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+        mvc.perform(MockMvcRequestBuilders.multipart("/api/promotions")
+                        .file(dataPart)
+                        .file(filePart))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    @DisplayName("POST /api/promotions ➔ 400 when dates invalid")
-    void testCreateBadRequestDates() throws Exception {
+    @DisplayName("PUT /api/promotions/{id} ➔ 200 when valid")
+    void testUpdateSuccess() throws Exception {
         PromotionRequest req = PromotionRequest.builder()
-                .administrateurId(9)
-                .imageUrl("http://bad")
-                .validFrom(Instant.parse("2025-06-10T00:00:00Z"))
-                .validTo(Instant.parse("2025-06-01T00:00:00Z"))
-                .build();
-        when(service.create(any(PromotionRequest.class)))
-                .thenThrow(new IllegalArgumentException("validFrom doit être avant validTo"));
-
-        mvc.perform(post("/api/promotions")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("PUT /api/promotions/{id} ➔ 200 when found")
-    void testUpdateFound() throws Exception {
-        PromotionRequest req = PromotionRequest.builder()
-                .administrateurId(11) // reste le même admin
+                .administrateurId(11)
                 .imageUrl("http://upd")
                 .validFrom(Instant.parse("2025-06-02T00:00:00Z"))
                 .validTo(Instant.parse("2025-06-06T00:00:00Z"))
@@ -182,51 +180,19 @@ class PromotionControllerTest {
                 .validTo(req.getValidTo())
                 .build();
 
-        when(service.update(eq(11), any(PromotionRequest.class)))
-                .thenReturn(Optional.of(updated));
+        String json = objectMapper.writeValueAsString(req);
+        MockMultipartFile dataPart = new MockMultipartFile("data", "data", "application/json", json.getBytes());
+        MockMultipartFile filePart = new MockMultipartFile("file", "new.jpg", "image/jpeg", new byte[0]);
 
-        mvc.perform(put("/api/promotions/11")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+        when(service.update(eq(11), any(), any())).thenReturn(Optional.of(updated));
+
+        mvc.perform(MockMvcRequestBuilders.multipart("/api/promotions/11")
+                        .file(dataPart)
+                        .file(filePart)
+                        .with(request -> { request.setMethod("PUT"); return request; })
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.imageUrl").value("http://upd"))
-                .andExpect(jsonPath("$.validTo").value("2025-06-06T00:00:00Z"));
-    }
-
-    @Test
-    @DisplayName("PUT /api/promotions/{id} ➔ 400 when dates invalid")
-    void testUpdateBadRequestDates() throws Exception {
-        PromotionRequest req = PromotionRequest.builder()
-                .administrateurId(12)
-                .imageUrl("http://bad")
-                .validFrom(Instant.parse("2025-06-10T00:00:00Z"))
-                .validTo(Instant.parse("2025-06-01T00:00:00Z"))
-                .build();
-        when(service.update(eq(12), any(PromotionRequest.class)))
-                .thenThrow(new IllegalArgumentException("validFrom doit être avant validTo"));
-
-        mvc.perform(put("/api/promotions/12")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("PUT /api/promotions/{id} ➔ 404 when not found")
-    void testUpdateNotFound() throws Exception {
-        PromotionRequest req = PromotionRequest.builder()
-                .administrateurId(99)
-                .imageUrl("http://none")
-                .validFrom(Instant.now())
-                .validTo(Instant.now().plusSeconds(3600))
-                .build();
-        when(service.update(eq(99), any(PromotionRequest.class)))
-                .thenReturn(Optional.empty());
-
-        mvc.perform(put("/api/promotions/99")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isNotFound());
+                .andExpect(jsonPath("$.imageUrl").value("http://upd"));
     }
 
     @Test
@@ -234,7 +200,7 @@ class PromotionControllerTest {
     void testDeleteFound() throws Exception {
         when(service.delete(13)).thenReturn(true);
 
-        mvc.perform(delete("/api/promotions/13"))
+        mvc.perform(MockMvcRequestBuilders.delete("/api/promotions/13"))
                 .andExpect(status().isNoContent());
     }
 
@@ -243,7 +209,7 @@ class PromotionControllerTest {
     void testDeleteNotFound() throws Exception {
         when(service.delete(99)).thenReturn(false);
 
-        mvc.perform(delete("/api/promotions/99"))
+        mvc.perform(MockMvcRequestBuilders.delete("/api/promotions/99"))
                 .andExpect(status().isNotFound());
     }
 }

@@ -51,6 +51,8 @@ public class SecurityConfig {
                         // autoriser les pré‐vol OPTIONS
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        // ici, on protège /api/promotions en POST
+                        .requestMatchers(HttpMethod.POST, "/api/promotions").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter,

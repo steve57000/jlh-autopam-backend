@@ -54,22 +54,33 @@
 </section>
 <section>
     <h2>POST /promotions</h2>
-    Body (JSON):<br />
+    <label for="postBody">Body (JSON):</label><br />
     <textarea id="postBody">{}</textarea><br />
+
+    <label for="fileInput">Image (fichier) :</label>
+    <input type="file" id="fileInput"/><br />
+
     <button onclick="fetchPost()">POST</button>
     <pre id="postOutput"></pre>
 </section>
 <section>
     <h2>PUT /promotions/{id}</h2>
-    ID: <input type="text" id="putId" /><br />
-    Body (JSON):<br />
-    <textarea id="putBody">{}</textarea><br />
+    ID : <input type="text" id="putId" /><br/>
+    Fichier image (optionnel) : <input type="file" id="putFile"/><br/>
+    Body JSON (PromotionRequest) :<br/>
+    <textarea id="putBody">
+{
+  "administrateurId": 1,
+  "validFrom": "2025-06-02T00:00:00Z",
+  "validTo":   "2025-06-08T23:59:59Z"
+}
+  </textarea><br/>
     <button onclick="fetchPut()">PUT</button>
     <pre id="putOutput"></pre>
 </section>
 <section>
     <h2>DELETE /promotions/{id}</h2>
-    ID: <input type="text" id="deleteId" />
+    ID : <input type="text" id="deleteId" />
     <button onclick="fetchDelete()">DELETE</button>
     <pre id="deleteOutput"></pre>
 </section>
@@ -92,29 +103,95 @@
             .catch(err => console.error('fetchGetById', err));
     }
 
-    function fetchPost() {
-        const body = document.getElementById('postBody').value;
-        apiFetch(basePath, { method: 'POST', body })
-            .then(data => document.getElementById('postOutput')
-                .textContent = JSON.stringify(data, null, 2))
-            .catch(err => console.error('fetchPost', err));
+    async function fetchPost() {
+        const data = new FormData();
+        data.append('data', new Blob([ JSON.stringify({
+            administrateurId: 1,
+            validFrom: '2025-07-01T00:00:00Z',
+            validTo:   '2025-07-07T23:59:59Z'
+        })], { type: 'application/json' }));
+        data.append('file', document.getElementById('fileInput').files[0]);
+
+        const response = await fetch(
+            `${window.API_BASE_URL}/promotions`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                    // NE PAS fixer Content-Type ici, laissez le navigateur le définir pour multipart/form-data
+                },
+                body: data
+            }
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
     }
 
-    function fetchPut() {
+    async function fetchPut() {
         const id = document.getElementById('putId').value;
-        const body = document.getElementById('putBody').value;
-        apiFetch(`${basePath}/${id}`, { method: 'PUT', body })
-            .then(data => document.getElementById('putOutput')
-                .textContent = JSON.stringify(data, null, 2))
-            .catch(err => console.error('fetchPut', err));
+        if (!id) {
+            document.getElementById('putOutput').textContent = 'Il faut un ID.';
+            return;
+        }
+
+        let json;
+        try {
+            json = JSON.parse(document.getElementById('putBody').value);
+        } catch {
+            document.getElementById('putOutput').textContent = 'JSON invalide.';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append(
+            'data',
+            new Blob([JSON.stringify(json)], { type: 'application/json' }),
+            'data.json'
+        );
+        const fileInput = document.getElementById('putFile');
+        if (fileInput.files[0]) {
+            formData.append('file', fileInput.files[0]);
+        }
+
+        const token = localStorage.getItem('jwtToken');
+        const resp = await apiFetch(`/promotions/${id}`, {
+            method: 'PUT',
+            headers: {
+                ...(token && { 'Authorization': `Bearer ${token}` })
+                // Ne pas setter Content-Type : le navigateur le fait
+            },
+            body: formData
+        });
+
+        if (!resp.ok) {
+            document.getElementById('putOutput').textContent = `Erreur : HTTP ${resp.status}`;
+            return;
+        }
+
+        const data = await resp.json();
+        document.getElementById('putOutput').textContent = JSON.stringify(data, null, 2);
     }
 
-    function fetchDelete() {
+    async function fetchDelete() {
         const id = document.getElementById('deleteId').value;
-        apiFetch(`${basePath}/${id}`, { method: 'DELETE' })
-            .then(() => document.getElementById('deleteOutput')
-                .textContent = 'Deleted')
-            .catch(err => console.error('fetchDelete', err));
+        if (!id) {
+            document.getElementById('deleteOutput').textContent = 'Il faut un ID.';
+            return;
+        }
+
+        const token = localStorage.getItem('jwtToken');
+        const resp = await apiFetch(`/promotions/${id}`, {
+            method: 'DELETE',
+            headers: {
+                ...(token && { 'Authorization': `Bearer ${token}` })
+            }
+        });
+
+        if (resp.status === 204) {
+            document.getElementById('deleteOutput').textContent = 'Supprimé ✔';
+        } else {
+            document.getElementById('deleteOutput').textContent = `Erreur : HTTP ${resp.status}`;
+        }
     }
 </script>
 </body>

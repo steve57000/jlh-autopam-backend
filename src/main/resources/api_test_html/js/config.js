@@ -14,18 +14,20 @@ function authHeaders() {
     return headers;
 }
 
-// --- <ajoutez ceci> ---
+
 ;(function() {
     const _fetch = window.fetch;
     window.fetch = (input, init = {}) => {
-        // On n’applique l’en-tête JWT que si on appelle l’API
         const url = typeof input === 'string' ? input : input.url;
         if (url.startsWith(window.API_BASE_URL)) {
+            const isForm = init.body instanceof FormData;
+            const token = localStorage.getItem('jwtToken');
             init.headers = {
-                // fusionne vos éventuels headers passés manuellement…
                 ...(init.headers || {}),
-                // …avec l’Authorization (ou seulement Content-Type si pas de token)
-                ...authHeaders()
+                // seulement JSON
+                ...(!isForm ? { 'Content-Type': 'application/json' } : {}),
+                // bearer si présent
+                ...(token ? { 'Authorization': 'Bearer ' + token } : {})
             };
         }
         return _fetch(input, init);
@@ -34,16 +36,15 @@ function authHeaders() {
 
 async function apiFetch(path, options = {}) {
     const url = `${window.API_BASE_URL}${path}`;
-    const opts = {
-        ...options,
-        headers: {
-            // prend d’abord vos headers passés à options…
-            ...(options.headers || {}),
-            // …puis ajoute Content-Type + Bearer si existant
-            ...authHeaders()
-        }
+    const headers = {
+        ...authHeaders(),
+        ...(options.headers || {})
     };
-    const response = await fetch(url, opts);
+    // Si on envoie du JSON, on précise le Content-Type ici
+    if (options.body && typeof options.body === 'string') {
+        headers['Content-Type'] = 'application/json';
+    }
+    const response = await fetch(url, { ...options, headers });
     if (!response.ok) {
         const err = new Error(`HTTP ${response.status}`);
         err.response = response;

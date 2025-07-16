@@ -3,9 +3,12 @@ package com.jlh.jlhautopambackend.controllers;
 import com.jlh.jlhautopambackend.dto.PromotionRequest;
 import com.jlh.jlhautopambackend.dto.PromotionResponse;
 import com.jlh.jlhautopambackend.services.PromotionService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
@@ -32,30 +35,26 @@ public class PromotionController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
-    public ResponseEntity<PromotionResponse> create(@RequestBody PromotionRequest req) {
-        try {
-            PromotionResponse resp = service.create(req);
-            String location = "/api/promotions/" + resp.getIdPromotion();
-            return ResponseEntity.created(URI.create(location)).body(resp);
-        } catch (IllegalArgumentException ex) {
-            // validFrom > validTo ou admin introuvable
-            return ResponseEntity.badRequest().build();
-        }
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PromotionResponse> create(
+            @RequestPart("data") PromotionRequest req,
+            @RequestPart("file") MultipartFile file
+    ) throws IOException {
+        PromotionResponse resp = service.create(req, file);  // passe les 2 args
+        URI location = URI.create("/api/promotions/" + resp.getIdPromotion());
+        return ResponseEntity.created(location).body(resp);
     }
 
-    @PutMapping("/{id}")
+    // Mise à jour avec trois arguments : id + req + file (file optionnel)
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PromotionResponse> update(
             @PathVariable Integer id,
-            @RequestBody PromotionRequest req) {
-        try {
-            return service.update(id, req)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-        } catch (IllegalArgumentException ex) {
-            // validFrom > validTo
-            return ResponseEntity.badRequest().build();
-        }
+            @RequestPart("data") PromotionRequest req,
+            @RequestPart(value = "file", required = false) MultipartFile file
+    ) throws IOException {
+        return service.update(id, req, file)   // passe les 3 args
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")

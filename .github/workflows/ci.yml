@@ -11,7 +11,7 @@ env:
 
 jobs:
 
-  # 1️⃣ Compilation, tests & packaging
+  # 1️⃣ Compilation, tests & packaging (s'exécute sur main et dev)
   build:
     runs-on: ubuntu-latest
     outputs:
@@ -45,8 +45,9 @@ jobs:
           fi
           echo "TAG=$TAG" >> $GITHUB_OUTPUT
 
-  # 2️⃣ Construction de l’image Docker
+  # 2️⃣ Construction de l’image Docker (uniquement sur main)
   docker-build:
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -66,8 +67,9 @@ jobs:
             --tag ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.TAG }} \
             .
 
-  # 3️⃣ Push de l’image sur Docker Hub
+  # 3️⃣ Push de l’image sur Docker Hub (uniquement sur main)
   docker-push:
+    if: github.ref == 'refs/heads/main'
     needs: docker-build
     runs-on: ubuntu-latest
     steps:

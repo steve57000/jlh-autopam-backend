@@ -79,6 +79,6 @@ jobs:
 
       - name: Pull & run prod container
         run: |
-          docker-compose --env-file .env.prod -f docker-compose.prod.yml pull backend
-          docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d backend
+          docker-compose --env-file .env.prod -f docker-compose.prod.yml pull
+          docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d 
 

@@ -39,9 +39,9 @@ jobs:
         id: set-tag
         run: |
           if [[ "${GITHUB_REF#refs/heads/}" == "main" ]]; then
-            TAG=latest
+            echo "TAG=latest" >> $GITHUB_OUTPUT
           else
-            TAG=dev-${GITHUB_SHA::8}
+            echo "TAG=dev-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
           fi
           echo "TAG=$TAG" >> $GITHUB_OUTPUT
 

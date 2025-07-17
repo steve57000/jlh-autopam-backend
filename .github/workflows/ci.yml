@@ -10,6 +10,7 @@ env:
   IMAGE_NAME: jlh-autopam-backend
 
 jobs:
+
   # 1️⃣ Compilation, tests & packaging (s’exécute sur main et dev)
   build:
     runs-on: ubuntu-latest
@@ -46,10 +47,11 @@ jobs:
             echo "TAG=dev-${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT
           fi
 
-  # 2️⃣ Build & push Docker image (only on main)
+  # 2️⃣ Build & push Docker image (sur main ET dev)
   docker:
     needs: build
-    if: github.ref == 'refs/heads/main'
+    # Trigger on both main et dev
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -69,9 +71,10 @@ jobs:
           file: Dockerfile
           target: runtime
           push: true
+          # Sur main → latest, sur dev → dev-<sha>
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.TAG }}
 
-  # 3️⃣ Deploy to production (only on main)
+  # 3️⃣ Deploy to production (seulement sur main)
   deploy-production:
     needs: docker
     if: github.ref == 'refs/heads/main'

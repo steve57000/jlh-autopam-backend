@@ -39,10 +39,12 @@ jobs:
       - name: Déterminer le tag
         id: set-tag
         run: |
-          if [[ "${GITHUB_REF#refs/heads/}" == "main" ]]; then
+          BRANCH=${GITHUB_REF##*/}
+          echo "Branch is $BRANCH"
+          if [[ "$BRANCH" == "main" ]]; then
             echo "TAG=latest" >> $GITHUB_OUTPUT
           else
-            echo "TAG=dev-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+            echo "TAG=dev-${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT
           fi
 
   # 2️⃣ Construction de l’image Docker (uniquement sur main)

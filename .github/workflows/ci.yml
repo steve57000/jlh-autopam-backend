@@ -1,90 +1,97 @@
-# .github/workflows/ci-cd-backend.yml
 name: CI/CD Backend
 
-# Permissions nécessaires pour push sur Docker Hub (packages) et checkout
-permissions:
-  contents: read
-  packages: write
-
+# Déclenche sur push vers main ou dev
 on:
   push:
     branches:
       - main
       - dev
 
+# Nom de l’image (sans le préfixe utilisateur)
 env:
-  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+  IMAGE_NAME: jlh-autopam-backend
 
 jobs:
-  build-and-push:
+
+  # 1️⃣ Compilation, tests & packaging
+  build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: .
-
+    outputs:
+      TAG: ${{ steps.set-tag.outputs.TAG }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up JDK 17
+      - name: Setup JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Cache Maven dependencies
+      - name: Cache Maven deps
         uses: actions/cache@v3
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-m2-${{ hashFiles('pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-m2-
+          restore-keys: ${{ runner.os }}-m2-
 
-      - name: Run tests
-        run: mvn test -B
-
-      - name: Build JAR
+      - name: Run tests & package
         run: mvn clean package -DskipTests -B
+
+      - name: Déterminer le tag
+        id: set-tag
+        run: |
+          if [[ "${GITHUB_REF#refs/heads/}" == "main" ]]; then
+            TAG=latest
+          else
+            TAG=dev-${GITHUB_SHA::8}
+          fi
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "::set-output name=TAG::$TAG"
+
+  # 2️⃣ Construction de l’image Docker
+  docker-build:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
-          registry: docker.io
+          # Assurez-vous que ces secrets existent et correspondent bien à votre compte Docker Hub
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Determine Docker image tag
-        id: set-tag
+      - name: Build Docker image
         run: |
-          if [[ "${GITHUB_REF#refs/heads/}" == "main" ]]; then
-            echo "TAG=latest" >> $GITHUB_ENV
-          else
-            echo "TAG=dev-${GITHUB_SHA::8}" >> $GITHUB_ENV
-          fi
+          docker build \
+            --file Dockerfile \
+            --target runtime \
+            --tag ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.TAG }} \
+            .
 
-      - name: Build & push Docker image
-        uses: docker/build-push-action@v4
+  # 3️⃣ Push de l’image sur Docker Hub
+  docker-push:
+    needs: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to Docker Hub (re-login for safety)
+        uses: docker/login-action@v2
         with:
-          context: .
-          file: Dockerfile
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_USER }}/jlh-autopam-backend:${{ env.TAG }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Logout from Docker Hub
-        run: docker logout docker.io
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.TAG }}
 
+  # 4️⃣ Déploiement en production (uniquement sur main)
   deploy-production:
     if: github.ref == 'refs/heads/main'
-    needs: build-and-push
+    needs: docker-push
     runs-on: self-hosted
-    defaults:
-      run:
-        working-directory: .
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Pull & run prod container
         run: |

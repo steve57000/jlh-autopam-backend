@@ -14,7 +14,7 @@ env:
 
 jobs:
 
-  # 1️⃣ Compilation, tests & packaging (sur dev, sur main et sur PR)
+  # 1️⃣ Compilation, tests & packaging (sur dev, main et PR)
   build:
     runs-on: ubuntu-latest
     outputs:
@@ -50,10 +50,10 @@ jobs:
             echo "TAG=dev-${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT
           fi
 
-  # 2️⃣ Build & push Docker image (uniquement sur push → dev)
+  # 2️⃣ Build & push Docker image (push sur dev et main)
   docker:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -73,9 +73,10 @@ jobs:
           file: Dockerfile
           target: runtime
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.TAG }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.TAG }}
 
-  # 3️⃣ Déploiement en production (uniquement sur push → main)
+  # 3️⃣ Déploiement en production (uniquement après push sur main)
   deploy-production:
     needs: docker
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

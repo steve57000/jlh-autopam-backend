@@ -1,13 +1,11 @@
 name: CI/CD Backend
 
-# Déclenche sur push vers main ou dev
 on:
   push:
     branches:
       - main
       - dev
 
-# Nom de l’image (sans le préfixe utilisateur)
 env:
   IMAGE_NAME: jlh-autopam-backend
 
@@ -27,7 +25,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Cache Maven deps
+      - name: Cache Maven dependencies
         uses: actions/cache@v3
         with:
           path: ~/.m2/repository
@@ -45,8 +43,7 @@ jobs:
           else
             TAG=dev-${GITHUB_SHA::8}
           fi
-          echo "TAG=$TAG" >> $GITHUB_ENV
-          echo "::set-output name=TAG::$TAG"
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
 
   # 2️⃣ Construction de l’image Docker
   docker-build:
@@ -58,7 +55,6 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
-          # Assurez-vous que ces secrets existent et correspondent bien à votre compte Docker Hub
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
@@ -75,7 +71,7 @@ jobs:
     needs: docker-build
     runs-on: ubuntu-latest
     steps:
-      - name: Login to Docker Hub (re-login for safety)
+      - name: Login to Docker Hub (again)
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -85,7 +81,7 @@ jobs:
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.TAG }}
 
-  # 4️⃣ Déploiement en production (uniquement sur main)
+  # 4️⃣ Déploiement en production (seulement sur main)
   deploy-production:
     if: github.ref == 'refs/heads/main'
     needs: docker-push

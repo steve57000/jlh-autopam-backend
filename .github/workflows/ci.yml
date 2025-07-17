@@ -4,17 +4,13 @@ on:
   push:
     branches:
       - dev
-      - main
-  pull_request:
-    branches:
-      - main
 
 env:
   IMAGE_NAME: jlh-autopam-backend
 
 jobs:
 
-  # 1️⃣ Compilation, tests & packaging (toujours, même sur main et PR)
+  # 1️⃣ Compilation, tests & packaging (sur dev uniquement)
   build:
     runs-on: ubuntu-latest
     outputs:
@@ -43,17 +39,11 @@ jobs:
       - name: Determine Docker tag
         id: set-tag
         run: |
-          BRANCH=${GITHUB_REF##*/}
-          if [[ "$BRANCH" == "main" ]]; then
-            echo "TAG=latest" >> $GITHUB_OUTPUT
-          else
-            echo "TAG=dev-${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT
-          fi
+          echo "TAG=dev-${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT
 
-  # 2️⃣ Build & push Docker image (UNIQUEMENT sur push dev)
+  # 2️⃣ Build & push Docker image (dev uniquement)
   docker:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -76,10 +66,9 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.TAG }}
 
-  # 3️⃣ Déploiement en production (UNIQUEMENT après push sur main)
+  # 3️⃣ Déploiement en production (toujours sur dev)
   deploy-production:
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: docker
     runs-on: self-hosted
     steps:
       - name: Checkout code

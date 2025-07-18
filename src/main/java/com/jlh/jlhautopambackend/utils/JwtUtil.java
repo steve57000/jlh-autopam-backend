@@ -5,6 +5,8 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -34,14 +36,21 @@ public class JwtUtil {
     }
 
     /**
-     * Génère un JWT à partir du nom d’utilisateur.
+     * Génère un JWT à partir du nom d’utilisateur et son role.
      */
-    public String generateToken(String username) {
+    public String generateToken(UserDetails userDetails) {
         Instant now = Instant.now();
         Instant expiry = now.plus(Duration.ofMillis(expirationMs));
 
+        // On récupère les authorities (rôles) pour le token
+        var authorities = userDetails.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(userDetails.getUsername())
+                .claim("authorities", authorities)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(expiry))
                 .signWith(signingKey, SignatureAlgorithm.HS256)

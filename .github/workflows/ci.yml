@@ -74,7 +74,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Copy .env.prod secret
+        run: copy C:\secrets\jlh-autopam-backend\.env.prod .env.prod
+
       - name: Pull & run prod container
         run: |
-          docker-compose -f docker-compose.prod.yml pull backend
-          docker-compose -f docker-compose.prod.yml up -d backend
+          docker-compose --env-file .env.prod -f docker-compose.prod.yml pull
+          docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d 
+

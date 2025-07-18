@@ -34,19 +34,12 @@ services:
       - promo-images:/var/www/promo
     networks:
       - backend
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 20s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
 
   nginx:
     image: nginx:alpine
     restart: unless-stopped
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     ports:
       - "80:80"
     volumes:

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -31,11 +32,10 @@ public class AuthController {
         try {
             Authentication auth = authManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            creds.getUsername(),
-                            creds.getPassword()
+                            creds.getUsername(), creds.getPassword()
                     )
             );
-            String token = jwtUtil.generateToken(creds.getUsername());
+            String token = jwtUtil.generateToken((UserDetails) auth.getPrincipal());
             return ResponseEntity.ok(Map.of("token", token));
         } catch (AuthenticationException ex) {
             return ResponseEntity.status(401).body("Identifiants invalides");

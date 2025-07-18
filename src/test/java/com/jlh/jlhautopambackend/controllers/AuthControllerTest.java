@@ -14,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -53,12 +54,21 @@ class AuthControllerTest {
 
         // Stub de l'AuthenticationManager pour simuler un login réussi
         Authentication auth = Mockito.mock(Authentication.class);
+        UserDetails userDetails = org.springframework.security.core.userdetails.User
+                .withUsername("user")
+                .password("pass")
+                .roles("ADMIN")
+                .build();
+
         Mockito.when(authManager.authenticate(
                 Mockito.any(UsernamePasswordAuthenticationToken.class))
         ).thenReturn(auth);
 
-        // Stub du JwtUtil pour renvoyer un token fixe
-        Mockito.when(jwtUtil.generateToken("user")).thenReturn("jwt-token");
+        // Stub pour que auth.getPrincipal() retourne le UserDetails simulé
+        Mockito.when(auth.getPrincipal()).thenReturn(userDetails);
+
+        // Stub du JwtUtil pour renvoyer un token fixe (pour un UserDetails)
+        Mockito.when(jwtUtil.generateToken(userDetails)).thenReturn("jwt-token");
 
         // Exécution et assertions
         mvc.perform(post("/api/auth/login")

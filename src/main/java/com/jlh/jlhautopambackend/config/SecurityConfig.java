@@ -52,6 +52,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/administrateurs/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/administrateurs/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/administrateurs/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/administrateurs/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/administrateurs/**").permitAll()
                         // ici, on protège /api/promotions en POST
                         .requestMatchers(HttpMethod.POST, "/api/promotions").authenticated()
                         .anyRequest().authenticated()

@@ -50,6 +50,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // autoriser les pré‐vol OPTIONS
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         // ici, on protège /api/promotions en POST
                         .requestMatchers(HttpMethod.POST, "/api/promotions").authenticated()

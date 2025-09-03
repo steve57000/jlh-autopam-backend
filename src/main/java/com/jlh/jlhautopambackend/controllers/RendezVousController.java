@@ -2,9 +2,13 @@ package com.jlh.jlhautopambackend.controllers;
 
 import com.jlh.jlhautopambackend.dto.RendezVousRequest;
 import com.jlh.jlhautopambackend.dto.RendezVousResponse;
+import com.jlh.jlhautopambackend.modeles.Client;
+import com.jlh.jlhautopambackend.repository.ClientRepository;
 import com.jlh.jlhautopambackend.services.RendezVousService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -16,17 +20,21 @@ import java.util.List;
 public class RendezVousController {
 
     private final RendezVousService service;
+    private final ClientRepository clientRepo;
 
-    public RendezVousController(RendezVousService service) {
+    public RendezVousController(RendezVousService service, ClientRepository clientRepo) {
         this.service = service;
+        this.clientRepo = clientRepo;
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN')") // ajuste si besoin
     public List<RendezVousResponse> getAll() {
         return service.findAll();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('CLIENT','ADMIN')")
     public ResponseEntity<RendezVousResponse> getById(@PathVariable Integer id) {
         return service.findById(id)
                 .map(ResponseEntity::ok)
@@ -34,8 +42,8 @@ public class RendezVousController {
     }
 
     @PostMapping
-    public ResponseEntity<RendezVousResponse> create(
-            @Valid @RequestBody RendezVousRequest req) {
+    @PreAuthorize("hasAnyRole('CLIENT','ADMIN')")
+    public ResponseEntity<RendezVousResponse> create(@Valid @RequestBody RendezVousRequest req) {
         RendezVousResponse resp = service.create(req);
         return ResponseEntity
                 .created(URI.create("/api/rendezvous/" + resp.getIdRdv()))
@@ -43,6 +51,7 @@ public class RendezVousController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('CLIENT','ADMIN')")
     public ResponseEntity<RendezVousResponse> update(
             @PathVariable Integer id,
             @Valid @RequestBody RendezVousRequest req) {
@@ -51,7 +60,32 @@ public class RendezVousController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /**
+     * Valide/soumet un RDV : passe la Demande liée de 'Brouillon' → 'En_attente'.
+     * - CLIENT : ne peut soumettre que ses propres demandes.
+     * - ADMIN  : peut soumettre n'importe quelle demande.
+     */
+    @PatchMapping("/{id}/submit")
+    @PreAuthorize("hasAnyRole('CLIENT','ADMIN')")
+    public ResponseEntity<RendezVousResponse> submit(@PathVariable Integer id, Authentication auth) {
+        Integer clientIdOrNullIfAdmin = null;
+
+        boolean isClient = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_CLIENT"));
+        if (isClient) {
+            String email = auth.getName();
+            Client client = clientRepo.findByEmail(email)
+                    .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+            clientIdOrNullIfAdmin = client.getIdClient();
+        }
+
+        return service.submit(id, clientIdOrNullIfAdmin)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('CLIENT','ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         return service.delete(id)
                 ? ResponseEntity.noContent().build()

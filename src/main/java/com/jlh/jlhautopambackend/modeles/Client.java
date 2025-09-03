@@ -3,8 +3,10 @@ package com.jlh.jlhautopambackend.modeles;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
+
 @Entity
-@Table(name = "Client")
+@Table(name = "client")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class Client {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,7 +21,19 @@ public class Client {
     @Column(nullable = false, unique = true, length = 150)
     private String email;
 
-    @Column(length = 20)
+    @Column(nullable = false)
+    private String motDePasse;
+
+    @Column(name="email_verified", nullable=false)
+    private boolean emailVerified = false;
+
+    @Column(name="email_verified_at")
+    private Instant emailVerifiedAt;
+
+    @Column(nullable = false)
+    private String immatriculation;
+
+    @Column(length = 20, nullable = false)
     private String telephone;
 
     @Column(columnDefinition = "TEXT")

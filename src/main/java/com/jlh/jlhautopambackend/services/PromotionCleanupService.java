@@ -1,7 +1,7 @@
 package com.jlh.jlhautopambackend.services;
 
 import com.jlh.jlhautopambackend.modeles.Promotion;
-import com.jlh.jlhautopambackend.repositories.PromotionRepository;
+import com.jlh.jlhautopambackend.repository.PromotionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

@@ -12,4 +12,7 @@ public interface RendezVousService {
     RendezVousResponse create(RendezVousRequest request);
     Optional<RendezVousResponse> update(Integer id, RendezVousRequest request);
     boolean delete(Integer id);
+
+    /** Valide/soumet un RDV et passe la demande rattachée en En_attente si elle est en Brouillon. */
+    Optional<RendezVousResponse> submit(Integer rdvId, Integer clientIdOrNullIfAdmin);
 }

@@ -3,7 +3,7 @@ package com.jlh.jlhautopambackend.services;
 import com.jlh.jlhautopambackend.dto.StatutCreneauDto;
 import com.jlh.jlhautopambackend.mapper.StatutCreneauMapper;
 import com.jlh.jlhautopambackend.modeles.StatutCreneau;
-import com.jlh.jlhautopambackend.repositories.StatutCreneauRepository;
+import com.jlh.jlhautopambackend.repository.StatutCreneauRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

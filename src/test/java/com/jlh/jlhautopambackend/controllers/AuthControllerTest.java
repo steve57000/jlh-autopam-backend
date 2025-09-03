@@ -49,7 +49,7 @@ class AuthControllerTest {
     void testLoginSuccess() throws Exception {
         // Prépare la requête
         LoginRequest req = new LoginRequest();
-        req.setUsername("user");
+        req.setEmail("user");
         req.setPassword("pass");
 
         // Stub de l'AuthenticationManager pour simuler un login réussi
@@ -83,7 +83,7 @@ class AuthControllerTest {
     void testLoginFailure() throws Exception {
         // Prépare la requête
         LoginRequest req = new LoginRequest();
-        req.setUsername("bad");
+        req.setEmail("bad");
         req.setPassword("credentials");
 
         // Stub pour lever une exception d'authentification

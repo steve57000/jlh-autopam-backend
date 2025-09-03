@@ -4,7 +4,7 @@ import com.jlh.jlhautopambackend.dto.AdministrateurRequest;
 import com.jlh.jlhautopambackend.dto.AdministrateurResponse;
 import com.jlh.jlhautopambackend.mapper.AdministrateurMapper;
 import com.jlh.jlhautopambackend.modeles.Administrateur;
-import com.jlh.jlhautopambackend.repositories.AdministrateurRepository;
+import com.jlh.jlhautopambackend.repository.AdministrateurRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,14 +45,14 @@ class AdministrateurServiceImplTest {
     void setUp() {
         // Common test data
         request = AdministrateurRequest.builder()
-                .username("adminUser")
+                .email("adminUser")
                 .motDePasse("rawPass")
                 .nom("Dupont")
                 .prenom("Jean")
                 .build();
 
         entity = Administrateur.builder()
-                .username(request.getUsername())
+                .email(request.getEmail())
                 .motDePasse(null)
                 .nom(request.getNom())
                 .prenom(request.getPrenom())
@@ -60,7 +60,7 @@ class AdministrateurServiceImplTest {
 
         savedEntity = Administrateur.builder()
                 .idAdmin(1)
-                .username(request.getUsername())
+                .email(request.getEmail())
                 .motDePasse("encodedPass")
                 .nom(request.getNom())
                 .prenom(request.getPrenom())
@@ -68,7 +68,7 @@ class AdministrateurServiceImplTest {
 
         response = AdministrateurResponse.builder()
                 .idAdmin(savedEntity.getIdAdmin())
-                .username(savedEntity.getUsername())
+                .email(savedEntity.getEmail())
                 .nom(savedEntity.getNom())
                 .prenom(savedEntity.getPrenom())
                 .disponibilites(Collections.emptyList())
@@ -120,14 +120,14 @@ class AdministrateurServiceImplTest {
     void testFindAll_ShouldReturnListOfResponses() {
         Administrateur other = Administrateur.builder()
                 .idAdmin(2)
-                .username("user2")
+                .email("user2")
                 .motDePasse("pwd2")
                 .nom("Martin")
                 .prenom("Paul")
                 .build();
         AdministrateurResponse otherResp = AdministrateurResponse.builder()
                 .idAdmin(2)
-                .username("user2")
+                .email("user2")
                 .nom("Martin")
                 .prenom("Paul")
                 .disponibilites(Collections.emptyList())
@@ -150,7 +150,7 @@ class AdministrateurServiceImplTest {
     @Test
     void testUpdate_WhenExistsAndPasswordProvided() {
         AdministrateurRequest updateReq = AdministrateurRequest.builder()
-                .username("newUser")
+                .email("newUser")
                 .motDePasse("newPass")
                 .nom("NewNom")
                 .prenom("NewPrenom")
@@ -158,7 +158,7 @@ class AdministrateurServiceImplTest {
 
         Administrateur existing = Administrateur.builder()
                 .idAdmin(3)
-                .username("oldUser")
+                .email("oldUser")
                 .motDePasse("oldPass")
                 .nom("OldNom")
                 .prenom("OldPrenom")
@@ -166,7 +166,7 @@ class AdministrateurServiceImplTest {
 
         Administrateur updatedEntity = Administrateur.builder()
                 .idAdmin(3)
-                .username("newUser")
+                .email("newUser")
                 .motDePasse("encodedNewPass")
                 .nom("NewNom")
                 .prenom("NewPrenom")
@@ -174,7 +174,7 @@ class AdministrateurServiceImplTest {
 
         AdministrateurResponse updatedResp = AdministrateurResponse.builder()
                 .idAdmin(3)
-                .username("newUser")
+                .email("newUser")
                 .nom("NewNom")
                 .prenom("NewPrenom")
                 .disponibilites(Collections.emptyList())
@@ -198,7 +198,7 @@ class AdministrateurServiceImplTest {
     @Test
     void testUpdate_WhenExistsAndPasswordBlank() {
         AdministrateurRequest updateReq = AdministrateurRequest.builder()
-                .username("userNoPwd")
+                .email("userNoPwd")
                 .motDePasse("")  // motDePasse vide
                 .nom("NomNoPwd")
                 .prenom("PrenomNoPwd")
@@ -206,7 +206,7 @@ class AdministrateurServiceImplTest {
 
         Administrateur existing = Administrateur.builder()
                 .idAdmin(4)
-                .username("origUser")
+                .email("origUser")
                 .motDePasse("origPass")
                 .nom("OrigNom")
                 .prenom("OrigPrenom")
@@ -214,7 +214,7 @@ class AdministrateurServiceImplTest {
 
         AdministrateurResponse respNoPwd = AdministrateurResponse.builder()
                 .idAdmin(4)
-                .username("userNoPwd")
+                .email("userNoPwd")
                 .nom("NomNoPwd")
                 .prenom("PrenomNoPwd")
                 .disponibilites(Collections.emptyList())

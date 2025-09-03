@@ -2,9 +2,9 @@ package com.jlh.jlhautopambackend.services;
 
 import com.jlh.jlhautopambackend.modeles.Disponibilite;
 import com.jlh.jlhautopambackend.modeles.DisponibiliteKey;
-import com.jlh.jlhautopambackend.repositories.AdministrateurRepository;
-import com.jlh.jlhautopambackend.repositories.CreneauRepository;
-import com.jlh.jlhautopambackend.repositories.DisponibiliteRepository;
+import com.jlh.jlhautopambackend.repository.AdministrateurRepository;
+import com.jlh.jlhautopambackend.repository.CreneauRepository;
+import com.jlh.jlhautopambackend.repository.DisponibiliteRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

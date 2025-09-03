@@ -10,7 +10,7 @@ import java.util.List;
 @Builder
 public class AdministrateurResponse {
     private Integer idAdmin;
-    private String username;
+    private String email;
     private String nom;
     private String prenom;
     // Si vous voulez renvoyer les disponibilités, n’incluez que leur ID :

@@ -6,7 +6,7 @@ import com.jlh.jlhautopambackend.dto.StatutDemandeDto;
 import com.jlh.jlhautopambackend.dto.TypeDemandeDto;
 import com.jlh.jlhautopambackend.mapper.DemandeMapper;
 import com.jlh.jlhautopambackend.modeles.*;
-import com.jlh.jlhautopambackend.repositories.*;
+import com.jlh.jlhautopambackend.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -95,7 +95,6 @@ class DemandeServiceImplTest {
         response = DemandeResponse.builder()
                 .idDemande(1)
                 .dateDemande(date)
-                .clientId(100)
                 .typeDemande(new TypeDemandeDto(type.getCodeType(), type.getLibelle()))
                 .statutDemande(new StatutDemandeDto(statut.getCodeStatut(), statut.getLibelle()))
                 .services(Collections.emptyList())
@@ -206,7 +205,6 @@ class DemandeServiceImplTest {
         DemandeResponse otherResp = DemandeResponse.builder()
                 .idDemande(2)
                 .dateDemande(date)
-                .clientId(100)
                 .typeDemande(new TypeDemandeDto(type.getCodeType(), type.getLibelle()))
                 .statutDemande(new StatutDemandeDto(statut.getCodeStatut(), statut.getLibelle()))
                 .services(Collections.emptyList())
@@ -249,7 +247,6 @@ class DemandeServiceImplTest {
         DemandeResponse updatedResp = DemandeResponse.builder()
                 .idDemande(1)
                 .dateDemande(updateReq.getDateDemande())
-                .clientId(200)
                 .typeDemande(new TypeDemandeDto(newType.getCodeType(), null))
                 .statutDemande(new StatutDemandeDto(newStatut.getCodeStatut(), null))
                 .services(Collections.emptyList())

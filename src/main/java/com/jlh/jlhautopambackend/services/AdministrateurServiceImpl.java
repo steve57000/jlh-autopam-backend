@@ -4,7 +4,7 @@ import com.jlh.jlhautopambackend.dto.AdministrateurRequest;
 import com.jlh.jlhautopambackend.dto.AdministrateurResponse;
 import com.jlh.jlhautopambackend.mapper.AdministrateurMapper;
 import com.jlh.jlhautopambackend.modeles.Administrateur;
-import com.jlh.jlhautopambackend.repositories.AdministrateurRepository;
+import com.jlh.jlhautopambackend.repository.AdministrateurRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,7 +57,7 @@ public class AdministrateurServiceImpl implements AdministrateurService {
     public Optional<AdministrateurResponse> update(Integer id, AdministrateurRequest request) {
         return repository.findById(id)
                 .map(existing -> {
-                    existing.setUsername(request.getUsername());
+                    existing.setEmail(request.getEmail());
                     existing.setNom(request.getNom());
                     existing.setPrenom(request.getPrenom());
                     if (request.getMotDePasse() != null && !request.getMotDePasse().isBlank()) {

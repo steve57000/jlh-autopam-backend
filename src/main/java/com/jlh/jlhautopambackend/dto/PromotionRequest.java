@@ -16,4 +16,6 @@ public class PromotionRequest {
     private Instant validFrom;
     /** Date de fin de validité */
     private Instant validTo;
+    /** Description de la promotion */
+    private String description;
 }

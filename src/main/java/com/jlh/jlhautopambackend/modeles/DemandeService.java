@@ -1,26 +1,27 @@
 package com.jlh.jlhautopambackend.modeles;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.*;
 
 @Entity
-@Table(name = "Demande_Service")
+@Table(name = "demande_service")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class DemandeService {
     @EmbeddedId
-    private DemandeServiceKey id;
+    private DemandeServiceKey id = new DemandeServiceKey();
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("idDemande")
-    @JoinColumn(name = "id_demande")
+    @JoinColumn(name = "id_demande", nullable = false)
     private Demande demande;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("idService")
-    @JoinColumn(name = "id_service")
+    @JoinColumn(name = "id_service", nullable = false)
     private Service service;
 
-    @Column(nullable = false)
+    @Column(name = "quantite", nullable = false)
     private Integer quantite;
 }
 

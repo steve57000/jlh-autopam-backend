@@ -10,9 +10,9 @@ import java.util.stream.Collectors;
 import com.jlh.jlhautopambackend.modeles.Demande;
 import com.jlh.jlhautopambackend.modeles.DemandeService;
 import com.jlh.jlhautopambackend.modeles.DemandeServiceKey;
-import com.jlh.jlhautopambackend.repositories.DemandeRepository;
-import com.jlh.jlhautopambackend.repositories.DemandeServiceRepository;
-import com.jlh.jlhautopambackend.repositories.ServiceRepository;
+import com.jlh.jlhautopambackend.repository.DemandeRepository;
+import com.jlh.jlhautopambackend.repository.DemandeServiceRepository;
+import com.jlh.jlhautopambackend.repository.ServiceRepository;
 import com.jlh.jlhautopambackend.dto.DemandeServiceRequest;
 import com.jlh.jlhautopambackend.dto.DemandeServiceResponse;
 import com.jlh.jlhautopambackend.mapper.DemandeServiceMapper;
@@ -54,18 +54,28 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
 
     @Override
     public DemandeServiceResponse create(DemandeServiceRequest req) {
-        Demande demande = demandeRepo.findById(req.getDemandeId())
+        var demande = demandeRepo.findById(req.getDemandeId())
                 .orElseThrow(() -> new IllegalArgumentException("Demande introuvable"));
-        com.jlh.jlhautopambackend.modeles.Service serviceEntity =
-                serviceRepo.findById(req.getServiceId())
-                        .orElseThrow(() -> new IllegalArgumentException("Service introuvable"));
+        var serviceEntity = serviceRepo.findById(req.getServiceId())
+                .orElseThrow(() -> new IllegalArgumentException("Service introuvable"));
+
+        var key = new DemandeServiceKey(req.getDemandeId(), req.getServiceId());
+        var existing = dsRepo.findById(key).orElse(null);
+
+        if (existing != null) {
+            int q = (existing.getQuantite() == null ? 0 : existing.getQuantite())
+                    + (req.getQuantite() == null ? 1 : req.getQuantite());
+            existing.setQuantite(q);
+            return mapper.toDto(dsRepo.save(existing));
+        }
 
         DemandeService entity = mapper.toEntity(req);
+        // defaults robustes
+        entity.setQuantite(entity.getQuantite() == null ? 1 : entity.getQuantite());
         entity.setDemande(demande);
         entity.setService(serviceEntity);
 
-        DemandeService saved = dsRepo.save(entity);
-        return mapper.toDto(saved);
+        return mapper.toDto(dsRepo.save(entity));
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.jlh.jlhautopambackend.repositories;
+package com.jlh.jlhautopambackend.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import com.jlh.jlhautopambackend.modeles.Client;

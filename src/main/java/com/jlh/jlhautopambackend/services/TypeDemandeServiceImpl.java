@@ -3,7 +3,7 @@ package com.jlh.jlhautopambackend.services;
 import com.jlh.jlhautopambackend.dto.TypeDemandeDto;
 import com.jlh.jlhautopambackend.mapper.TypeDemandeMapper;
 import com.jlh.jlhautopambackend.modeles.TypeDemande;
-import com.jlh.jlhautopambackend.repositories.TypeDemandeRepository;
+import com.jlh.jlhautopambackend.repository.TypeDemandeRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

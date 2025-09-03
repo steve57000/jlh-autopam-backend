@@ -1,7 +1,7 @@
 package com.jlh.jlhautopambackend.services;
 
 import com.jlh.jlhautopambackend.modeles.Administrateur;
-import com.jlh.jlhautopambackend.repositories.AdministrateurRepository;
+import com.jlh.jlhautopambackend.repository.AdministrateurRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

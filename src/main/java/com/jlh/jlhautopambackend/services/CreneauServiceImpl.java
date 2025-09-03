@@ -4,7 +4,7 @@ import com.jlh.jlhautopambackend.dto.CreneauRequest;
 import com.jlh.jlhautopambackend.dto.CreneauResponse;
 import com.jlh.jlhautopambackend.mapper.CreneauMapper;
 import com.jlh.jlhautopambackend.modeles.Creneau;
-import com.jlh.jlhautopambackend.repositories.CreneauRepository;
+import com.jlh.jlhautopambackend.repository.CreneauRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

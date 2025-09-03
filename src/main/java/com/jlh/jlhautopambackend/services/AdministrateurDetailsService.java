@@ -1,7 +1,7 @@
 package com.jlh.jlhautopambackend.services;
 
 import com.jlh.jlhautopambackend.modeles.Administrateur;
-import com.jlh.jlhautopambackend.repositories.AdministrateurRepository;
+import com.jlh.jlhautopambackend.repository.AdministrateurRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.*;

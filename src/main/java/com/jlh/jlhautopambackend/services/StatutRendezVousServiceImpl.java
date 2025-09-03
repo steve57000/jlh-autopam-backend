@@ -3,7 +3,7 @@ package com.jlh.jlhautopambackend.services;
 import com.jlh.jlhautopambackend.dto.StatutRendezVousDto;
 import com.jlh.jlhautopambackend.mapper.StatutRendezVousMapper;
 import com.jlh.jlhautopambackend.modeles.StatutRendezVous;
-import com.jlh.jlhautopambackend.repositories.StatutRendezVousRepository;
+import com.jlh.jlhautopambackend.repository.StatutRendezVousRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;

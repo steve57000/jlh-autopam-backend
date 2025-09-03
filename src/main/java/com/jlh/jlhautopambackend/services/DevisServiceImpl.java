@@ -4,8 +4,8 @@ import com.jlh.jlhautopambackend.dto.DevisRequest;
 import com.jlh.jlhautopambackend.dto.DevisResponse;
 import com.jlh.jlhautopambackend.mapper.DevisMapper;
 import com.jlh.jlhautopambackend.modeles.Devis;
-import com.jlh.jlhautopambackend.repositories.DevisRepository;
-import com.jlh.jlhautopambackend.repositories.DemandeRepository;
+import com.jlh.jlhautopambackend.repository.DevisRepository;
+import com.jlh.jlhautopambackend.repository.DemandeRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

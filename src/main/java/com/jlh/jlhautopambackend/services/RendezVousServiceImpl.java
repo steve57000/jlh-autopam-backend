@@ -4,7 +4,7 @@ import com.jlh.jlhautopambackend.dto.RendezVousRequest;
 import com.jlh.jlhautopambackend.dto.RendezVousResponse;
 import com.jlh.jlhautopambackend.mapper.RendezVousMapper;
 import com.jlh.jlhautopambackend.modeles.*;
-import com.jlh.jlhautopambackend.repositories.*;
+import com.jlh.jlhautopambackend.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

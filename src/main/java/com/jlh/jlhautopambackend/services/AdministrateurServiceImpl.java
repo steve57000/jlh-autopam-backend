@@ -4,7 +4,7 @@ import com.jlh.jlhautopambackend.dto.AdministrateurRequest;
 import com.jlh.jlhautopambackend.dto.AdministrateurResponse;
 import com.jlh.jlhautopambackend.mapper.AdministrateurMapper;
 import com.jlh.jlhautopambackend.modeles.Administrateur;
-import com.jlh.jlhautopambackend.repositories.AdministrateurRepository;
+import com.jlh.jlhautopambackend.repository.AdministrateurRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

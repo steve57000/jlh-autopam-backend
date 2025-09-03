@@ -4,7 +4,7 @@ import com.jlh.jlhautopambackend.dto.CreneauRequest;
 import com.jlh.jlhautopambackend.dto.CreneauResponse;
 import com.jlh.jlhautopambackend.mapper.CreneauMapper;
 import com.jlh.jlhautopambackend.modeles.Creneau;
-import com.jlh.jlhautopambackend.repositories.CreneauRepository;
+import com.jlh.jlhautopambackend.repository.CreneauRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -1,4 +1,4 @@
-package com.jlh.jlhautopambackend.repositories;
+package com.jlh.jlhautopambackend.repository;
 
 import com.jlh.jlhautopambackend.modeles.StatutRendezVous;
 import org.springframework.data.jpa.repository.JpaRepository;

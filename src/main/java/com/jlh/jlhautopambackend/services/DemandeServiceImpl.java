@@ -7,10 +7,10 @@ import com.jlh.jlhautopambackend.modeles.Client;
 import com.jlh.jlhautopambackend.modeles.Demande;
 import com.jlh.jlhautopambackend.modeles.StatutDemande;
 import com.jlh.jlhautopambackend.modeles.TypeDemande;
-import com.jlh.jlhautopambackend.repositories.ClientRepository;
-import com.jlh.jlhautopambackend.repositories.DemandeRepository;
-import com.jlh.jlhautopambackend.repositories.StatutDemandeRepository;
-import com.jlh.jlhautopambackend.repositories.TypeDemandeRepository;
+import com.jlh.jlhautopambackend.repository.ClientRepository;
+import com.jlh.jlhautopambackend.repository.DemandeRepository;
+import com.jlh.jlhautopambackend.repository.StatutDemandeRepository;
+import com.jlh.jlhautopambackend.repository.TypeDemandeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

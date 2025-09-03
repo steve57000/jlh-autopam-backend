@@ -1,5 +1,6 @@
 package com.jlh.jlhautopambackend.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Data
@@ -7,12 +8,20 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class RendezVousRequest {
-    /** Identifiant de la demande associée */
+
+    /** Id de la demande (en Brouillon au moment de la création du RDV). */
+    @NotNull
     private Integer demandeId;
-    /** Identifiant du créneau réservé */
+
+    /** Id du créneau choisi par le client (matin/après-midi ⇒ tu mappes vers un Creneau en base). */
+    @NotNull
     private Integer creneauId;
-    /** Identifiant de l’administrateur */
+
+    /** Id de l’administrateur « propriétaire » du RDV (si nécessaire). */
+    @NotNull
     private Integer administrateurId;
-    /** Code du statut du rendez-vous (clé primaire de StatutRendezVous) */
+
+    /** Code du statut RDV initial (ex: "Confirme", "Reporte", "Annule"). */
+    @NotNull
     private String codeStatut;
 }

@@ -2,41 +2,64 @@ package com.jlh.jlhautopambackend.mapper;
 
 import com.jlh.jlhautopambackend.dto.*;
 import com.jlh.jlhautopambackend.modeles.*;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import org.mapstruct.*;
 
-@Mapper(
-        componentModel = "spring",
-        imports = {
-                com.jlh.jlhautopambackend.dto.DemandeServiceKeyDto.class,
-                java.util.stream.Collectors.class
-        }
-)
+@Mapper(componentModel = "spring")
 public interface DemandeMapper {
 
+    // ----------- ENTITY -> DTO -----------
+
+    @Mapping(target = "client", source = "client") // utilisera toClientSummaryDto
+    @Mapping(target = "typeDemande", source = "typeDemande")
+    @Mapping(target = "statutDemande", source = "statutDemande")
+    @Mapping(target = "services", source = "services") // utilisera toDemandeServiceDto
+    DemandeResponse toResponse(Demande ent);
+
+    // Client -> ClientSummaryDto
+    @Mapping(target = "idClient", source = "idClient")
+    @Mapping(target = "nom", source = "nom")
+    @Mapping(target = "prenom", source = "prenom")
+    @Mapping(target = "email", source = "email")
+    @Mapping(target = "telephone", source = "telephone")
+    @Mapping(target = "immatriculation", source = "immatriculation")
+    ClientSummaryDto toClientSummaryDto(Client client);
+
+    // DemandeService -> DemandeServiceDto
+    @Mapping(target = "idService", source = "id.idService")
+    @Mapping(target = "libelle", source = "service.libelle")
+    @Mapping(target = "prixUnitaire", source = "service.prixUnitaire")
+    @Mapping(target = "quantite", source = "quantite")
+    DemandeServiceDto toDemandeServiceDto(DemandeService ds);
+
+    // TypeDemande -> TypeDemandeDto (si tu n’as pas déjà un mapper dédié)
+    TypeDemandeDto toDto(TypeDemande td);
+
+    // StatutDemande -> StatutDemandeDto
+    StatutDemandeDto toDto(StatutDemande sd);
+
+    // BONUS : si la demande est de type "RendezVous", on écrase le statutDemande par le statut du RDV
+    @AfterMapping
+    default void overrideStatutForRendezVous(Demande src, @MappingTarget DemandeResponse target) {
+        if (src == null || src.getTypeDemande() == null) return;
+        if (!"RendezVous".equals(src.getTypeDemande().getCodeType())) return;
+
+        RendezVous rdv = src.getRendezVous(); // suppose un champ OneToOne<->Demande
+        if (rdv != null && rdv.getStatut() != null) {
+            // On mappe le StatutRendezVous → StatutDemandeDto (mêmes champs code/libellé)
+            target.setStatutDemande(new StatutDemandeDto(
+                    rdv.getStatut().getCodeStatut(),
+                    rdv.getStatut().getLibelle()
+            ));
+        }
+    }
+
+    // ----------- DTO -> ENTITY (pour create/update) -----------
+    // On ignore les relations ; on les associe en Service (par codes/ids)
     @Mapping(target = "idDemande", ignore = true)
     @Mapping(target = "client", ignore = true)
     @Mapping(target = "typeDemande", ignore = true)
     @Mapping(target = "statutDemande", ignore = true)
     @Mapping(target = "services", ignore = true)
-    Demande toEntity(DemandeRequest dto);
-
-    @Mapping(target = "clientId", source = "entity.client.idClient")
-    @Mapping(target = "typeDemande", source = "entity.typeDemande")
-    @Mapping(target = "statutDemande", source = "entity.statutDemande")
-    @Mapping(
-            target = "services",
-            expression =
-                    """
-                            java(entity.getServices().stream()
-                                .map(ds -> new DemandeServiceKeyDto(
-                                    ds.getId().getIdDemande(),
-                                    ds.getId().getIdService()))
-                                .collect(Collectors.toList()))"""
-    )
-    DemandeResponse toResponse(Demande entity);
-
-    // MapStruct saura utiliser ces méthodes pour convertir vos entités en DTO
-    TypeDemandeDto toDto(TypeDemande td);
-    StatutDemandeDto toDto(StatutDemande sd);
+    @Mapping(target = "rendezVous", ignore = true) // si lien 1-1
+    Demande toEntity(DemandeRequest req);
 }

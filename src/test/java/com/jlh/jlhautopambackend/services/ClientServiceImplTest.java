@@ -4,7 +4,7 @@ import com.jlh.jlhautopambackend.dto.ClientRequest;
 import com.jlh.jlhautopambackend.dto.ClientResponse;
 import com.jlh.jlhautopambackend.mapper.ClientMapper;
 import com.jlh.jlhautopambackend.modeles.Client;
-import com.jlh.jlhautopambackend.repositories.ClientRepository;
+import com.jlh.jlhautopambackend.repository.ClientRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

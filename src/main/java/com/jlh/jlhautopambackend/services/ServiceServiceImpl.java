@@ -4,7 +4,7 @@ import com.jlh.jlhautopambackend.dto.ServiceRequest;
 import com.jlh.jlhautopambackend.dto.ServiceResponse;
 import com.jlh.jlhautopambackend.mapper.ServiceMapper;
 import com.jlh.jlhautopambackend.modeles.Service;
-import com.jlh.jlhautopambackend.repositories.ServiceRepository;
+import com.jlh.jlhautopambackend.repository.ServiceRepository;
 
 import java.util.List;
 import java.util.Optional;

@@ -1,4 +1,4 @@
-package com.jlh.jlhautopambackend.repositories;
+package com.jlh.jlhautopambackend.repository;
 
 import com.jlh.jlhautopambackend.modeles.DemandeService;
 import com.jlh.jlhautopambackend.modeles.DemandeServiceKey;

@@ -5,7 +5,7 @@ import com.jlh.jlhautopambackend.dto.RendezVousResponse;
 import com.jlh.jlhautopambackend.dto.StatutRendezVousDto;
 import com.jlh.jlhautopambackend.mapper.RendezVousMapper;
 import com.jlh.jlhautopambackend.modeles.*;
-import com.jlh.jlhautopambackend.repositories.*;
+import com.jlh.jlhautopambackend.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

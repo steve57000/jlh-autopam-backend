@@ -3,7 +3,7 @@ package com.jlh.jlhautopambackend.services;
 import com.jlh.jlhautopambackend.dto.StatutCreneauDto;
 import com.jlh.jlhautopambackend.mapper.StatutCreneauMapper;
 import com.jlh.jlhautopambackend.modeles.StatutCreneau;
-import com.jlh.jlhautopambackend.repositories.StatutCreneauRepository;
+import com.jlh.jlhautopambackend.repository.StatutCreneauRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;

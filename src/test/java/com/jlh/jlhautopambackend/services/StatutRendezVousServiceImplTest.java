@@ -3,7 +3,7 @@ package com.jlh.jlhautopambackend.services;
 import com.jlh.jlhautopambackend.dto.StatutRendezVousDto;
 import com.jlh.jlhautopambackend.mapper.StatutRendezVousMapper;
 import com.jlh.jlhautopambackend.modeles.StatutRendezVous;
-import com.jlh.jlhautopambackend.repositories.StatutRendezVousRepository;
+import com.jlh.jlhautopambackend.repository.StatutRendezVousRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

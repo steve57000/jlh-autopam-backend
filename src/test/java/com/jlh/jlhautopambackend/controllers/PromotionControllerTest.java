@@ -1,11 +1,11 @@
 package com.jlh.jlhautopambackend.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
 import com.jlh.jlhautopambackend.dto.PromotionRequest;
 import com.jlh.jlhautopambackend.dto.PromotionResponse;
 import com.jlh.jlhautopambackend.services.PromotionService;
 import com.jlh.jlhautopambackend.utils.JwtUtil;
-import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +22,16 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Remarques :
+ * - On importe bien jsonPath de MockMvcResultMatchers
+ * - On utilise directement jsonPath() sans cast
+ */
 @WebMvcTest(
         controllers = PromotionController.class,
         excludeAutoConfiguration = SecurityAutoConfiguration.class
@@ -56,6 +62,7 @@ class PromotionControllerTest {
                 .imageUrl("http://img1")
                 .validFrom(Instant.parse("2025-06-01T00:00:00Z"))
                 .validTo(Instant.parse("2025-06-07T23:59:00Z"))
+                .description("Promo 1")
                 .build();
         PromotionResponse p2 = PromotionResponse.builder()
                 .idPromotion(2)
@@ -63,6 +70,7 @@ class PromotionControllerTest {
                 .imageUrl("http://img2")
                 .validFrom(Instant.parse("2025-07-01T00:00:00Z"))
                 .validTo(Instant.parse("2025-07-05T23:59:00Z"))
+                .description("Promo 2")
                 .build();
 
         when(service.findAll()).thenReturn(Arrays.asList(p1, p2));
@@ -71,8 +79,9 @@ class PromotionControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idPromotion").value(1))
-                .andExpect(jsonPath("$[0].imageUrl").value("http://img1"))
-                .andExpect(jsonPath("$[1].administrateurId").value(20));
+                .andExpect(jsonPath("$[0].description").value("Promo 1"))
+                .andExpect(jsonPath("$[1].administrateurId").value(20))
+                .andExpect(jsonPath("$[1].description").value("Promo 2"));
     }
 
     @Test
@@ -84,6 +93,7 @@ class PromotionControllerTest {
                 .imageUrl("http://img3")
                 .validFrom(Instant.parse("2025-08-01T00:00:00Z"))
                 .validTo(Instant.parse("2025-08-02T00:00:00Z"))
+                .description("Unique promo")
                 .build();
         when(service.findById(3)).thenReturn(Optional.of(p));
 
@@ -91,7 +101,7 @@ class PromotionControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idPromotion").value(3))
-                .andExpect(jsonPath("$.imageUrl").value("http://img3"));
+                .andExpect(jsonPath("$.description").value("Unique promo"));
     }
 
     @Test
@@ -112,6 +122,7 @@ class PromotionControllerTest {
                 .imageUrl("http://new")
                 .validFrom(Instant.parse("2025-06-01T00:00:00Z"))
                 .validTo(Instant.parse("2025-06-07T23:59:00Z"))
+                .description("Nouvelle promo")
                 .build();
         PromotionResponse saved = PromotionResponse.builder()
                 .idPromotion(7)
@@ -119,13 +130,12 @@ class PromotionControllerTest {
                 .imageUrl(req.getImageUrl())
                 .validFrom(req.getValidFrom())
                 .validTo(req.getValidTo())
+                .description(req.getDescription())
                 .build();
 
-        // Préparer la partie JSON "data"
         String json = objectMapper.writeValueAsString(req);
         MockMultipartFile dataPart = new MockMultipartFile(
                 "data", "data", "application/json", json.getBytes());
-        // Fichier simulé
         MockMultipartFile filePart = new MockMultipartFile(
                 "file", "promo.jpg", "image/jpeg", "dummyImage".getBytes());
 
@@ -138,7 +148,7 @@ class PromotionControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/api/promotions/7"))
                 .andExpect(jsonPath("$.idPromotion").value(7))
-                .andExpect(jsonPath("$.administrateurId").value(5));
+                .andExpect(jsonPath("$.description").value("Nouvelle promo"));
     }
 
     @Test
@@ -149,6 +159,7 @@ class PromotionControllerTest {
                 .imageUrl("http://bad")
                 .validFrom(Instant.now())
                 .validTo(Instant.now().plusSeconds(3600))
+                .description("Erreur")
                 .build();
         String json = objectMapper.writeValueAsString(req);
         MockMultipartFile dataPart = new MockMultipartFile("data", "data", "application/json", json.getBytes());
@@ -171,6 +182,7 @@ class PromotionControllerTest {
                 .imageUrl("http://upd")
                 .validFrom(Instant.parse("2025-06-02T00:00:00Z"))
                 .validTo(Instant.parse("2025-06-06T00:00:00Z"))
+                .description("Mise à jour")
                 .build();
         PromotionResponse updated = PromotionResponse.builder()
                 .idPromotion(11)
@@ -178,6 +190,7 @@ class PromotionControllerTest {
                 .imageUrl(req.getImageUrl())
                 .validFrom(req.getValidFrom())
                 .validTo(req.getValidTo())
+                .description(req.getDescription())
                 .build();
 
         String json = objectMapper.writeValueAsString(req);
@@ -192,7 +205,7 @@ class PromotionControllerTest {
                         .with(request -> { request.setMethod("PUT"); return request; })
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.imageUrl").value("http://upd"));
+                .andExpect(jsonPath("$.description").value("Mise à jour"));
     }
 
     @Test

@@ -5,8 +5,8 @@ import com.jlh.jlhautopambackend.dto.PromotionResponse;
 import com.jlh.jlhautopambackend.mapper.PromotionMapper;
 import com.jlh.jlhautopambackend.modeles.Administrateur;
 import com.jlh.jlhautopambackend.modeles.Promotion;
-import com.jlh.jlhautopambackend.repositories.AdministrateurRepository;
-import com.jlh.jlhautopambackend.repositories.PromotionRepository;
+import com.jlh.jlhautopambackend.repository.AdministrateurRepository;
+import com.jlh.jlhautopambackend.repository.PromotionRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,9 +75,16 @@ public class PromotionServiceImpl implements PromotionService {
         validateDates(req.getValidFrom(), req.getValidTo());
         Promotion existing = opt.get();
         handleAdminChange(existing, req.getAdministrateurId());
-        existing.setImageUrl(req.getImageUrl());
+
+        // NE METTRE à jour que si req.imageUrl non-null ET non-blank
+        if (StringUtils.hasText(req.getImageUrl())) {
+            existing.setImageUrl(req.getImageUrl());
+        }
+
         existing.setValidFrom(req.getValidFrom());
         existing.setValidTo(req.getValidTo());
+        existing.setDescription(req.getDescription());
+
         Promotion saved = promoRepo.save(existing);
         return Optional.of(mapper.toResponse(saved));
     }

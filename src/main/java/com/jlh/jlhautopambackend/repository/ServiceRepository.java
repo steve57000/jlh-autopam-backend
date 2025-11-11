@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ServiceRepository extends JpaRepository<Service, Integer> {
     List<Service> findAllByArchivedFalseOrderByLibelleAsc();
 
-    Optional<Service> findByIdAndArchivedFalse(Integer id);
+    Optional<Service> findByIdServiceAndArchivedFalse(Integer idService);
 
-    boolean existsByIdAndArchivedFalse(Integer id);
+    boolean existsByIdServiceAndArchivedFalse(Integer idService);
 }

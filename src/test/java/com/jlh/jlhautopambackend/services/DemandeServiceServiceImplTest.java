@@ -130,7 +130,7 @@ class DemandeServiceServiceImplTest {
     void testCreate_ShouldSetRelationsAndReturnResponse() {
         when(mapper.toEntity(request)).thenReturn(entityWithoutRel);
         when(demandeRepo.findById(1)).thenReturn(Optional.of(demande));
-        when(serviceRepo.findByIdAndArchivedFalse(2)).thenReturn(Optional.of(serviceEntity));
+        when(serviceRepo.findByIdServiceAndArchivedFalse(2)).thenReturn(Optional.of(serviceEntity));
         when(dsRepo.save(entityWithoutRel)).thenReturn(savedEntity);
         when(mapper.toDto(savedEntity)).thenReturn(response);
 
@@ -139,7 +139,7 @@ class DemandeServiceServiceImplTest {
         assertEquals(response, result);
         verify(mapper).toEntity(request);
         verify(demandeRepo).findById(1);
-        verify(serviceRepo).findByIdAndArchivedFalse(2);
+        verify(serviceRepo).findByIdServiceAndArchivedFalse(2);
         verify(dsRepo).save(entityWithoutRel);
         assertEquals(serviceEntity.getLibelle(), entityWithoutRel.getLibelleService());
         assertEquals(serviceEntity.getDescription(), entityWithoutRel.getDescriptionService());
@@ -161,13 +161,13 @@ class DemandeServiceServiceImplTest {
     @Test
     void testCreate_ShouldThrowWhenServiceNotFound() {
         when(demandeRepo.findById(1)).thenReturn(Optional.of(demande));
-        when(serviceRepo.findByIdAndArchivedFalse(2)).thenReturn(Optional.empty());
+        when(serviceRepo.findByIdServiceAndArchivedFalse(2)).thenReturn(Optional.empty());
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.create(request));
         assertEquals("Service introuvable", ex.getMessage());
         verify(demandeRepo).findById(1);
-        verify(serviceRepo).findByIdAndArchivedFalse(2);
+        verify(serviceRepo).findByIdServiceAndArchivedFalse(2);
         verifyNoMoreInteractions(dsRepo, mapper);
     }
 

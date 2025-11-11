@@ -56,7 +56,7 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
     public DemandeServiceResponse create(DemandeServiceRequest req) {
         var demande = demandeRepo.findById(req.getDemandeId())
                 .orElseThrow(() -> new IllegalArgumentException("Demande introuvable"));
-        var serviceEntity = serviceRepo.findByIdAndArchivedFalse(req.getServiceId())
+        var serviceEntity = serviceRepo.findByIdServiceAndArchivedFalse(req.getServiceId())
                 .orElseThrow(() -> new IllegalArgumentException("Service introuvable"));
 
         var key = new DemandeServiceKey(req.getDemandeId(), req.getServiceId());

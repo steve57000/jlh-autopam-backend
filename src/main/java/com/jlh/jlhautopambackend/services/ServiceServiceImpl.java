@@ -35,7 +35,7 @@ public class ServiceServiceImpl implements ServiceService {
 
     @Override
     public Optional<ServiceResponse> findById(Integer id) {
-        return repo.findByIdAndArchivedFalse(id)
+        return repo.findByIdServiceAndArchivedFalse(id)
                 .map(mapper::toResponse);
     }
 

@@ -110,25 +110,25 @@ class ServiceServiceImplTest {
 
     @Test
     void testFindById_WhenFound() {
-        when(repo.findByIdAndArchivedFalse(1)).thenReturn(Optional.of(savedEntity));
+        when(repo.findByIdServiceAndArchivedFalse(1)).thenReturn(Optional.of(savedEntity));
         when(mapper.toResponse(savedEntity)).thenReturn(response);
 
         Optional<ServiceResponse> result = service.findById(1);
 
         assertTrue(result.isPresent());
         assertEquals(response, result.get());
-        verify(repo).findByIdAndArchivedFalse(1);
+        verify(repo).findByIdServiceAndArchivedFalse(1);
         verify(mapper).toResponse(savedEntity);
     }
 
     @Test
     void testFindById_WhenNotFound() {
-        when(repo.findByIdAndArchivedFalse(3)).thenReturn(Optional.empty());
+        when(repo.findByIdServiceAndArchivedFalse(3)).thenReturn(Optional.empty());
 
         Optional<ServiceResponse> result = service.findById(3);
 
         assertFalse(result.isPresent());
-        verify(repo).findByIdAndArchivedFalse(3);
+        verify(repo).findByIdServiceAndArchivedFalse(3);
         verifyNoInteractions(mapper);
     }
 

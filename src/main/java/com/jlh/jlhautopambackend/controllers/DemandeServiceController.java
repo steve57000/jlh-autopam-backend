@@ -1,10 +1,9 @@
 package com.jlh.jlhautopambackend.controllers;
 
 import com.jlh.jlhautopambackend.dto.*;
-import com.jlh.jlhautopambackend.modeles.Client;
-import com.jlh.jlhautopambackend.repository.ClientRepository;
 import com.jlh.jlhautopambackend.repository.DemandeRepository;
 import com.jlh.jlhautopambackend.services.DemandeServiceService;
+import com.jlh.jlhautopambackend.services.support.AuthenticatedClientResolver;
 import jakarta.validation.Valid;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,21 +15,20 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/demandes-services")
-@CrossOrigin
 public class DemandeServiceController {
 
     private final DemandeServiceService service;
-    private final ClientRepository clientRepo;
     private final DemandeRepository demandeRepo;
+    private final AuthenticatedClientResolver clientResolver;
 
     public DemandeServiceController(
             DemandeServiceService service,
-            ClientRepository clientRepo,
-            DemandeRepository demandeRepo
+            DemandeRepository demandeRepo,
+            AuthenticatedClientResolver clientResolver
     ) {
         this.service = service;
-        this.clientRepo = clientRepo;
         this.demandeRepo = demandeRepo;
+        this.clientResolver = clientResolver;
     }
 
     /* ==================== ADMIN ==================== */
@@ -113,9 +111,6 @@ public class DemandeServiceController {
     /* ==================== Utils ==================== */
 
     private Integer getClientIdFromAuth(Authentication auth) {
-        String email = auth.getName();
-        Client client = clientRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
-        return client.getIdClient();
+        return clientResolver.requireCurrentClient(auth).getIdClient();
     }
 }

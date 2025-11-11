@@ -11,7 +11,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/types-demande")
-@CrossOrigin
 public class TypeDemandeController {
 
     private final TypeDemandeService service;

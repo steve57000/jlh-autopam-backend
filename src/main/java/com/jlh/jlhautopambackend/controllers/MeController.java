@@ -17,7 +17,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/me")
-@CrossOrigin
 @RequiredArgsConstructor
 public class MeController {
 

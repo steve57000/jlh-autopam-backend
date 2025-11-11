@@ -52,22 +52,22 @@ INSERT INTO statut_rendez_vous (code_statut, libelle) VALUES
 -- ==================================================
 -- 2) Services
 -- ==================================================
-INSERT INTO service (id_service, libelle, description, prix_unitaire) VALUES
+INSERT INTO service (id_service, libelle, description, prix_unitaire, archived) VALUES
                                                                           (1, 'Vidange',
                                                                            'Vidange moteur complète avec huile synthétique haute performance et remplacement du filtre à huile pour optimiser la longévité de votre moteur',
-                                                                           59.90),
+                                                                           59.90, 0),
                                                                           (2, 'Révision',
                                                                            'Révision générale incluant le contrôle et le remplacement des courroies, filtres (air, habitacle, carburant) et bougies, ainsi que la vérification des niveaux de liquide',
-                                                                           129.90),
+                                                                           129.90, 0),
                                                                           (3, 'Freinage',
                                                                            'Remplacement des plaquettes de frein avant par des plaquettes haute performance, contrôle des disques et purge complète du circuit de freinage pour une sécurité maximale',
-                                                                           199.00),
+                                                                           199.00, 0),
                                                                           (4, 'Pneumatiques',
                                                                            'Montage et équilibrage de quatre pneus toutes saisons, vérification de la géométrie et conseil personnalisé pour un confort et une adhérence optimaux',
-                                                                           449.00),
+                                                                           449.00, 0),
                                                                           (5, 'Diagnostic',
                                                                            'Diagnostic électronique multimarque complet avec intervention valise électronique, analyse des défauts et remise d’un rapport détaillé',
-                                                                           79.00);
+                                                                           79.00, 0);
 
 -- ==================================================
 -- 3) Clients (mots de passe déjà hashés)
@@ -164,21 +164,48 @@ INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut
 -- 8) Demande_Service
 -- ==================================================
 -- Demande 1 : Alice veut Vidange + Diagnostic
-INSERT INTO demande_service (id_demande, id_service, quantite) VALUES
-                                                                   (1, 1, 1),
-                                                                   (1, 5, 1);
+INSERT INTO demande_service (
+    id_demande, id_service, quantite,
+    libelle_service, description_service, prix_unitaire_service
+) VALUES
+    (1, 1, 1,
+     'Vidange',
+     'Vidange moteur complète avec huile synthétique haute performance et remplacement du filtre à huile pour optimiser la longévité de votre moteur',
+     59.90),
+    (1, 5, 1,
+     'Diagnostic',
+     'Diagnostic électronique multimarque complet avec intervention valise électronique, analyse des défauts et remise d’un rapport détaillé',
+     79.00);
 
 -- Demande 2 : Bob veut Révision
-INSERT INTO demande_service (id_demande, id_service, quantite) VALUES
-    (2, 2, 1);
+INSERT INTO demande_service (
+    id_demande, id_service, quantite,
+    libelle_service, description_service, prix_unitaire_service
+) VALUES
+    (2, 2, 1,
+     'Révision',
+     'Révision générale incluant le contrôle et le remplacement des courroies, filtres (air, habitacle, carburant) et bougies, ainsi que la vérification des niveaux de liquide',
+     129.90);
 
 -- Demande 3 : Claire veut Changement pneus x4
-INSERT INTO demande_service (id_demande, id_service, quantite) VALUES
-    (3, 4, 1);
+INSERT INTO demande_service (
+    id_demande, id_service, quantite,
+    libelle_service, description_service, prix_unitaire_service
+) VALUES
+    (3, 4, 1,
+     'Pneumatiques',
+     'Montage et équilibrage de quatre pneus toutes saisons, vérification de la géométrie et conseil personnalisé pour un confort et une adhérence optimaux',
+     449.00);
 
 -- Demande 5 : Eva voulait Diagnostic
-INSERT INTO demande_service (id_demande, id_service, quantite) VALUES
-    (5, 5, 1);
+INSERT INTO demande_service (
+    id_demande, id_service, quantite,
+    libelle_service, description_service, prix_unitaire_service
+) VALUES
+    (5, 5, 1,
+     'Diagnostic',
+     'Diagnostic électronique multimarque complet avec intervention valise électronique, analyse des défauts et remise d’un rapport détaillé',
+     79.00);
 
 -- ==================================================
 -- 9) Devis
@@ -205,8 +232,14 @@ INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut
 VALUES (7, 1, '2025-06-25 09:00:00', 'RendezVous', 'En_attente');
 
 -- Services associés (ex: révision complète)
-INSERT INTO demande_service (id_demande, id_service, quantite)
-VALUES (7, 2, 1);
+INSERT INTO demande_service (
+    id_demande, id_service, quantite,
+    libelle_service, description_service, prix_unitaire_service
+)
+VALUES (7, 2, 1,
+        'Révision',
+        'Révision générale incluant le contrôle et le remplacement des courroies, filtres (air, habitacle, carburant) et bougies, ainsi que la vérification des niveaux de liquide',
+        129.90);
 
 -- Créneau réservé pour ce RDV (futur)
 INSERT INTO creneau (id_creneau, date_debut, date_fin, code_statut)

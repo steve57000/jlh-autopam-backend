@@ -5,8 +5,8 @@ import com.jlh.jlhautopambackend.dto.DemandeRequest;
 import com.jlh.jlhautopambackend.dto.DemandeResponse;
 import com.jlh.jlhautopambackend.dto.ProchainRdvDto;
 import com.jlh.jlhautopambackend.modeles.Client;
-import com.jlh.jlhautopambackend.repository.ClientRepository;
 import com.jlh.jlhautopambackend.services.DemandeService;
+import com.jlh.jlhautopambackend.services.support.AuthenticatedClientResolver;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,16 +19,19 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/demandes")
-@CrossOrigin
 public class DemandeController {
 
     private final DemandeService service;
-    private final ClientRepository clientRepo;
+    private final AuthenticatedClientResolver clientResolver;
 
     public DemandeController(DemandeService service,
-                             ClientRepository clientRepo) {
-        this.service    = service;
-        this.clientRepo = clientRepo;
+                             AuthenticatedClientResolver clientResolver) {
+        this.service = service;
+        this.clientResolver = clientResolver;
+    }
+
+    private Client requireClient(Authentication auth) {
+        return clientResolver.requireCurrentClient(auth);
     }
 
     @GetMapping
@@ -44,9 +47,7 @@ public class DemandeController {
     @PostMapping
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<?> createForClient(Authentication auth, @Valid @RequestBody DemandeRequest req) {
-        String email = auth.getName();
-        Client client = clientRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+        Client client = requireClient(auth);
         try {
             DemandeResponse created = service.createForClient(client.getIdClient(), req);
             URI uri = URI.create("/api/demandes/" + created.getIdDemande());
@@ -64,9 +65,7 @@ public class DemandeController {
     @PostMapping("/current")
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<DemandeResponse> getOrCreate(Authentication auth) {
-        String email = auth.getName();
-        Client client = clientRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+        Client client = requireClient(auth);
 
         return service.findCurrentForClient(client.getIdClient())
                 .map(ResponseEntity::ok)
@@ -79,27 +78,21 @@ public class DemandeController {
     @GetMapping("/mes-demandes")
     @PreAuthorize("hasRole('CLIENT')")
     public List<DemandeResponse> listForClient(Authentication auth) {
-        String email = auth.getName();
-        Client client = clientRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+        Client client = requireClient(auth);
         return service.findByClientId(client.getIdClient());
     }
 
     @GetMapping("/mes-demandes/stats")
     @PreAuthorize("hasRole('CLIENT')")
     public ClientStatsDto statsForClient(Authentication auth) {
-        String email = auth.getName();
-        Client client = clientRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+        Client client = requireClient(auth);
         return service.findStatsByClientId(client.getIdClient());
     }
 
     @GetMapping("/mes-demandes/prochain-rdv")
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<ProchainRdvDto> prochainRdv(Authentication auth) {
-        String email = auth.getName();
-        Client client = clientRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+        Client client = requireClient(auth);
         return service.findProchainRdvByClientId(client.getIdClient())
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
@@ -121,9 +114,7 @@ public class DemandeController {
     @GetMapping(value = "/mes-demandes/prochain-rdv.ics", produces = "text/calendar; charset=UTF-8")
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<byte[]> prochainRdvIcs(Authentication auth) { /* ... identique à ta version ... */
-        String email = auth.getName();
-        Client client = clientRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+        Client client = requireClient(auth);
         return service.buildProchainRendezVousIcs(client.getIdClient())
                 .map(ics -> {
                     String filename = "rendezvous-" + java.time.format.DateTimeFormatter
@@ -143,10 +134,7 @@ public class DemandeController {
         Integer clientId = null;
         boolean isClient = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_CLIENT"));
         if (isClient) {
-            String email = auth.getName();
-            Client client = clientRepo.findByEmail(email)
-                    .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
-            clientId = client.getIdClient();
+            clientId = requireClient(auth).getIdClient();
         }
         return service.buildRendezVousIcs(id, clientId)
                 .map(ics -> ResponseEntity.ok()
@@ -160,9 +148,7 @@ public class DemandeController {
     @PatchMapping("/{id}/submit")
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<DemandeResponse> submit(Authentication auth, @PathVariable Integer id) {
-        String email = auth.getName();
-        Client client = clientRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+        Client client = requireClient(auth);
 
         // Vérifie ownership (le service.update fera la maj proprement)
         var opt = service.findById(id);

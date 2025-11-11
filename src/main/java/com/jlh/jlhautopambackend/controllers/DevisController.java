@@ -13,7 +13,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/devis")
-@CrossOrigin
 public class DevisController {
 
     private final DevisService service;

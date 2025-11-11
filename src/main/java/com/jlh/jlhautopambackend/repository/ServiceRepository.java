@@ -1,6 +1,14 @@
 package com.jlh.jlhautopambackend.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
 import com.jlh.jlhautopambackend.modeles.Service;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ServiceRepository extends JpaRepository<Service, Integer> { }
+public interface ServiceRepository extends JpaRepository<Service, Integer> {
+    List<Service> findAllByArchivedFalseOrderByLibelleAsc();
+
+    Optional<Service> findByIdServiceAndArchivedFalse(Integer idService);
+
+    boolean existsByIdServiceAndArchivedFalse(Integer idService);
+}

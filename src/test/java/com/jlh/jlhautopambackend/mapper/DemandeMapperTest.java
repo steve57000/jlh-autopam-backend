@@ -79,6 +79,9 @@ class DemandeMapperTest {
                 .id(key)
                 .service(service)
                 .quantite(2)
+                .libelleService("Vidange")
+                .descriptionService("Vidange moteur")
+                .prixUnitaireService(BigDecimal.valueOf(59.90))
                 .build();
 
         Demande ent = Demande.builder()
@@ -121,7 +124,8 @@ class DemandeMapperTest {
         DemandeServiceDto s0 = svc.get(0);
         assertEquals(456, s0.getIdService());
         assertEquals("Vidange", s0.getLibelle());
+        assertEquals("Vidange moteur", s0.getDescription());
         assertEquals(2, s0.getQuantite());
-        assertEquals(59.90, s0.getPrixUnitaire());
+        assertEquals(BigDecimal.valueOf(59.90), s0.getPrixUnitaire());
     }
 }

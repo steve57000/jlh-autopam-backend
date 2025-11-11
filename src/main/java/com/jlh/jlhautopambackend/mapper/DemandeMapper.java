@@ -26,10 +26,27 @@ public interface DemandeMapper {
 
     // DemandeService -> DemandeServiceDto
     @Mapping(target = "idService", source = "id.idService")
-    @Mapping(target = "libelle", source = "service.libelle")
-    @Mapping(target = "prixUnitaire", source = "service.prixUnitaire")
+    @Mapping(target = "libelle", source = "libelleService")
+    @Mapping(target = "description", source = "descriptionService")
+    @Mapping(target = "prixUnitaire", source = "prixUnitaireService")
     @Mapping(target = "quantite", source = "quantite")
     DemandeServiceDto toDemandeServiceDto(DemandeService ds);
+
+    @AfterMapping
+    default void ensureServiceFallback(DemandeService source, @MappingTarget DemandeServiceDto target) {
+        if (source == null || target == null) {
+            return;
+        }
+        if (target.getLibelle() == null && source.getService() != null) {
+            target.setLibelle(source.getService().getLibelle());
+        }
+        if (target.getDescription() == null && source.getService() != null) {
+            target.setDescription(source.getService().getDescription());
+        }
+        if (target.getPrixUnitaire() == null && source.getService() != null) {
+            target.setPrixUnitaire(source.getService().getPrixUnitaire());
+        }
+    }
 
     // TypeDemande -> TypeDemandeDto (si tu n’as pas déjà un mapper dédié)
     TypeDemandeDto toDto(TypeDemande td);

@@ -14,13 +14,11 @@ import com.jlh.jlhautopambackend.repository.ServiceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,6 +64,7 @@ class DemandeServiceServiceImplTest {
                 .libelle("TestService")
                 .description("Desc")
                 .prixUnitaire(new BigDecimal("100.00"))
+                .archived(false)
                 .build();
 
         entityWithoutRel = DemandeService.builder()
@@ -77,6 +76,9 @@ class DemandeServiceServiceImplTest {
                 .demande(demande)
                 .service(serviceEntity)
                 .quantite(request.getQuantite())
+                .libelleService(serviceEntity.getLibelle())
+                .descriptionService(serviceEntity.getDescription())
+                .prixUnitaireService(serviceEntity.getPrixUnitaire())
                 .build();
 
         response = DemandeServiceResponse.builder()
@@ -87,29 +89,15 @@ class DemandeServiceServiceImplTest {
 
     @Test
     void testFindAll_ShouldReturnListOfResponses() {
-        DemandeService otherEntity = DemandeService.builder()
-                .id(new DemandeServiceKey(1, 3))
-                .demande(demande)
-                .service(serviceEntity)
-                .quantite(2)
-                .build();
-        DemandeServiceResponse otherResp = DemandeServiceResponse.builder()
-                .id(new DemandeServiceKeyDto(1, 3))
-                .quantite(2)
-                .build();
-
-        when(dsRepo.findAll()).thenReturn(Arrays.asList(savedEntity, otherEntity));
+        when(dsRepo.findAll()).thenReturn(List.of(savedEntity));
         when(mapper.toDto(savedEntity)).thenReturn(response);
-        when(mapper.toDto(otherEntity)).thenReturn(otherResp);
 
         List<DemandeServiceResponse> results = service.findAll();
 
-        assertEquals(2, results.size());
+        assertEquals(1, results.size());
         assertEquals(response, results.get(0));
-        assertEquals(otherResp, results.get(1));
         verify(dsRepo).findAll();
         verify(mapper).toDto(savedEntity);
-        verify(mapper).toDto(otherEntity);
     }
 
     @Test
@@ -142,22 +130,20 @@ class DemandeServiceServiceImplTest {
     void testCreate_ShouldSetRelationsAndReturnResponse() {
         when(mapper.toEntity(request)).thenReturn(entityWithoutRel);
         when(demandeRepo.findById(1)).thenReturn(Optional.of(demande));
-        when(serviceRepo.findById(2)).thenReturn(Optional.of(serviceEntity));
+        when(serviceRepo.findByIdAndArchivedFalse(2)).thenReturn(Optional.of(serviceEntity));
         when(dsRepo.save(entityWithoutRel)).thenReturn(savedEntity);
         when(mapper.toDto(savedEntity)).thenReturn(response);
 
         DemandeServiceResponse result = service.create(request);
 
         assertEquals(response, result);
-        ArgumentCaptor<DemandeService> captor = ArgumentCaptor.forClass(DemandeService.class);
         verify(mapper).toEntity(request);
         verify(demandeRepo).findById(1);
-        verify(serviceRepo).findById(2);
-        verify(dsRepo).save(captor.capture());
-        DemandeService passed = captor.getValue();
-        assertEquals(demande, passed.getDemande());
-        assertEquals(serviceEntity, passed.getService());
-        assertEquals(request.getQuantite(), passed.getQuantite());
+        verify(serviceRepo).findByIdAndArchivedFalse(2);
+        verify(dsRepo).save(entityWithoutRel);
+        assertEquals(serviceEntity.getLibelle(), entityWithoutRel.getLibelleService());
+        assertEquals(serviceEntity.getDescription(), entityWithoutRel.getDescriptionService());
+        assertEquals(serviceEntity.getPrixUnitaire(), entityWithoutRel.getPrixUnitaireService());
         verify(mapper).toDto(savedEntity);
     }
 
@@ -175,13 +161,13 @@ class DemandeServiceServiceImplTest {
     @Test
     void testCreate_ShouldThrowWhenServiceNotFound() {
         when(demandeRepo.findById(1)).thenReturn(Optional.of(demande));
-        when(serviceRepo.findById(2)).thenReturn(Optional.empty());
+        when(serviceRepo.findByIdAndArchivedFalse(2)).thenReturn(Optional.empty());
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.create(request));
         assertEquals("Service introuvable", ex.getMessage());
         verify(demandeRepo).findById(1);
-        verify(serviceRepo).findById(2);
+        verify(serviceRepo).findByIdAndArchivedFalse(2);
         verifyNoMoreInteractions(dsRepo, mapper);
     }
 
@@ -191,10 +177,15 @@ class DemandeServiceServiceImplTest {
         DemandeService existing = DemandeService.builder()
                 .id(key)
                 .quantite(10)
+                .service(serviceEntity)
                 .build();
         DemandeService updatedEntity = DemandeService.builder()
                 .id(key)
                 .quantite(8)
+                .service(serviceEntity)
+                .libelleService(serviceEntity.getLibelle())
+                .descriptionService(serviceEntity.getDescription())
+                .prixUnitaireService(serviceEntity.getPrixUnitaire())
                 .build();
         DemandeServiceResponse updatedResp = DemandeServiceResponse.builder()
                 .id(new DemandeServiceKeyDto(1, 2))
@@ -214,6 +205,10 @@ class DemandeServiceServiceImplTest {
 
         assertTrue(result.isPresent());
         assertEquals(updatedResp, result.get());
+        assertEquals(8, existing.getQuantite());
+        assertEquals(serviceEntity.getLibelle(), existing.getLibelleService());
+        assertEquals(serviceEntity.getDescription(), existing.getDescriptionService());
+        assertEquals(serviceEntity.getPrixUnitaire(), existing.getPrixUnitaireService());
         verify(dsRepo).findById(key);
         verify(dsRepo).save(existing);
         verify(mapper).toDto(updatedEntity);
@@ -240,12 +235,15 @@ class DemandeServiceServiceImplTest {
     void testDelete_WhenExists() {
         DemandeServiceKey key = new DemandeServiceKey(1, 2);
         when(dsRepo.existsById(key)).thenReturn(true);
+        when(dsRepo.countByDemande_IdDemande(1)).thenReturn(1L);
 
         boolean result = service.delete(1, 2);
 
         assertTrue(result);
         verify(dsRepo).existsById(key);
         verify(dsRepo).deleteById(key);
+        verify(dsRepo).countByDemande_IdDemande(1);
+        verifyNoInteractions(demandeRepo);
     }
 
     @Test

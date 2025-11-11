@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/statuts-creneau")
-@CrossOrigin
 public class StatutCreneauController {
     private final StatutCreneauService service;
 

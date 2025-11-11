@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/disponibilites")
-@CrossOrigin
 public class DisponibiliteController {
 
     private final DisponibiliteService service;

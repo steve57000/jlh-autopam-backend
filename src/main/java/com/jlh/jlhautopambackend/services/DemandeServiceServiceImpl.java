@@ -56,7 +56,7 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
     public DemandeServiceResponse create(DemandeServiceRequest req) {
         var demande = demandeRepo.findById(req.getDemandeId())
                 .orElseThrow(() -> new IllegalArgumentException("Demande introuvable"));
-        var serviceEntity = serviceRepo.findById(req.getServiceId())
+        var serviceEntity = serviceRepo.findByIdAndArchivedFalse(req.getServiceId())
                 .orElseThrow(() -> new IllegalArgumentException("Service introuvable"));
 
         var key = new DemandeServiceKey(req.getDemandeId(), req.getServiceId());
@@ -66,6 +66,7 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
             int q = (existing.getQuantite() == null ? 0 : existing.getQuantite())
                     + (req.getQuantite() == null ? 1 : req.getQuantite());
             existing.setQuantite(q);
+            existing.snapshotFromService(serviceEntity);
             return mapper.toDto(dsRepo.save(existing));
         }
 
@@ -74,6 +75,7 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
         entity.setQuantite(entity.getQuantite() == null ? 1 : entity.getQuantite());
         entity.setDemande(demande);
         entity.setService(serviceEntity);
+        entity.snapshotFromService(serviceEntity);
 
         return mapper.toDto(dsRepo.save(entity));
     }
@@ -84,6 +86,9 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
         return dsRepo.findById(key)
                 .map(entity -> {
                     entity.setQuantite(req.getQuantite());
+                    if (entity.getService() != null) {
+                        entity.snapshotFromService(entity.getService());
+                    }
                     DemandeService saved = dsRepo.save(entity);
                     return mapper.toDto(saved);
                 });

@@ -2,9 +2,8 @@ package com.jlh.jlhautopambackend.controllers;
 
 import com.jlh.jlhautopambackend.dto.RendezVousRequest;
 import com.jlh.jlhautopambackend.dto.RendezVousResponse;
-import com.jlh.jlhautopambackend.modeles.Client;
-import com.jlh.jlhautopambackend.repository.ClientRepository;
 import com.jlh.jlhautopambackend.services.RendezVousService;
+import com.jlh.jlhautopambackend.services.support.AuthenticatedClientResolver;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,15 +15,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/rendezvous")
-@CrossOrigin
 public class RendezVousController {
 
     private final RendezVousService service;
-    private final ClientRepository clientRepo;
+    private final AuthenticatedClientResolver clientResolver;
 
-    public RendezVousController(RendezVousService service, ClientRepository clientRepo) {
+    public RendezVousController(RendezVousService service, AuthenticatedClientResolver clientResolver) {
         this.service = service;
-        this.clientRepo = clientRepo;
+        this.clientResolver = clientResolver;
     }
 
     @GetMapping
@@ -73,10 +71,7 @@ public class RendezVousController {
         boolean isClient = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_CLIENT"));
         if (isClient) {
-            String email = auth.getName();
-            Client client = clientRepo.findByEmail(email)
-                    .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
-            clientIdOrNullIfAdmin = client.getIdClient();
+            clientIdOrNullIfAdmin = clientResolver.requireCurrentClient(auth).getIdClient();
         }
 
         return service.submit(id, clientIdOrNullIfAdmin)

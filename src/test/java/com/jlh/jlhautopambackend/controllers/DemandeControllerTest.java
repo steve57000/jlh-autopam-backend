@@ -6,8 +6,8 @@ import com.jlh.jlhautopambackend.dto.DemandeResponse;
 import com.jlh.jlhautopambackend.dto.StatutDemandeDto;
 import com.jlh.jlhautopambackend.dto.TypeDemandeDto;
 import com.jlh.jlhautopambackend.modeles.Client;
-import com.jlh.jlhautopambackend.repository.ClientRepository;
 import com.jlh.jlhautopambackend.services.DemandeService;
+import com.jlh.jlhautopambackend.services.support.AuthenticatedClientResolver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -64,7 +64,9 @@ class DemandeControllerTest {
 
     @MockitoBean
     DemandeService service;
-    @MockitoBean ClientRepository clientRepository;
+
+    @MockitoBean
+    AuthenticatedClientResolver clientResolver;
 
     @Test
     @DisplayName("GET /api/demandes ➔ 200")
@@ -117,8 +119,8 @@ class DemandeControllerTest {
                 .codeStatut("En_attente")
                 .build();
 
-        Mockito.when(clientRepository.findByEmail(email))
-                .thenReturn(Optional.of(Client.builder().idClient(1).email(email).build()));
+        Mockito.when(clientResolver.requireCurrentClient(Mockito.any()))
+                .thenReturn(Client.builder().idClient(1).email(email).build());
 
         var created = DemandeResponse.builder()
                 .idDemande(10)

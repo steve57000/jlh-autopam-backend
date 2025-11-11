@@ -2,9 +2,11 @@ package com.jlh.jlhautopambackend.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlh.jlhautopambackend.dto.*;
-import com.jlh.jlhautopambackend.utils.JwtUtil;
 import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
+import com.jlh.jlhautopambackend.repository.DemandeRepository;
 import com.jlh.jlhautopambackend.services.DemandeServiceService;
+import com.jlh.jlhautopambackend.services.support.AuthenticatedClientResolver;
+import com.jlh.jlhautopambackend.utils.JwtUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -31,6 +33,8 @@ class DemandeServiceControllerTest {
     @Autowired ObjectMapper objectMapper;
 
     @MockitoBean DemandeServiceService service;
+    @MockitoBean DemandeRepository demandeRepository;
+    @MockitoBean AuthenticatedClientResolver clientResolver;
     @MockitoBean JwtUtil jwtUtil;
     @MockitoBean JwtAuthenticationFilter jwtAuthenticationFilter;
 

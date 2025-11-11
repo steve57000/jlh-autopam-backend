@@ -26,6 +26,7 @@ class ServiceMapperTest {
                 .libelle("Free wash")
                 .description("Lavage intérieur et extérieur")
                 .prixUnitaire(new BigDecimal("19.90"))
+                .archived(true)
                 .build();
 
         ServiceResponse dto = mapper.toResponse(entity);
@@ -35,6 +36,7 @@ class ServiceMapperTest {
         assertEquals("Free wash", dto.getLibelle());
         assertEquals("Lavage intérieur et extérieur", dto.getDescription());
         assertEquals(new BigDecimal("19.90"), dto.getPrixUnitaire());
+        assertTrue(dto.isArchived());
     }
 
     @Test
@@ -53,5 +55,6 @@ class ServiceMapperTest {
         assertEquals("Premium wash", entity.getLibelle());
         assertEquals("Lavage complet + cire", entity.getDescription());
         assertEquals(new BigDecimal("29.90"), entity.getPrixUnitaire());
+        assertFalse(entity.isArchived(), "le mapper doit initialiser archived à false");
     }
 }

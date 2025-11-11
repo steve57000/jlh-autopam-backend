@@ -96,6 +96,18 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
             return false;
         }
         dsRepo.deleteById(key);
+
+        // 🔍 Combien de lignes restent ?
+        long remaining = dsRepo.countByDemande_IdDemande(demandeId);
+        if (remaining == 0) {
+            // Si la demande est un brouillon -> on la supprime
+            demandeRepo.findById(demandeId).ifPresent(d -> {
+                String code = d.getStatutDemande() != null ? d.getStatutDemande().getCodeStatut() : null;
+                if ("Brouillon".equals(code)) {
+                    demandeRepo.deleteById(demandeId);
+                }
+            });
+        }
         return true;
     }
 }

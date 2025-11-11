@@ -21,7 +21,10 @@ class ClientMapperTest {
                 .motDePasse("secret123")         // ajouté
                 .immatriculation("AA-123-AA")    // ajouté
                 .telephone("0102030405")
-                .adresse("1 rue X")
+                .adresseLigne1("1 bis ter")
+                .adresseLigne2("2 bis ter")
+                .codePostal("654")
+                .ville("Metz")
                 .build();
 
         // WHEN: mapping vers l'entité
@@ -32,9 +35,12 @@ class ClientMapperTest {
         assertEquals("Dupont", ent.getNom());
         assertEquals("Jean", ent.getPrenom());
         assertEquals("jean@dupont.fr", ent.getEmail());
-        assertEquals("0102030405", ent.getTelephone());
-        assertEquals("1 rue X", ent.getAdresse());
         assertEquals("AA-123-AA", ent.getImmatriculation());
+        assertEquals("0102030405", ent.getTelephone());
+        assertEquals("1 rue X", ent.getAdresseLigne1());
+        assertEquals("2 bis ter", ent.getAdresseLigne2());
+        assertEquals("654", ent.getAdresseCodePostal());
+        assertEquals("Metz", ent.getAdresseVille());
         // selon ton mapper, tu peux hasher/saisir le mot de passe ailleurs,
         // ici on vérifie juste que le champ est bien passé si mappé tel quel :
         // assertEquals("secret123", ent.getMotDePasse());
@@ -49,7 +55,10 @@ class ClientMapperTest {
         assertEquals("Jean", res.getPrenom());
         assertEquals("jean@dupont.fr", res.getEmail());
         assertEquals("0102030405", res.getTelephone());
-        assertEquals("1 rue X", res.getAdresse());
         assertEquals("AA-123-AA", res.getImmatriculation());
+        assertEquals("1 rue X", ent.getAdresseLigne1());
+        assertEquals("2 bis ter", ent.getAdresseLigne2());
+        assertEquals("654", ent.getAdresseCodePostal());
+        assertEquals("Metz", ent.getAdresseVille());
     }
 }

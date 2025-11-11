@@ -1,3 +1,4 @@
+// src/main/java/com/jlh/jlhautopambackend/mapper/ClientMapper.java
 package com.jlh.jlhautopambackend.mapper;
 
 import com.jlh.jlhautopambackend.dto.ClientRequest;
@@ -13,24 +14,21 @@ public abstract class ClientMapper {
 
     protected PasswordEncoder passwordEncoder;
 
-    /** Injection par setter (propre en abstract MapStruct) */
     @Autowired
     public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
         this.passwordEncoder = passwordEncoder;
     }
 
-    /**
-     * Création d’une entité à partir du DTO :
-     * - ignore l’ID
-     * - hash le mot de passe
-     * - force l’état de vérification initial
-     */
     @Mapping(target = "idClient", ignore = true)
     @Mapping(target = "motDePasse", expression = "java(passwordEncoder.encode(dto.getMotDePasse()))")
     @Mapping(target = "emailVerified", constant = "false")
     @Mapping(target = "emailVerifiedAt", ignore = true)
+    // champs adresse
+    @Mapping(target = "adresseLigne1", source = "adresseLigne1")
+    @Mapping(target = "adresseLigne2", source = "adresseLigne2")
+    @Mapping(target = "adresseCodePostal", source = "codePostal")
+    @Mapping(target = "adresseVille", source = "ville")
     public abstract Client toEntity(ClientRequest dto);
 
-    /** Entité -> DTO de sortie (mot de passe jamais exposé) */
     public abstract ClientResponse toResponse(Client entity);
 }

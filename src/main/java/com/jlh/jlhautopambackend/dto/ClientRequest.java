@@ -1,3 +1,4 @@
+// src/main/java/com/jlh/jlhautopambackend/dto/ClientRequest.java
 package com.jlh.jlhautopambackend.dto;
 
 import jakarta.validation.constraints.Email;
@@ -31,5 +32,13 @@ public class ClientRequest {
     private String telephone;
 
     @NotBlank(message = "L'adresse est obligatoire")
-    private String adresse;
+    private String adresseLigne1;
+
+    private String adresseLigne2;
+
+    @NotBlank(message = "Le code postal est obligatoire")
+    private String codePostal;
+
+    @NotBlank(message = "La ville est obligatoire")
+    private String ville;
 }

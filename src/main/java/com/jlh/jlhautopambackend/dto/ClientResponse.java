@@ -4,6 +4,7 @@ import lombok.*;
 
 import java.time.Instant;
 
+// src/main/java/com/jlh/jlhautopambackend/dto/ClientResponse.java
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,7 +16,12 @@ public class ClientResponse {
     private String email;
     private String immatriculation;
     private String telephone;
-    private String adresse;
+
+    // on garde la forme éclatée
+    private String adresseLigne1;
+    private String adresseLigne2;
+    private String codePostal;
+    private String ville;
 
     private boolean emailVerified;
     private Instant emailVerifiedAt;

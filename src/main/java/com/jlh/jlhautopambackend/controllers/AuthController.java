@@ -1,3 +1,4 @@
+// src/main/java/com/jlh/jlhautopambackend/controllers/AuthController.java
 package com.jlh.jlhautopambackend.controllers;
 
 import com.jlh.jlhautopambackend.payload.RegisterRequest;
@@ -6,11 +7,9 @@ import com.jlh.jlhautopambackend.modeles.Client;
 import com.jlh.jlhautopambackend.repository.ClientRepository;
 import com.jlh.jlhautopambackend.services.ClientService;
 import com.jlh.jlhautopambackend.services.EmailVerificationService;
-import com.jlh.jlhautopambackend.dto.ChangePasswordRequest;
 import com.jlh.jlhautopambackend.dto.ForgotPasswordRequest;
 import com.jlh.jlhautopambackend.dto.ResetPasswordRequest;
 import com.jlh.jlhautopambackend.services.PasswordResetService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import com.jlh.jlhautopambackend.utils.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.Data;
@@ -37,32 +36,24 @@ public class AuthController {
     private final ClientService clientService;
     private final ClientRepository clientRepo;
     private final EmailVerificationService emailVerificationService;
-
-    private final PasswordEncoder passwordEncoder;
     private final PasswordResetService passwordResetService;
 
-    // ===== DTO login =====
     @Data
     public static class LoginRequest {
         private String email;
         private String password;
     }
 
-    // ===== Endpoints =====
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest creds) {
         try {
             Authentication auth = authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            creds.getEmail(), creds.getPassword()
-                    )
+                    new UsernamePasswordAuthenticationToken(creds.getEmail(), creds.getPassword())
             );
 
-            // Si c'est un client non vérifié => on refuse proprement
             clientRepo.findByEmail(creds.getEmail()).ifPresent(cli -> {
                 if (!cli.isEmailVerified()) {
-                    throw new BadCredentialsException("Veuillez vérifier votre e‑mail pour activer votre compte.");
+                    throw new BadCredentialsException("Veuillez vérifier votre e-mail pour activer votre compte.");
                 }
             });
 
@@ -75,19 +66,18 @@ public class AuthController {
         }
     }
 
-    /** Inscription publique : crée le client et ENVOIE l'e‑mail de vérification */
+    /** Inscription publique : crée le client et ENVOIE l’e-mail de vérification */
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
-        // anti‑doublon email (on garde, même si contrainte unique existe)
         if (clientRepo.findByEmail(req.email()).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", "Un compte existe déjà avec cet e‑mail.",
+                    "message", "Un compte existe déjà avec cet e-mail.",
                     "errors", Map.of("email", "déjà utilisé")
             ));
         }
 
-        // ✅ mapping minimal vers ClientRequest pour NE PAS casser ClientService
+        // Mapping RegisterRequest -> ClientRequest (adresse éclatée)
         ClientRequest toCreate = ClientRequest.builder()
                 .nom(req.nom())
                 .prenom(req.prenom())
@@ -95,14 +85,15 @@ public class AuthController {
                 .motDePasse(req.motDePasse())
                 .telephone(req.telephone())
                 .immatriculation(req.immatriculation())
-                .adresse(req.adresse())
+                .adresseLigne1(req.adresseLigne1())
+                .adresseLigne2(req.adresseLigne2())
+                .codePostal(req.codePostal())
+                .ville(req.ville())
                 .build();
 
-        // Centralisé : hash mdp + flags vérif + envoi email (sendVerification=true)
         try {
             clientService.create(toCreate, true);
         } catch (DataIntegrityViolationException dup) {
-            // garde‑fou si contrainte unique déclenche quand même
             return ResponseEntity.status(409).body(Map.of(
                     "success", false,
                     "message", "Conflit de données",
@@ -112,44 +103,39 @@ public class AuthController {
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Inscription reçue. Vérifiez votre e‑mail."
+                "message", "Inscription reçue. Vérifiez votre e-mail."
         ));
     }
 
-    /** Renvoi du mail de vérification pour l'utilisateur authentifié (non vérifié) */
     @PostMapping("/resend-verification")
     public ResponseEntity<?> resend(Authentication auth) {
         String email = auth.getName();
         Client c = clientRepo.findByEmail(email).orElseThrow();
         if (c.isEmailVerified()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Adresse e‑mail déjà vérifiée."));
+            return ResponseEntity.badRequest().body(Map.of("message", "Adresse e-mail déjà vérifiée."));
         }
         emailVerificationService.sendVerificationForClient(c.getIdClient());
-        return ResponseEntity.ok(Map.of("message", "E‑mail de vérification renvoyé."));
+        return ResponseEntity.ok(Map.of("message", "E-mail de vérification renvoyé."));
     }
 
-    /** Callback de vérification par token */
     @GetMapping("/verify-email")
     public ResponseEntity<?> verify(@RequestParam("token") String token) {
         boolean ok = emailVerificationService.verify(token);
-        if (!ok) return ResponseEntity.badRequest().body(Map.of("message","Lien invalide ou expiré"));
+        if (!ok) return ResponseEntity.badRequest().body(Map.of("message", "Lien invalide ou expiré"));
         return ResponseEntity.status(302)
                 .header("Location", "http://localhost:4200/login?verified=1")
                 .build();
     }
 
-    // === Demande de réinitialisation (public)
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody @Valid ForgotPasswordRequest req) {
         try {
             passwordResetService.requestReset(req.email());
-        } catch (IllegalArgumentException e) {
-            // Pour ne pas divulguer l’existence d’un compte, on répond OK quand même
+        } catch (IllegalArgumentException ignored) {
         }
         return ResponseEntity.ok(Map.of("message", "Si un compte existe pour cet e-mail, un message a été envoyé."));
     }
 
-    // === Réinitialisation (public)
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody @Valid ResetPasswordRequest req) {
         try {

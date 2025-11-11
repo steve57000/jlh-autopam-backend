@@ -70,7 +70,10 @@ class DemandeServiceImplTest {
                 .prenom("John")
                 .email("john@example.com")
                 .telephone("0123456789")
-                .adresse("Addr")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .adresseVille("Metz")
+                .adresseCodePostal("12345")
                 .build();
 
         type = TypeDemande.builder()

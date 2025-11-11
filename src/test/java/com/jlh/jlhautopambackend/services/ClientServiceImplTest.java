@@ -43,7 +43,8 @@ class ClientServiceImplTest {
                 .prenom("John")
                 .email("john.doe@example.com")
                 .telephone("0123456789")
-                .adresse("123 Main St")
+                .adresseLigne1("I").adresseLigne2("J")
+                .codePostal("57").ville("Metz")
                 .build();
 
         entity = Client.builder()
@@ -51,7 +52,10 @@ class ClientServiceImplTest {
                 .prenom(request.getPrenom())
                 .email(request.getEmail())
                 .telephone(request.getTelephone())
-                .adresse(request.getAdresse())
+                .adresseLigne1(request.getAdresseLigne1())
+                .adresseLigne2(request.getAdresseLigne2())
+                .adresseVille(request.getVille())
+                .adresseCodePostal(request.getCodePostal())
                 .build();
 
         savedEntity = Client.builder()
@@ -60,7 +64,10 @@ class ClientServiceImplTest {
                 .prenom(request.getPrenom())
                 .email(request.getEmail())
                 .telephone(request.getTelephone())
-                .adresse(request.getAdresse())
+                .adresseLigne1(request.getAdresseLigne1())
+                .adresseLigne2(request.getAdresseLigne2())
+                .adresseVille(request.getVille())
+                .adresseCodePostal(request.getCodePostal())
                 .build();
 
         response = ClientResponse.builder()
@@ -69,7 +76,10 @@ class ClientServiceImplTest {
                 .prenom(savedEntity.getPrenom())
                 .email(savedEntity.getEmail())
                 .telephone(savedEntity.getTelephone())
-                .adresse(savedEntity.getAdresse())
+                .adresseLigne1(request.getAdresseLigne1())
+                .adresseLigne2(request.getAdresseLigne2())
+                .ville(request.getVille())
+                .codePostal(request.getCodePostal())
                 .build();
     }
 
@@ -119,7 +129,10 @@ class ClientServiceImplTest {
                 .prenom("Jane")
                 .email("jane.smith@example.com")
                 .telephone("0987654321")
-                .adresse("456 Elm St")
+                .adresseLigne1("1 rue dg")
+                .adresseLigne2("2 rue dg")
+                .adresseVille("Metz")
+                .adresseCodePostal("57")
                 .build();
         ClientResponse otherResp = ClientResponse.builder()
                 .idClient(2)
@@ -127,7 +140,10 @@ class ClientServiceImplTest {
                 .prenom("Jane")
                 .email("jane.smith@example.com")
                 .telephone("0987654321")
-                .adresse("456 Elm St")
+                .adresseLigne1("1 rue dg")
+                .adresseLigne2("2 rue dg")
+                .ville("Metz")
+                .codePostal("57")
                 .build();
 
         when(repository.findAll()).thenReturn(Arrays.asList(savedEntity, other));
@@ -151,7 +167,10 @@ class ClientServiceImplTest {
                 .prenom("User")
                 .email("updated.user@example.com")
                 .telephone("0112233445")
-                .adresse("789 Oak St")
+                .adresseLigne1("789 Oak St")
+                .adresseLigne2("981 Sur Md")
+                .codePostal("57")
+                .ville("Metz")
                 .build();
 
         Client existing = Client.builder()
@@ -160,7 +179,10 @@ class ClientServiceImplTest {
                 .prenom("Old")
                 .email("old@example.com")
                 .telephone("0000000000")
-                .adresse("Old Addr")
+                .adresseLigne1("Old Addr")
+                .adresseLigne2("Old Addr")
+                .adresseVille("Old Addr")
+                .adresseCodePostal("Old Addr")
                 .build();
 
         Client updatedEntity = Client.builder()
@@ -169,7 +191,10 @@ class ClientServiceImplTest {
                 .prenom(updateReq.getPrenom())
                 .email(updateReq.getEmail())
                 .telephone(updateReq.getTelephone())
-                .adresse(updateReq.getAdresse())
+                .adresseLigne1(updateReq.getAdresseLigne1())
+                .adresseLigne2(updateReq.getAdresseLigne2())
+                .adresseCodePostal(updateReq.getCodePostal())
+                .adresseVille(updateReq.getVille())
                 .build();
 
         ClientResponse updatedResp = ClientResponse.builder()
@@ -178,7 +203,10 @@ class ClientServiceImplTest {
                 .prenom(updateReq.getPrenom())
                 .email(updateReq.getEmail())
                 .telephone(updateReq.getTelephone())
-                .adresse(updateReq.getAdresse())
+                .adresseLigne1(updateReq.getAdresseLigne1())
+                .adresseLigne2(updateReq.getAdresseLigne2())
+                .ville(updateReq.getVille())
+                .codePostal(updateReq.getCodePostal())
                 .build();
 
         when(repository.findById(3)).thenReturn(Optional.of(existing));

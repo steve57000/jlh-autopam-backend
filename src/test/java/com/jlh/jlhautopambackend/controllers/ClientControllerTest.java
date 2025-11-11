@@ -53,14 +53,20 @@ class ClientControllerTest {
                 .nom("Dupont").prenom("Jean")
                 .email("jean.dupont@example.com")
                 .telephone("0123456789")
-                .adresse("1 rue A")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
         ClientResponse r2 = ClientResponse.builder()
                 .idClient(2)
                 .nom("Martin").prenom("Marie")
                 .email("marie.martin@example.com")
                 .telephone("0987654321")
-                .adresse("2 avenue B")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
 
         Mockito.when(service.findAll()).thenReturn(List.of(r1, r2));
@@ -92,7 +98,10 @@ class ClientControllerTest {
                 .nom("Durand").prenom("Luc")
                 .email("luc.durand@example.com")
                 .telephone("0112233445")
-                .adresse("3 chemin C")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
         Mockito.when(service.findById(5)).thenReturn(Optional.of(resp));
 
@@ -119,14 +128,20 @@ class ClientControllerTest {
                 .nom("Petit").prenom("Anne")
                 .email("anne.petit@example.com")
                 .telephone("0223344556")
-                .adresse("4 boulevard D")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
         ClientResponse created = ClientResponse.builder()
                 .idClient(10)
                 .nom(req.getNom()).prenom(req.getPrenom())
                 .email(req.getEmail())
                 .telephone(req.getTelephone())
-                .adresse(req.getAdresse())
+                .adresseLigne1(req.getAdresseLigne1())
+                .adresseLigne2(req.getAdresseLigne2())
+                .ville(req.getVille())
+                .codePostal(req.getCodePostal())
                 .build();
 
         Mockito.when(service.create(Mockito.any(ClientRequest.class))).thenReturn(created);
@@ -147,14 +162,20 @@ class ClientControllerTest {
                 .nom("NewNom").prenom("NewPrenom")
                 .email("new@example.com")
                 .telephone("1111111111")
-                .adresse("NewAdresse")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
         ClientResponse updated = ClientResponse.builder()
                 .idClient(7)
                 .nom("NewNom").prenom("NewPrenom")
                 .email("new@example.com")
                 .telephone("1111111111")
-                .adresse("NewAdresse")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
 
         Mockito.when(service.update(Mockito.eq(7), Mockito.any(ClientRequest.class)))
@@ -175,7 +196,10 @@ class ClientControllerTest {
                 .nom("X").prenom("Y")
                 .email("x@y.com")
                 .telephone("123")
-                .adresse("Z")
+                .adresseLigne1("A")
+                .adresseLigne2("B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
         Mockito.when(service.update(Mockito.eq(42), Mockito.any(ClientRequest.class)))
                 .thenReturn(Optional.empty());

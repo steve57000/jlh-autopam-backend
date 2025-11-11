@@ -25,7 +25,11 @@ public record RegisterRequest(
         @Pattern(regexp = "^[A-Z]{2}-\\d{3}-[A-Z]{2}$", message = "Format immatriculation invalide (AA-123-AA)")
         String immatriculation,
 
-        String adresse,
+        // ✅ Adresse éclatée
+        @NotBlank String adresseLigne1,
+        String adresseLigne2,
+        @NotBlank String codePostal,
+        @NotBlank String ville,
 
         @NotNull Boolean consentRgpd
 ) {}

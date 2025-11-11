@@ -16,7 +16,10 @@ class ClientResponseTest {
                 .prenom("Jean")
                 .email("jean.dupont@example.com")
                 .telephone("0123456789")
-                .adresse("1 rue A")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .codePostal("57000")
+                .ville("Metz")
                 .build();
 
         assertEquals(42, resp.getIdClient());
@@ -24,7 +27,10 @@ class ClientResponseTest {
         assertEquals("Jean", resp.getPrenom());
         assertEquals("jean.dupont@example.com", resp.getEmail());
         assertEquals("0123456789", resp.getTelephone());
-        assertEquals("1 rue A", resp.getAdresse());
+        assertEquals("1 rue A", resp.getAdresseLigne1());
+        assertEquals("2 rue B", resp.getAdresseLigne1());
+        assertEquals("57000", resp.getCodePostal());
+        assertEquals("Metz", resp.getVille());
     }
 
     @Test
@@ -36,14 +42,20 @@ class ClientResponseTest {
         resp.setPrenom("Marie");
         resp.setEmail("marie.martin@example.com");
         resp.setTelephone("0987654321");
-        resp.setAdresse("2 avenue B");
+        resp.setAdresseLigne1("2 avenue B");
+        resp.setAdresseLigne2("1 avenue C");
+        resp.setCodePostal("57000");
+        resp.setVille("Metz");
 
         assertEquals(99, resp.getIdClient());
         assertEquals("Martin", resp.getNom());
         assertEquals("Marie", resp.getPrenom());
         assertEquals("marie.martin@example.com", resp.getEmail());
         assertEquals("0987654321", resp.getTelephone());
-        assertEquals("2 avenue B", resp.getAdresse());
+        assertEquals("2 avenue B", resp.getAdresseLigne1());
+        assertEquals("1 avenue C", resp.getAdresseLigne1());
+        assertEquals("57000", resp.getCodePostal());
+        assertEquals("Metz", resp.getVille());
     }
 
     @Test
@@ -51,13 +63,16 @@ class ClientResponseTest {
     void equalsAndHashCode() {
         ClientResponse a = ClientResponse.builder()
                 .idClient(1).nom("A").prenom("B")
-                .email("a@b.com").telephone("111").adresse("Z").build();
+                .email("a@b.com").telephone("111").adresseLigne1("Z").adresseLigne2("I").codePostal("57").ville("Metz").build();
         ClientResponse b = ClientResponse.builder()
                 .idClient(1).nom("A").prenom("B")
-                .email("a@b.com").telephone("111").adresse("Z").build();
+                .email("a@b.com").telephone("111").adresseLigne1("Z").adresseLigne2("I").codePostal("57").ville("Metz").build();
         ClientResponse c = ClientResponse.builder()
                 .idClient(2).nom("A").prenom("B")
-                .email("a@b.com").telephone("111").adresse("Z").build();
+                .email("a@b.com").telephone("111")
+                .adresseLigne1("Z").adresseLigne2("I")
+                .codePostal("57").ville("Metz")
+                .build();
 
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
@@ -69,7 +84,9 @@ class ClientResponseTest {
     void toStringContainsAllFields() {
         ClientResponse resp = ClientResponse.builder()
                 .idClient(7).nom("T").prenom("U")
-                .email("t@u.com").telephone("000").adresse("Addr")
+                .email("t@u.com").telephone("000")
+                .adresseLigne1("I").adresseLigne2("J")
+                .codePostal("57").ville("Metz")
                 .build();
         String s = resp.toString();
         assertTrue(s.contains("idClient=7"));

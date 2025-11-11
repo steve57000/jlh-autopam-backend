@@ -180,7 +180,16 @@ public class DemandeServiceImpl implements DemandeService {
     @Override
     @Transactional(readOnly = true)
     public List<DemandeResponse> findByClientId(Integer clientId) {
-        return repo.findByClient_IdClient(clientId).stream().map(mapper::toResponse).toList();
+        return repo.findByClient_IdClient(clientId)
+                .stream()
+                .map(mapper::toResponse)
+                // ⛔️ on masque tout brouillon sans service par sécurité
+                .filter(d -> {
+                    String code = d.getStatutDemande() != null ? d.getStatutDemande().getCodeStatut() : null;
+                    int n = d.getServices() != null ? d.getServices().size() : 0;
+                    return !("Brouillon".equals(code) && n == 0);
+                })
+                .toList();
     }
 
     @Override

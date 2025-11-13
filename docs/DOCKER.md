@@ -18,10 +18,10 @@ Avant de repartir sur une base propre, exécutez :
 ```bash
 
 # Arrêter et supprimer les conteneurs de production
-docker-compose -f docker-compose.prod.yml down
+docker-compose -f ../docker-compose.prod.yml down
 
 # Arrêter et supprimer les conteneurs de développement
-docker-compose -f docker-compose.dev.yml down
+docker-compose -f ../docker-compose.dev.yml down
 
 # Supprimer les conteneurs orphelins
 docker container prune -f
@@ -43,7 +43,7 @@ docker network prune -f
 Pour lancer la stack de développement (API, base MySQL, interface Adminer) :
 
 ```bash
-  docker-compose -f docker-compose.dev.yml up --build
+  docker-compose -f ../docker-compose.dev.yml up --build
 ```
 
 * **API** : [http://localhost:8080](http://localhost:8080)
@@ -80,13 +80,13 @@ spring.mail.properties.mail.smtp.starttls.enable=false
 ### Journaux (logs)
 
 ```bash
-  docker-compose -f docker-compose.dev.yml logs -f backend
+  docker-compose -f ../docker-compose.dev.yml logs -f backend
 ```
 
 ### Arrêter les conteneurs de développement
 
 ```bash
-  docker-compose -f docker-compose.dev.yml down
+  docker-compose -f ../docker-compose.dev.yml down
 ```
 
 ---
@@ -96,20 +96,20 @@ spring.mail.properties.mail.smtp.starttls.enable=false
 Démarrer la stack de production en arrière-plan :
 
 ```bash
-  docker-compose -f docker-compose.prod.yml up -d
+  docker-compose -f ../docker-compose.prod.yml up -d
 ```
 
 Arrêter et supprimer les conteneurs de production :
 
 ```bash
-  docker-compose -f docker-compose.prod.yml down
+  docker-compose -f ../docker-compose.prod.yml down
 ```
 
 Mettre à jour l’image backend et redémarrer le service :
 
 ```bash
-  docker-compose -f docker-compose.prod.yml pull backend
-  docker-compose -f docker-compose.prod.yml up -d backend
+  docker-compose -f ../docker-compose.prod.yml pull backend
+  docker-compose -f ../docker-compose.prod.yml up -d backend
 ```
 
 ---

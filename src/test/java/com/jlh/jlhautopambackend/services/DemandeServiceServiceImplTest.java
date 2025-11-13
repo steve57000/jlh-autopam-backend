@@ -64,6 +64,7 @@ class DemandeServiceServiceImplTest {
                 .libelle("TestService")
                 .description("Desc")
                 .prixUnitaire(new BigDecimal("100.00"))
+                .quantiteMax(10)
                 .archived(false)
                 .build();
 

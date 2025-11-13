@@ -46,6 +46,7 @@ class DisponibiliteServiceImplTest {
         // Prepare stubbed admin and creneau
         adminStub = Administrateur.builder()
                 .idAdmin(10)
+                .username("admin10")
                 .build();
         creneauStub = Creneau.builder()
                 .idCreneau(20)
@@ -68,7 +69,10 @@ class DisponibiliteServiceImplTest {
     void testFindAll_ShouldReturnAllDisponibilites() {
         Disponibilite other = Disponibilite.builder()
                 .id(new DisponibiliteKey(11,21))
-                .administrateur(Administrateur.builder().idAdmin(11).build())
+                .administrateur(Administrateur.builder()
+                        .idAdmin(11)
+                        .username("admin11")
+                        .build())
                 .creneau(Creneau.builder().idCreneau(21).build())
                 .build();
         when(dispoRepo.findAll()).thenReturn(Arrays.asList(savedEntity, other));

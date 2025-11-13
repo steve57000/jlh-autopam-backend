@@ -51,12 +51,14 @@ class AdministrateurControllerTest {
         AdministrateurResponse r1 = AdministrateurResponse.builder()
                 .idAdmin(1)
                 .email("alice")
+                .username("alice")
                 .nom("Alice").prenom("A")
                 .disponibilites(Collections.emptyList())
                 .build();
         AdministrateurResponse r2 = AdministrateurResponse.builder()
                 .idAdmin(2)
                 .email("bob")
+                .username("bob")
                 .nom("Bob").prenom("B")
                 .disponibilites(Collections.emptyList())
                 .build();
@@ -76,6 +78,7 @@ class AdministrateurControllerTest {
         AdministrateurResponse resp = AdministrateurResponse.builder()
                 .idAdmin(1)
                 .email("alice")
+                .username("alice")
                 .nom("Alice").prenom("A")
                 .disponibilites(Collections.emptyList())
                 .build();
@@ -107,6 +110,7 @@ class AdministrateurControllerTest {
         AdministrateurResponse created = AdministrateurResponse.builder()
                 .idAdmin(3)
                 .email("Charlie").prenom("C")
+                .username("charlie")
                 .disponibilites(Collections.emptyList())
                 .build();
 
@@ -133,6 +137,7 @@ class AdministrateurControllerTest {
         AdministrateurResponse updated = AdministrateurResponse.builder()
                 .idAdmin(1)
                 .email("alice2")
+                .username("alice2")
                 .nom("Alice").prenom("A2")
                 .disponibilites(Collections.emptyList())
                 .build();

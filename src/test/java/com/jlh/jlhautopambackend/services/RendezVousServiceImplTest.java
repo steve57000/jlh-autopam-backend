@@ -54,7 +54,10 @@ class RendezVousServiceImplTest {
 
         demande = Demande.builder().idDemande(1).build();
         creneau = Creneau.builder().idCreneau(2).build();
-        admin = Administrateur.builder().idAdmin(3).build();
+        admin = Administrateur.builder()
+                .idAdmin(3)
+                .username("admin3")
+                .build();
         statut = StatutRendezVous.builder()
                 .codeStatut("ST1")
                 .libelle("Planned")

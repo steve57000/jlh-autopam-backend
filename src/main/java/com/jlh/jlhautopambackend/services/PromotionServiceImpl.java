@@ -7,18 +7,15 @@ import com.jlh.jlhautopambackend.modeles.Administrateur;
 import com.jlh.jlhautopambackend.modeles.Promotion;
 import com.jlh.jlhautopambackend.repository.AdministrateurRepository;
 import com.jlh.jlhautopambackend.repository.PromotionRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,17 +25,16 @@ public class PromotionServiceImpl implements PromotionService {
     private final PromotionRepository promoRepo;
     private final AdministrateurRepository adminRepo;
     private final PromotionMapper mapper;
-
-    /** Chemin absolu sur le disque où stocker les images */
-    @Value("${app.upload-dir}")
-    private String uploadDir;
+    private final FileStorageService fileStorage;
 
     public PromotionServiceImpl(PromotionRepository promoRepo,
                                 AdministrateurRepository adminRepo,
-                                PromotionMapper mapper) {
+                                PromotionMapper mapper,
+                                FileStorageService fileStorage) {
         this.promoRepo = promoRepo;
         this.adminRepo = adminRepo;
         this.mapper = mapper;
+        this.fileStorage = fileStorage;
     }
 
     @Override
@@ -105,7 +101,7 @@ public class PromotionServiceImpl implements PromotionService {
     public PromotionResponse create(PromotionRequest req, MultipartFile file) throws IOException {
         // si un fichier est fourni, on le stocke
         if (file != null && !file.isEmpty()) {
-            String filename = storeFile(file);
+            String filename = fileStorage.store(file);
             req.setImageUrl("/promotions/images/" + filename);
         }
         return create(req);
@@ -118,12 +114,15 @@ public class PromotionServiceImpl implements PromotionService {
             // charger l'ancienne entité pour récupérer l'URL
             promoRepo.findById(id).ifPresent(old -> {
                 String oldUrl = old.getImageUrl();
-                if (oldUrl != null && oldUrl.startsWith("/promotions/images/")) {
-                    Path oldPath = Paths.get(uploadDir, oldUrl.substring("/promotions/images/".length()));
-                    try { Files.deleteIfExists(oldPath); } catch (IOException ignored) {}
-                }
+                resolveRelativePath(oldUrl).ifPresent(path -> {
+                    try {
+                        fileStorage.delete(path);
+                    } catch (IOException ignored) {
+                        // si la suppression échoue, on ne bloque pas la mise à jour
+                    }
+                });
             });
-            String filename = storeFile(file);
+            String filename = fileStorage.store(file);
             req.setImageUrl("/promotions/images/" + filename);
         }
         return update(id, req);
@@ -151,24 +150,14 @@ public class PromotionServiceImpl implements PromotionService {
         }
     }
 
-    private String storeFile(MultipartFile file) throws IOException {
-        // Récupère le nom original, ou "" si null
-        String originalName = Optional.ofNullable(file.getOriginalFilename()).orElse("");
-
-        // Nettoie le chemin pour éviter les séquences malveillantes
-        String safeName = StringUtils.cleanPath(originalName);
-
-        // Construit un nom unique : UUID + (–nomNettoyé si présent)
-        String filename = UUID.randomUUID()
-                + (safeName.isEmpty() ? "" : "-" + safeName);
-
-        // Crée le dossier si besoin
-        Path targetDir = Paths.get(uploadDir).toAbsolutePath().normalize();
-        Files.createDirectories(targetDir);
-
-        // Transfère le fichier
-        Path target = targetDir.resolve(filename);
-        file.transferTo(target);
-        return filename;
+    private Optional<String> resolveRelativePath(String imageUrl) {
+        if (imageUrl == null) {
+            return Optional.empty();
+        }
+        String prefix = "/promotions/images/";
+        if (!imageUrl.startsWith(prefix)) {
+            return Optional.empty();
+        }
+        return Optional.of(imageUrl.substring(prefix.length()));
     }
 }

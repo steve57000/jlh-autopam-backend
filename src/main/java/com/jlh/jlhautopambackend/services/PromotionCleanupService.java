@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -42,6 +43,10 @@ public class PromotionCleanupService {
 
         for (Promotion promo : expired) {
             String imageUrl = promo.getImageUrl();
+            if (!StringUtils.hasText(imageUrl)) {
+                continue;
+            }
+
             String filename = extractFilename(imageUrl);
             Path filePath = uploadDir.resolve(filename);
             try {
@@ -64,6 +69,10 @@ public class PromotionCleanupService {
      * Extrait le nom de fichier à partir de l’URL (tout ce qui suit le dernier '/').
      */
     private String extractFilename(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            return "";
+        }
+
         try {
             URI uri = URI.create(imageUrl);
             String path = uri.getPath();

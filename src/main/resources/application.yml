@@ -10,7 +10,7 @@ app:
   email:
     from: "JLH Auto Pam <contact@jlh-autopam.fr>"
     verificationExpiryHours: 24
-  upload-dir: ${APP_UPLOAD_DIR:uploads}  # par défaut 'uploads' si non défini
+  upload-dir: ${APP_UPLOAD_DIR:/var/www/promo}  # dossier partagé avec Nginx pour les images
 
 spring:
   application:

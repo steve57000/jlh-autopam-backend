@@ -1,5 +1,6 @@
 package com.jlh.jlhautopambackend.dto;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import lombok.*;
 
 import java.util.List;
@@ -17,6 +18,7 @@ public class AdministrateurResponse {
     // Si vous voulez renvoyer les disponibilités, n’incluez que leur ID :
     private List<DisponibiliteIdDto> disponibilites;
 
+    @JsonGetter("username")
     public String getUsername() {
         return username != null && !username.isBlank() ? username : email;
     }

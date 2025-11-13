@@ -91,7 +91,8 @@ CREATE TABLE Administrateur (
   username       VARCHAR(50) UNIQUE NOT NULL,
   mot_de_passe   VARCHAR(255) NOT NULL,
   nom            VARCHAR(100),
-  prenom         VARCHAR(100)
+  prenom         VARCHAR(100),
+  email          VARCHAR(150) UNIQUE
 );
 
 -- Table des disponibilités (planning admin)

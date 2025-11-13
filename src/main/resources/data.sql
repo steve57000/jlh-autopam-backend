@@ -25,6 +25,22 @@ SET @ddl := IF(@exists = 0,
             );
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+-- Ajout colonne username (nullable au départ pour éviter l'échec si la table contient déjà des données)
+SET @exists := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'administrateur' AND COLUMN_NAME = 'username'
+);
+SET @ddl := IF(@exists = 0,
+               'ALTER TABLE administrateur ADD COLUMN username VARCHAR(50) UNIQUE',
+               'SELECT 1'
+            );
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Valorise username à partir de l'e-mail pour les administrateurs existants
+UPDATE administrateur
+SET username = email
+WHERE username IS NULL OR username = '';
+
 -- ==================================================
 -- 1) Lookups
 -- ==================================================
@@ -113,8 +129,8 @@ INSERT INTO client (
 -- ==================================================
 -- 4) Admins
 -- ==================================================
-INSERT INTO administrateur (id_admin, email, mot_de_passe, nom, prenom) VALUES
-    (1,'test@admin.fr','$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW','Bongeot','Michael');
+INSERT INTO administrateur (id_admin, username, email, mot_de_passe, nom, prenom) VALUES
+    (1,'test@admin.fr','test@admin.fr','$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW','Bongeot','Michael');
 
 -- ==================================================
 -- 5) Créneaux

@@ -51,12 +51,14 @@ class ServiceServiceImplTest {
                 .libelle("Cleaning")
                 .description("Home cleaning service")
                 .prixUnitaire(price)
+                .quantiteMax(5)
                 .build();
 
         entityWithoutId = Service.builder()
                 .libelle(request.getLibelle())
                 .description(request.getDescription())
                 .prixUnitaire(request.getPrixUnitaire())
+                .quantiteMax(5)
                 .archived(false)
                 .build();
 
@@ -65,6 +67,7 @@ class ServiceServiceImplTest {
                 .libelle(request.getLibelle())
                 .description(request.getDescription())
                 .prixUnitaire(request.getPrixUnitaire())
+                .quantiteMax(5)
                 .archived(false)
                 .build();
 
@@ -73,6 +76,7 @@ class ServiceServiceImplTest {
                 .libelle(savedEntity.getLibelle())
                 .description(savedEntity.getDescription())
                 .prixUnitaire(savedEntity.getPrixUnitaire())
+                .quantiteMax(5)
                 .archived(false)
                 .build();
     }
@@ -84,6 +88,7 @@ class ServiceServiceImplTest {
                 .libelle("Gardening")
                 .description("Garden maintenance")
                 .prixUnitaire(new BigDecimal("59.99"))
+                .quantiteMax(3)
                 .archived(false)
                 .build();
         ServiceResponse otherResp = ServiceResponse.builder()
@@ -91,6 +96,7 @@ class ServiceServiceImplTest {
                 .libelle("Gardening")
                 .description("Garden maintenance")
                 .prixUnitaire(new BigDecimal("59.99"))
+                .quantiteMax(3)
                 .archived(false)
                 .build();
 
@@ -152,12 +158,14 @@ class ServiceServiceImplTest {
                 .libelle("Deep Cleaning")
                 .description("Intensive cleaning")
                 .prixUnitaire(new BigDecimal("79.99"))
+                .quantiteMax(12)
                 .build();
         Service existing = Service.builder()
                 .idService(1)
                 .libelle("Cleaning")
                 .description("Home cleaning")
                 .prixUnitaire(price)
+                .quantiteMax(4)
                 .archived(true)
                 .build();
         Service updatedEntity = Service.builder()
@@ -165,6 +173,7 @@ class ServiceServiceImplTest {
                 .libelle(updateReq.getLibelle())
                 .description(updateReq.getDescription())
                 .prixUnitaire(updateReq.getPrixUnitaire())
+                .quantiteMax(12)
                 .archived(false)
                 .build();
         ServiceResponse updatedResp = ServiceResponse.builder()
@@ -172,6 +181,7 @@ class ServiceServiceImplTest {
                 .libelle(updateReq.getLibelle())
                 .description(updateReq.getDescription())
                 .prixUnitaire(updateReq.getPrixUnitaire())
+                .quantiteMax(12)
                 .archived(false)
                 .build();
 
@@ -214,6 +224,7 @@ class ServiceServiceImplTest {
         Service active = Service.builder()
                 .idService(1)
                 .libelle("Cleaning")
+                .quantiteMax(5)
                 .archived(false)
                 .build();
         var associations = List.of(DemandeService.builder().build());
@@ -236,6 +247,7 @@ class ServiceServiceImplTest {
         Service archived = Service.builder()
                 .idService(2)
                 .libelle("Old")
+                .quantiteMax(2)
                 .archived(true)
                 .build();
         when(repo.findById(2)).thenReturn(Optional.of(archived));

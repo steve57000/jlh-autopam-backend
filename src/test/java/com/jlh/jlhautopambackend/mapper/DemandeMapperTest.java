@@ -70,6 +70,7 @@ class DemandeMapperTest {
         Service service = Service.builder()
                 .idService(456)
                 .libelle("Vidange")
+                .quantiteMax(3)
                 .prixUnitaire(BigDecimal.valueOf(59.90))
                 .build();
 

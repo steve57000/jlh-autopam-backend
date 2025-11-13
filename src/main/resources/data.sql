@@ -68,22 +68,22 @@ INSERT INTO statut_rendez_vous (code_statut, libelle) VALUES
 -- ==================================================
 -- 2) Services
 -- ==================================================
-INSERT INTO service (id_service, libelle, description, prix_unitaire, archived) VALUES
+INSERT INTO service (id_service, libelle, description, prix_unitaire, quantite_max, archived) VALUES
                                                                           (1, 'Vidange',
                                                                            'Vidange moteur complète avec huile synthétique haute performance et remplacement du filtre à huile pour optimiser la longévité de votre moteur',
-                                                                           59.90, 0),
+                                                                           59.90, 1, 0),
                                                                           (2, 'Révision',
                                                                            'Révision générale incluant le contrôle et le remplacement des courroies, filtres (air, habitacle, carburant) et bougies, ainsi que la vérification des niveaux de liquide',
-                                                                           129.90, 0),
+                                                                           129.90, 1, 0),
                                                                           (3, 'Freinage',
                                                                            'Remplacement des plaquettes de frein avant par des plaquettes haute performance, contrôle des disques et purge complète du circuit de freinage pour une sécurité maximale',
-                                                                           199.00, 0),
+                                                                           199.00, 2, 0),
                                                                           (4, 'Pneumatiques',
                                                                            'Montage et équilibrage de quatre pneus toutes saisons, vérification de la géométrie et conseil personnalisé pour un confort et une adhérence optimaux',
-                                                                           449.00, 0),
+                                                                           449.00, 4, 0),
                                                                           (5, 'Diagnostic',
                                                                            'Diagnostic électronique multimarque complet avec intervention valise électronique, analyse des défauts et remise d’un rapport détaillé',
-                                                                           79.00, 0);
+                                                                           79.00, 1, 0);
 
 -- ==================================================
 -- 3) Clients (mots de passe déjà hashés)

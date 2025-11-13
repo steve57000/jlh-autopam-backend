@@ -13,7 +13,9 @@ CREATE TABLE Service (
   id_service     INT AUTO_INCREMENT PRIMARY KEY,
   libelle        VARCHAR(100) NOT NULL,
   description    TEXT,
-  prix_unitaire  DECIMAL(10,2) NOT NULL
+  prix_unitaire  DECIMAL(10,2) NOT NULL,
+  quantite_max   INT NOT NULL DEFAULT 1,
+  archived       TINYINT(1) NOT NULL DEFAULT 0
 );
 
 -- Lookup table : types de demande

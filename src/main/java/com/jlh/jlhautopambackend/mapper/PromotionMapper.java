@@ -5,6 +5,8 @@ import com.jlh.jlhautopambackend.modeles.Promotion;
 import org.mapstruct.*;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.net.URI;
+
 @Mapper(componentModel = "spring")
 public abstract class PromotionMapper {
 
@@ -48,9 +50,20 @@ public abstract class PromotionMapper {
         } else if (imagePath.startsWith("http")) {
             response.setImageUrl(imagePath);
         } else {
-            String normalized = imagePath.startsWith("/") ? imagePath.substring(1) : imagePath;
-            String base       = imagesBaseUrl.endsWith("/") ? imagesBaseUrl : imagesBaseUrl + "/";
-            response.setImageUrl(base + normalized.replaceFirst("^promotions/images/", ""));
+            String normalized = imagePath.startsWith("/") ? imagePath : "/" + imagePath;
+            try {
+                String base = imagesBaseUrl == null ? "" : imagesBaseUrl;
+                if (!base.isBlank() && !base.endsWith("/")) {
+                    base = base + "/";
+                }
+
+                URI baseUri = base.isBlank() ? null : URI.create(base);
+                URI resolved = (baseUri == null ? URI.create(normalized) : baseUri.resolve(normalized)).normalize();
+                response.setImageUrl(resolved.toString());
+            } catch (IllegalArgumentException ex) {
+                // En cas d’URL de base invalide, on renvoie le chemin normalisé pour éviter une 500
+                response.setImageUrl(normalized);
+            }
         }
 
         return response;

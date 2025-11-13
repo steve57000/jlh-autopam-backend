@@ -63,6 +63,7 @@ class PromotionServiceImplTest {
 
         admin = Administrateur.builder()
                 .idAdmin(5)
+                .username("admin5")
                 .build();
 
         entityWithoutRel = Promotion.builder()
@@ -246,7 +247,10 @@ class PromotionServiceImplTest {
                 .validFrom(validFrom)
                 .validTo(validTo)
                 .build();
-        Administrateur newAdmin = Administrateur.builder().idAdmin(6).build();
+        Administrateur newAdmin = Administrateur.builder()
+                .idAdmin(6)
+                .username("admin6")
+                .build();
         Promotion existing = savedEntity;
         Promotion updatedEntity = Promotion.builder()
                 .idPromotion(10)

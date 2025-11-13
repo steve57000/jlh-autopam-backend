@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class DemandeServiceImpl implements DemandeService {
+public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.DemandeService {
 
     private final DemandeRepository       repo;
     private final ClientRepository        clientRepo;

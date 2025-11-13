@@ -21,6 +21,8 @@ public interface AdministrateurMapper {
     Administrateur toEntity(AdministrateurRequest dto);
 
     // On convertit la liste de Disponibilite en liste de DisponibiliteIdDto
+    @Mapping(target = "username",
+            expression = "java(resolveUsername(entity))")
     @Mapping(target = "disponibilites",
             expression = "java(mapDisponibilites(entity.getDisponibilites()))")
     AdministrateurResponse toResponse(Administrateur entity);
@@ -32,5 +34,17 @@ public interface AdministrateurMapper {
                         d.getId().getIdAdmin(),
                         d.getId().getIdCreneau()))
                 .collect(Collectors.toList());
+    }
+
+    default String resolveUsername(Administrateur entity) {
+        if (entity == null) {
+            return null;
+        }
+        String username = entity.getUsername();
+        if (username != null && !username.isBlank()) {
+            return username.trim();
+        }
+        String email = entity.getEmail();
+        return (email != null && !email.isBlank()) ? email.trim() : null;
     }
 }

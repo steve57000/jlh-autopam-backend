@@ -7,6 +7,8 @@ import com.jlh.jlhautopambackend.modeles.Administrateur;
 import com.jlh.jlhautopambackend.modeles.Promotion;
 import com.jlh.jlhautopambackend.repository.AdministrateurRepository;
 import com.jlh.jlhautopambackend.repository.PromotionRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -21,6 +23,8 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class PromotionServiceImpl implements PromotionService {
+
+    private static final Logger log = LoggerFactory.getLogger(PromotionServiceImpl.class);
 
     private final PromotionRepository promoRepo;
     private final AdministrateurRepository adminRepo;
@@ -87,11 +91,21 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     public boolean delete(Integer id) {
-        if (!promoRepo.existsById(id)) {
+        Optional<Promotion> opt = promoRepo.findById(id);
+        if (opt.isEmpty()) {
             return false;
         }
-        // On pourrait supprimer le fichier ici si on stocke le chemin dans la DB
-        promoRepo.deleteById(id);
+
+        Promotion promo = opt.get();
+        resolveRelativePath(promo.getImageUrl()).ifPresent(path -> {
+            try {
+                fileStorage.delete(path);
+            } catch (IOException e) {
+                log.warn("Impossible de supprimer l'image associée à la promotion {} : {}", id, e.getMessage());
+            }
+        });
+
+        promoRepo.delete(promo);
         return true;
     }
 
@@ -117,8 +131,8 @@ public class PromotionServiceImpl implements PromotionService {
                 resolveRelativePath(oldUrl).ifPresent(path -> {
                     try {
                         fileStorage.delete(path);
-                    } catch (IOException ignored) {
-                        // si la suppression échoue, on ne bloque pas la mise à jour
+                    } catch (IOException e) {
+                        log.warn("Impossible de supprimer l'ancienne image de la promotion {} : {}", id, e.getMessage());
                     }
                 });
             });

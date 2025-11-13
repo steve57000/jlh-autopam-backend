@@ -11,8 +11,13 @@ import java.util.List;
 public class AdministrateurResponse {
     private Integer idAdmin;
     private String email;
+    private String username;
     private String nom;
     private String prenom;
     // Si vous voulez renvoyer les disponibilités, n’incluez que leur ID :
     private List<DisponibiliteIdDto> disponibilites;
+
+    public String getUsername() {
+        return username != null && !username.isBlank() ? username : email;
+    }
 }

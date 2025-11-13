@@ -11,8 +11,8 @@ public class Administrateur {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idAdmin;
 
-//    @Column(nullable = false, unique = true, length = 50)
-//    private String username;
+    @Column(nullable = false, unique = true, length = 50)
+    private String username;
 
     @Column(nullable = false)
     private String motDePasse;

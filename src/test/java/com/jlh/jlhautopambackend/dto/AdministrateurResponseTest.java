@@ -38,6 +38,7 @@ class AdministrateurResponseTest {
 
         assertEquals(42, resp.getIdAdmin());
         assertEquals("user42", resp.getEmail());
+        assertEquals("user42", resp.getUsername());
         assertEquals("Dupont", resp.getNom());
         assertEquals("Jean", resp.getPrenom());
         assertSame(dispos, resp.getDisponibilites());
@@ -55,6 +56,7 @@ class AdministrateurResponseTest {
 
         assertEquals(7, resp.getIdAdmin());
         assertEquals("u7", resp.getEmail());
+        assertEquals("u7", resp.getUsername());
         assertEquals("Martin", resp.getNom());
         assertEquals("Marie", resp.getPrenom());
         assertTrue(resp.getDisponibilites().isEmpty());
@@ -98,6 +100,7 @@ class AdministrateurResponseTest {
                 .prenom("Anne")
                 .disponibilites(dispos)
                 .build();
+        original.setUsername(original.getEmail());
 
         String json = objectMapper.writeValueAsString(original);
         AdministrateurResponse fromJson = objectMapper.readValue(json, AdministrateurResponse.class);

@@ -32,6 +32,7 @@ public class AdministrateurServiceImpl implements AdministrateurService {
     @Override
     public AdministrateurResponse create(AdministrateurRequest request) {
         Administrateur entity = mapper.toEntity(request);
+        entity.setUsername(resolveUsername(request, null));
         entity.setMotDePasse(passwordEncoder.encode(request.getMotDePasse()));
         Administrateur saved = repository.save(entity);
         return mapper.toResponse(saved);
@@ -58,6 +59,7 @@ public class AdministrateurServiceImpl implements AdministrateurService {
         return repository.findById(id)
                 .map(existing -> {
                     existing.setEmail(request.getEmail());
+                    existing.setUsername(resolveUsername(request, existing.getUsername()));
                     existing.setNom(request.getNom());
                     existing.setPrenom(request.getPrenom());
                     if (request.getMotDePasse() != null && !request.getMotDePasse().isBlank()) {
@@ -75,5 +77,15 @@ public class AdministrateurServiceImpl implements AdministrateurService {
         }
         repository.deleteById(id);
         return true;
+    }
+
+    private String resolveUsername(AdministrateurRequest request, String fallback) {
+        if (request.getUsername() != null && !request.getUsername().isBlank()) {
+            return request.getUsername().trim();
+        }
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            return request.getEmail().trim();
+        }
+        return fallback;
     }
 }

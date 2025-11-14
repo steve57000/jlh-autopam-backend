@@ -14,6 +14,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Service
@@ -23,11 +26,13 @@ public class PromotionCleanupService {
 
     private final PromotionRepository promoRepo;
     private final Path uploadDir;
+    private final ZoneId systemZone;
 
     public PromotionCleanupService(PromotionRepository promoRepo,
                                    @Value("${app.upload-dir}") String uploadDir) {
         this.promoRepo = promoRepo;
         this.uploadDir = Paths.get(uploadDir);
+        this.systemZone = ZoneId.systemDefault();
     }
 
     /**
@@ -37,9 +42,9 @@ public class PromotionCleanupService {
     @Scheduled(cron = "0 59 23 * * *")
     @Transactional
     public void removeExpiredPromotions() {
-        Instant now = Instant.now();
+        Instant cutoff = nextMidnight();
         // 1. Récupère d'abord les promotions expirées
-        List<Promotion> expired = promoRepo.findByValidToBefore(now);
+        List<Promotion> expired = promoRepo.findByValidToBefore(cutoff);
 
         for (Promotion promo : expired) {
             String imageUrl = promo.getImageUrl();
@@ -48,6 +53,10 @@ public class PromotionCleanupService {
             }
 
             String filename = extractFilename(imageUrl);
+            if (!StringUtils.hasText(filename)) {
+                continue;
+            }
+
             Path filePath = uploadDir.resolve(filename);
             try {
                 if (Files.deleteIfExists(filePath)) {
@@ -62,7 +71,7 @@ public class PromotionCleanupService {
 
         // 2. Puis supprime définitivement les promotions en base
         promoRepo.deleteAll(expired);
-        log.info("{} promotions expirées supprimées.", expired.size());
+        log.info("{} promotions expirées supprimées (validTo < {}).", expired.size(), cutoff);
     }
 
     /**
@@ -82,5 +91,10 @@ public class PromotionCleanupService {
             // si échec, on renvoie l’intégralité de l’URL en nom (improbable mais sûr)
             return imageUrl;
         }
+    }
+
+    private Instant nextMidnight() {
+        LocalDate tomorrow = ZonedDateTime.now(systemZone).toLocalDate().plusDays(1);
+        return tomorrow.atStartOfDay(systemZone).toInstant();
     }
 }

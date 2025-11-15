@@ -5,6 +5,7 @@ import com.jlh.jlhautopambackend.dto.ClientResponse;
 import com.jlh.jlhautopambackend.modeles.Client;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -14,8 +15,25 @@ class ClientMapperTest {
     @BeforeEach
     void setUp() {
         ClientMapperImpl impl = new ClientMapperImpl();
-        impl.setPasswordEncoder(raw -> "ENC(" + raw + ")");
+        impl.setPasswordEncoder(new StubPasswordEncoder());
         mapper = impl;
+    }
+
+    private static class StubPasswordEncoder implements PasswordEncoder {
+        @Override
+        public String encode(CharSequence rawPassword) {
+            return "ENC(" + rawPassword + ")";
+        }
+
+        @Override
+        public boolean matches(CharSequence rawPassword, String encodedPassword) {
+            return encode(rawPassword).equals(encodedPassword);
+        }
+
+        @Override
+        public boolean upgradeEncoding(String encodedPassword) {
+            return false;
+        }
     }
 
     @Test

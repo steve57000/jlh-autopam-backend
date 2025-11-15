@@ -108,7 +108,7 @@ class RendezVousControllerTest {
 
         mvc.perform(put("/api/rendezvous/99")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new RendezVousRequest(1,2,3,"S")))
+                        .content(objectMapper.writeValueAsString(new RendezVousRequest(1, 2, 3, "S"))))
                 .andExpect(status().isNotFound());
     }
 

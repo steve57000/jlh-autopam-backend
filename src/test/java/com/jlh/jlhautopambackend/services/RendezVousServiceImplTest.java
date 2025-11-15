@@ -198,7 +198,7 @@ class RendezVousServiceImplTest {
                 IllegalArgumentException.class,
                 () -> service.create(request)
         );
-        assertEquals("Statut introuvable: ST1", ex.getMessage());
+        assertEquals("Statut RDV introuvable: ST1", ex.getMessage());
         verify(statutRepo).findById("ST1");
     }
 

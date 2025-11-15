@@ -3,13 +3,20 @@ package com.jlh.jlhautopambackend.mapper;
 import com.jlh.jlhautopambackend.dto.ClientRequest;
 import com.jlh.jlhautopambackend.dto.ClientResponse;
 import com.jlh.jlhautopambackend.modeles.Client;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mapstruct.factory.Mappers;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class ClientMapperTest {
-    private final ClientMapper mapper = Mappers.getMapper(ClientMapper.class);
+    private ClientMapper mapper;
+
+    @BeforeEach
+    void setUp() {
+        ClientMapperImpl impl = new ClientMapperImpl();
+        impl.setPasswordEncoder(raw -> "ENC(" + raw + ")");
+        mapper = impl;
+    }
 
     @Test
     void shouldMapRequestToEntityAndBack() {
@@ -37,10 +44,11 @@ class ClientMapperTest {
         assertEquals("jean@dupont.fr", ent.getEmail());
         assertEquals("AA-123-AA", ent.getImmatriculation());
         assertEquals("0102030405", ent.getTelephone());
-        assertEquals("1 rue X", ent.getAdresseLigne1());
+        assertEquals("1 bis ter", ent.getAdresseLigne1());
         assertEquals("2 bis ter", ent.getAdresseLigne2());
         assertEquals("654", ent.getAdresseCodePostal());
         assertEquals("Metz", ent.getAdresseVille());
+        assertEquals("ENC(secret123)", ent.getMotDePasse());
         // selon ton mapper, tu peux hasher/saisir le mot de passe ailleurs,
         // ici on vérifie juste que le champ est bien passé si mappé tel quel :
         // assertEquals("secret123", ent.getMotDePasse());
@@ -56,9 +64,9 @@ class ClientMapperTest {
         assertEquals("jean@dupont.fr", res.getEmail());
         assertEquals("0102030405", res.getTelephone());
         assertEquals("AA-123-AA", res.getImmatriculation());
-        assertEquals("1 rue X", ent.getAdresseLigne1());
-        assertEquals("2 bis ter", ent.getAdresseLigne2());
-        assertEquals("654", ent.getAdresseCodePostal());
-        assertEquals("Metz", ent.getAdresseVille());
+        assertEquals("1 bis ter", res.getAdresseLigne1());
+        assertEquals("2 bis ter", res.getAdresseLigne2());
+        assertEquals("654", res.getCodePostal());
+        assertEquals("Metz", res.getVille());
     }
 }

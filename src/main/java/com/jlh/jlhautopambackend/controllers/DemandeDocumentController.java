@@ -5,19 +5,17 @@ import com.jlh.jlhautopambackend.dto.DemandeDocumentDto;
 import com.jlh.jlhautopambackend.modeles.Client;
 import com.jlh.jlhautopambackend.services.DemandeDocumentService;
 import com.jlh.jlhautopambackend.services.support.AuthenticatedClientResolver;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,9 +59,9 @@ public class DemandeDocumentController {
 
     @GetMapping("/{documentId}")
     @PreAuthorize("hasAnyRole('ADMIN','CLIENT')")
-    public ResponseEntity<byte[]> download(@PathVariable Integer demandeId,
-                                           @PathVariable Long documentId,
-                                           Authentication authentication) {
+    public ResponseEntity<Void> download(@PathVariable Integer demandeId,
+                                         @PathVariable Long documentId,
+                                         Authentication authentication) {
         if (!hasAccess(authentication, demandeId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -74,16 +72,14 @@ public class DemandeDocumentController {
         }
 
         DemandeDocumentDownload doc = download.get();
-        MediaType mediaType = resolveMediaType(doc.getContentType());
-        ContentDisposition disposition = ContentDisposition.attachment()
-                .filename(doc.getFilename(), StandardCharsets.UTF_8)
-                .build();
+        if (!StringUtils.hasText(doc.getUrlPublic())) {
+            return ResponseEntity.notFound().build();
+        }
 
-        return ResponseEntity.ok()
-                .contentType(mediaType)
-                .contentLength(doc.getFileSize())
-                .header("Content-Disposition", disposition.toString())
-                .body(doc.getData());
+        URI target = URI.create(doc.getUrlPublic());
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(target)
+                .build();
     }
 
     @DeleteMapping("/{documentId}")
@@ -106,14 +102,4 @@ public class DemandeDocumentController {
         return documentService.isOwnedByClient(demandeId, client.getIdClient());
     }
 
-    private MediaType resolveMediaType(String contentType) {
-        if (contentType == null) {
-            return MediaType.APPLICATION_OCTET_STREAM;
-        }
-        try {
-            return MediaType.parseMediaType(contentType);
-        } catch (IllegalArgumentException ex) {
-            return MediaType.APPLICATION_OCTET_STREAM;
-        }
-    }
 }

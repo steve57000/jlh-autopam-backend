@@ -141,7 +141,7 @@ class DemandeServiceImplTest {
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.create(request));
-        assertEquals("Client introuvable", ex.getMessage());
+        assertEquals("Client introuvable : 100", ex.getMessage());
         verify(clientRepo).findById(100);
         verifyNoMoreInteractions(typeRepo, statutRepo, repository, mapper, timelineService);
     }
@@ -154,7 +154,7 @@ class DemandeServiceImplTest {
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.create(request));
-        assertEquals("Type introuvable", ex.getMessage());
+        assertEquals("TypeDemande introuvable: TYPE1", ex.getMessage());
         verify(clientRepo).findById(100);
         verify(typeRepo).findById("TYPE1");
         verifyNoMoreInteractions(statutRepo, repository, mapper, timelineService);
@@ -169,7 +169,7 @@ class DemandeServiceImplTest {
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.create(request));
-        assertEquals("Statut introuvable", ex.getMessage());
+        assertEquals("StatutDemande introuvable: STAT1", ex.getMessage());
         verify(clientRepo).findById(100);
         verify(typeRepo).findById("TYPE1");
         verify(statutRepo).findById("STAT1");

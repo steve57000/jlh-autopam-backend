@@ -37,6 +37,8 @@ class DemandeServiceImplTest {
     private StatutDemandeRepository statutRepo;
     @Mock
     private DemandeMapper mapper;
+    @Mock
+    private DemandeTimelineService timelineService;
 
     @InjectMocks
     private DemandeServiceImpl service;
@@ -129,6 +131,7 @@ class DemandeServiceImplTest {
         assertEquals(type, passed.getTypeDemande());
         assertEquals(statut, passed.getStatutDemande());
         verify(mapper).toResponse(savedEntity);
+        verify(timelineService).logStatusChange(savedEntity, statut, null, null, "ADMIN");
     }
 
     @Test
@@ -140,7 +143,7 @@ class DemandeServiceImplTest {
                 () -> service.create(request));
         assertEquals("Client introuvable", ex.getMessage());
         verify(clientRepo).findById(100);
-        verifyNoMoreInteractions(typeRepo, statutRepo, repository, mapper);
+        verifyNoMoreInteractions(typeRepo, statutRepo, repository, mapper, timelineService);
     }
 
     @Test
@@ -154,7 +157,7 @@ class DemandeServiceImplTest {
         assertEquals("Type introuvable", ex.getMessage());
         verify(clientRepo).findById(100);
         verify(typeRepo).findById("TYPE1");
-        verifyNoMoreInteractions(statutRepo, repository, mapper);
+        verifyNoMoreInteractions(statutRepo, repository, mapper, timelineService);
     }
 
     @Test
@@ -170,7 +173,7 @@ class DemandeServiceImplTest {
         verify(clientRepo).findById(100);
         verify(typeRepo).findById("TYPE1");
         verify(statutRepo).findById("STAT1");
-        verifyNoMoreInteractions(repository, mapper);
+        verifyNoMoreInteractions(repository, mapper, timelineService);
     }
 
     @Test
@@ -278,6 +281,7 @@ class DemandeServiceImplTest {
         verify(statutRepo).findById("STAT2");
         verify(repository).save(existing);
         verify(mapper).toResponse(updatedEntity);
+        verify(timelineService).logStatusChange(updatedEntity, newStatut, "STAT1", null, null);
     }
 
     @Test
@@ -288,7 +292,7 @@ class DemandeServiceImplTest {
 
         assertFalse(result.isPresent());
         verify(repository).findById(3);
-        verifyNoMoreInteractions(clientRepo, typeRepo, statutRepo, mapper);
+        verifyNoMoreInteractions(clientRepo, typeRepo, statutRepo, mapper, timelineService);
     }
 
     @Test

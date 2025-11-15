@@ -12,33 +12,40 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class DemandeDocument {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_document")
-    @EqualsAndHashCode.Include
     private Long idDocument;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_demande", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Demande demande;
 
-    @Column(name = "filename", nullable = false, length = 255)
-    private String filename;
+    @Column(name = "nom_fichier", nullable = false, length = 255)
+    private String nomFichier;
 
-    @Column(name = "content_type", nullable = false, length = 150)
-    private String contentType;
+    @Column(name = "url_public", length = 512)
+    private String urlPublic;
 
-    @Column(name = "file_size", nullable = false)
-    private Long fileSize;
+    @Column(name = "type_contenu", length = 100)
+    private String typeContenu;
 
-    @Lob
-    @Basic(fetch = FetchType.LAZY)
-    @Column(name = "data", nullable = false, columnDefinition = "LONGBLOB")
-    private byte[] data;
+    @Column(name = "taille_octets")
+    private Long tailleOctets;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    @Column(name = "visible_client", nullable = false)
+    private boolean visibleClient;
+
+    @Column(name = "cree_par", length = 150)
+    private String creePar;
+
+    @Column(name = "cree_par_role", length = 30)
+    private String creeParRole;
+
+    @Column(name = "cree_le", nullable = false)
+    private Instant creeLe;
 }

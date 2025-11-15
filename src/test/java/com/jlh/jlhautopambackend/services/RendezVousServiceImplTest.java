@@ -29,7 +29,10 @@ class RendezVousServiceImplTest {
     @Mock private CreneauRepository creneauRepo;
     @Mock private AdministrateurRepository adminRepo;
     @Mock private StatutRendezVousRepository statutRepo;
+    @Mock private StatutDemandeRepository statutDemandeRepo;
+    @Mock private TypeDemandeRepository typeDemandeRepo;
     @Mock private RendezVousMapper mapper;
+    @Mock private DemandeTimelineService timelineService;
 
     @InjectMocks
     private RendezVousServiceImpl service;
@@ -52,11 +55,15 @@ class RendezVousServiceImplTest {
                 .codeStatut("ST1")
                 .build();
 
-        demande = Demande.builder().idDemande(1).build();
+        demande = Demande.builder()
+                .idDemande(1)
+                .statutDemande(StatutDemande.builder().codeStatut("Brouillon").build())
+                .build();
         creneau = Creneau.builder().idCreneau(2).build();
         admin = Administrateur.builder()
                 .idAdmin(3)
                 .username("admin3")
+                .email("admin@example.com")
                 .build();
         statut = StatutRendezVous.builder()
                 .codeStatut("ST1")
@@ -143,12 +150,15 @@ class RendezVousServiceImplTest {
         );
         assertEquals("Demande introuvable: 1", ex.getMessage());
         verify(demandeRepo).findById(1);
-        verifyNoMoreInteractions(creneauRepo, adminRepo, statutRepo, repo);
+        verifyNoMoreInteractions(creneauRepo, adminRepo, statutRepo, repo, typeDemandeRepo, statutDemandeRepo, timelineService);
     }
 
     @Test
     void testCreate_ShouldThrowWhenCreneauNotFound() {
+        TypeDemande typeRdv = TypeDemande.builder().codeType("RendezVous").build();
         when(demandeRepo.findById(1)).thenReturn(Optional.of(demande));
+        when(typeDemandeRepo.findById("RendezVous")).thenReturn(Optional.of(typeRdv));
+        when(demandeRepo.save(demande)).thenReturn(demande);
         when(creneauRepo.findById(2)).thenReturn(Optional.empty());
 
         IllegalArgumentException ex = assertThrows(
@@ -162,6 +172,8 @@ class RendezVousServiceImplTest {
     @Test
     void testCreate_ShouldThrowWhenAdminNotFound() {
         when(demandeRepo.findById(1)).thenReturn(Optional.of(demande));
+        when(typeDemandeRepo.findById("RendezVous")).thenReturn(Optional.of(TypeDemande.builder().codeType("RendezVous").build()));
+        when(demandeRepo.save(demande)).thenReturn(demande);
         when(creneauRepo.findById(2)).thenReturn(Optional.of(creneau));
         when(adminRepo.findById(3)).thenReturn(Optional.empty());
 
@@ -176,6 +188,8 @@ class RendezVousServiceImplTest {
     @Test
     void testCreate_ShouldThrowWhenStatutNotFound() {
         when(demandeRepo.findById(1)).thenReturn(Optional.of(demande));
+        when(typeDemandeRepo.findById("RendezVous")).thenReturn(Optional.of(TypeDemande.builder().codeType("RendezVous").build()));
+        when(demandeRepo.save(demande)).thenReturn(demande);
         when(creneauRepo.findById(2)).thenReturn(Optional.of(creneau));
         when(adminRepo.findById(3)).thenReturn(Optional.of(admin));
         when(statutRepo.findById("ST1")).thenReturn(Optional.empty());
@@ -190,10 +204,15 @@ class RendezVousServiceImplTest {
 
     @Test
     void testCreate_ShouldSetRelationsAndReturnResponse() {
+        TypeDemande typeRdv = TypeDemande.builder().codeType("RendezVous").build();
+        StatutDemande enAttente = StatutDemande.builder().codeStatut("En_attente").libelle("En attente").build();
         when(demandeRepo.findById(1)).thenReturn(Optional.of(demande));
+        when(typeDemandeRepo.findById("RendezVous")).thenReturn(Optional.of(typeRdv));
+        when(demandeRepo.save(demande)).thenReturn(demande);
         when(creneauRepo.findById(2)).thenReturn(Optional.of(creneau));
         when(adminRepo.findById(3)).thenReturn(Optional.of(admin));
         when(statutRepo.findById("ST1")).thenReturn(Optional.of(statut));
+        when(statutDemandeRepo.findById("En_attente")).thenReturn(Optional.of(enAttente));
         when(mapper.toEntity(request)).thenReturn(entityWithoutRel);
         when(repo.save(entityWithoutRel)).thenReturn(savedEntity);
         when(mapper.toResponse(savedEntity)).thenReturn(response);
@@ -208,6 +227,8 @@ class RendezVousServiceImplTest {
         assertEquals(creneau, passed.getCreneau());
         assertEquals(admin, passed.getAdministrateur());
         assertEquals(statut, passed.getStatut());
+        verify(timelineService).logRendezVousEvent(demande, savedEntity, "Rendez-vous planifié", admin.getEmail(), "ADMIN");
+        verify(timelineService).logStatusChange(demande, enAttente, "Brouillon", admin.getEmail(), "ADMIN");
     }
 
     @Test
@@ -262,6 +283,7 @@ class RendezVousServiceImplTest {
         assertTrue(result.isPresent());
         assertEquals(updatedResp, result.get());
         verify(repo).save(savedEntity);
+        verify(timelineService).logRendezVousEvent(demande, updated, "Rendez-vous mis à jour", admin.getEmail(), "ADMIN");
     }
 
     @Test

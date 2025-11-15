@@ -49,6 +49,12 @@ public class Demande {
     private List<DemandeService> services;
 
     @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("creeLe ASC")
     @Builder.Default
     private List<DemandeDocument> documents = new ArrayList<>();
+
+    @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC")
+    @Builder.Default
+    private List<DemandeTimeline> timelineEntries = new ArrayList<>();
 }

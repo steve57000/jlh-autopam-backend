@@ -4,7 +4,7 @@ import com.jlh.jlhautopambackend.dto.*;
 import com.jlh.jlhautopambackend.modeles.*;
 import org.mapstruct.*;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {DemandeTimelineMapper.class})
 public interface DemandeMapper {
 
     // ----------- ENTITY -> DTO -----------
@@ -13,7 +13,7 @@ public interface DemandeMapper {
     @Mapping(target = "typeDemande", source = "typeDemande")
     @Mapping(target = "statutDemande", source = "statutDemande")
     @Mapping(target = "services", source = "services") // utilisera toDemandeServiceDto
-    @Mapping(target = "documents", source = "documents")
+    @Mapping(target = "timeline", source = "timelineEntries")
     DemandeResponse toResponse(Demande ent);
 
     // Client -> ClientSummaryDto

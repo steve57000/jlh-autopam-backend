@@ -42,7 +42,10 @@ public class PromotionCleanupService {
     @Scheduled(cron = "0 59 23 * * *")
     @Transactional
     public void removeExpiredPromotions() {
-        Instant cutoff = nextMidnight();
+        // On supprime uniquement les promotions dont la fin de validité est strictement avant
+        // le début de la journée en cours. Ainsi, une promotion valable jusqu'à 23h59 reste
+        // visible toute la journée et n'est supprimée qu'au passage au jour suivant.
+        Instant cutoff = startOfToday();
         // 1. Récupère d'abord les promotions expirées
         List<Promotion> expired = promoRepo.findByValidToBefore(cutoff);
 
@@ -93,8 +96,8 @@ public class PromotionCleanupService {
         }
     }
 
-    private Instant nextMidnight() {
-        LocalDate tomorrow = ZonedDateTime.now(systemZone).toLocalDate().plusDays(1);
-        return tomorrow.atStartOfDay(systemZone).toInstant();
+    private Instant startOfToday() {
+        LocalDate today = ZonedDateTime.now(systemZone).toLocalDate();
+        return today.atStartOfDay(systemZone).toInstant();
     }
 }

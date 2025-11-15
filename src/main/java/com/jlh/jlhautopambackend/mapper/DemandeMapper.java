@@ -13,6 +13,7 @@ public interface DemandeMapper {
     @Mapping(target = "typeDemande", source = "typeDemande")
     @Mapping(target = "statutDemande", source = "statutDemande")
     @Mapping(target = "services", source = "services") // utilisera toDemandeServiceDto
+    @Mapping(target = "documents", source = "documents")
     @Mapping(target = "timeline", source = "timelineEntries")
     DemandeResponse toResponse(Demande ent);
 

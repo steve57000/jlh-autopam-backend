@@ -88,10 +88,14 @@ class DemandeMapperTest {
 
         DemandeDocument document = DemandeDocument.builder()
                 .idDocument(321L)
-                .filename("devis.pdf")
-                .contentType("application/pdf")
-                .fileSize(2048L)
-                .createdAt(Instant.parse("2025-06-01T08:31:00Z"))
+                .nomFichier("devis.pdf")
+                .urlPublic("https://cdn.example.com/docs/devis.pdf")
+                .typeContenu("application/pdf")
+                .tailleOctets(2048L)
+                .visibleClient(true)
+                .creePar("admin@test.fr")
+                .creeParRole("ADMIN")
+                .creeLe(Instant.parse("2025-06-01T08:31:00Z"))
                 .build();
 
         Demande ent = Demande.builder()
@@ -146,9 +150,13 @@ class DemandeMapperTest {
         assertEquals(1, docs.size());
         DemandeDocumentDto docDto = docs.get(0);
         assertEquals(321L, docDto.getIdDocument());
-        assertEquals("devis.pdf", docDto.getFilename());
-        assertEquals("application/pdf", docDto.getContentType());
-        assertEquals(2048L, docDto.getFileSize());
-        assertEquals(Instant.parse("2025-06-01T08:31:00Z"), docDto.getCreatedAt());
+        assertEquals("devis.pdf", docDto.getNomFichier());
+        assertEquals("https://cdn.example.com/docs/devis.pdf", docDto.getUrlPublic());
+        assertEquals("application/pdf", docDto.getTypeContenu());
+        assertEquals(2048L, docDto.getTailleOctets());
+        assertTrue(docDto.isVisibleClient());
+        assertEquals("admin@test.fr", docDto.getCreePar());
+        assertEquals("ADMIN", docDto.getCreeParRole());
+        assertEquals(Instant.parse("2025-06-01T08:31:00Z"), docDto.getCreeLe());
     }
 }

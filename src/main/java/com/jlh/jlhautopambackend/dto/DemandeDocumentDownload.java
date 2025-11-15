@@ -10,9 +10,12 @@ import java.time.Instant;
 public class DemandeDocumentDownload {
     Long idDocument;
     Integer demandeId;
-    String filename;
-    String contentType;
-    Long fileSize;
-    Instant createdAt;
-    byte[] data;
+    String nomFichier;
+    String urlPublic;
+    String typeContenu;
+    Long tailleOctets;
+    boolean visibleClient;
+    String creePar;
+    String creeParRole;
+    Instant creeLe;
 }

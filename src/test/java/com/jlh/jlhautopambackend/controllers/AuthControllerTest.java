@@ -2,7 +2,13 @@ package com.jlh.jlhautopambackend.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlh.jlhautopambackend.controllers.AuthController.LoginRequest;
+import com.jlh.jlhautopambackend.modeles.Client;
+import com.jlh.jlhautopambackend.repository.ClientRepository;
+import com.jlh.jlhautopambackend.services.ClientService;
+import com.jlh.jlhautopambackend.services.EmailVerificationService;
+import com.jlh.jlhautopambackend.services.PasswordResetService;
 import com.jlh.jlhautopambackend.utils.JwtUtil;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -44,6 +50,18 @@ class AuthControllerTest {
     @MockitoBean
     private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
 
+    @MockitoBean
+    private ClientService clientService;
+
+    @MockitoBean
+    private ClientRepository clientRepository;
+
+    @MockitoBean
+    private EmailVerificationService emailVerificationService;
+
+    @MockitoBean
+    private PasswordResetService passwordResetService;
+
     @Test
     @DisplayName("POST /api/auth/login ➔ 200, retourne un token JWT")
     void testLoginSuccess() throws Exception {
@@ -67,6 +85,11 @@ class AuthControllerTest {
         // Stub pour que auth.getPrincipal() retourne le UserDetails simulé
         Mockito.when(auth.getPrincipal()).thenReturn(userDetails);
 
+        // Stub repository pour vérifier l'état de vérification
+        Mockito.when(clientRepository.findByEmail("user")).thenReturn(Optional.of(
+                Client.builder().email("user").emailVerified(true).idClient(42).build()
+        ));
+
         // Stub du JwtUtil pour renvoyer un token fixe (pour un UserDetails)
         Mockito.when(jwtUtil.generateToken(userDetails)).thenReturn("jwt-token");
 
@@ -79,7 +102,7 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/auth/login ➔ 401, identifiants invalides")
+    @DisplayName("POST /api/auth/login ➔ 403, identifiants invalides")
     void testLoginFailure() throws Exception {
         // Prépare la requête
         LoginRequest req = new LoginRequest();
@@ -95,7 +118,7 @@ class AuthControllerTest {
         mvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(content().string("Identifiants invalides"));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Bad credentials"));
     }
 }

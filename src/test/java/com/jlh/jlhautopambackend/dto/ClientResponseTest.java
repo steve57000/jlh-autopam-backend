@@ -28,7 +28,7 @@ class ClientResponseTest {
         assertEquals("jean.dupont@example.com", resp.getEmail());
         assertEquals("0123456789", resp.getTelephone());
         assertEquals("1 rue A", resp.getAdresseLigne1());
-        assertEquals("2 rue B", resp.getAdresseLigne1());
+        assertEquals("2 rue B", resp.getAdresseLigne2());
         assertEquals("57000", resp.getCodePostal());
         assertEquals("Metz", resp.getVille());
     }
@@ -53,7 +53,7 @@ class ClientResponseTest {
         assertEquals("marie.martin@example.com", resp.getEmail());
         assertEquals("0987654321", resp.getTelephone());
         assertEquals("2 avenue B", resp.getAdresseLigne1());
-        assertEquals("1 avenue C", resp.getAdresseLigne1());
+        assertEquals("1 avenue C", resp.getAdresseLigne2());
         assertEquals("57000", resp.getCodePostal());
         assertEquals("Metz", resp.getVille());
     }
@@ -94,6 +94,7 @@ class ClientResponseTest {
         assertTrue(s.contains("prenom=U"));
         assertTrue(s.contains("email=t@u.com"));
         assertTrue(s.contains("telephone=000"));
-        assertTrue(s.contains("adresse=Addr"));
+        assertTrue(s.contains("adresseLigne1=I"));
+        assertTrue(s.contains("adresseLigne2=J"));
     }
 }

@@ -127,6 +127,8 @@ class ClientControllerTest {
         ClientRequest req = ClientRequest.builder()
                 .nom("Petit").prenom("Anne")
                 .email("anne.petit@example.com")
+                .motDePasse("secret123")
+                .immatriculation("AB-123-CD")
                 .telephone("0223344556")
                 .adresseLigne1("1 rue A")
                 .adresseLigne2("2 rue B")
@@ -137,6 +139,7 @@ class ClientControllerTest {
                 .idClient(10)
                 .nom(req.getNom()).prenom(req.getPrenom())
                 .email(req.getEmail())
+                .immatriculation(req.getImmatriculation())
                 .telephone(req.getTelephone())
                 .adresseLigne1(req.getAdresseLigne1())
                 .adresseLigne2(req.getAdresseLigne2())
@@ -152,7 +155,8 @@ class ClientControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/api/clients/10"))
                 .andExpect(jsonPath("$.idClient").value(10))
-                .andExpect(jsonPath("$.adresse").value("4 boulevard D"));
+                .andExpect(jsonPath("$.adresseLigne1").value("1 rue A"))
+                .andExpect(jsonPath("$.adresseLigne2").value("2 rue B"));
     }
 
     @Test
@@ -161,6 +165,8 @@ class ClientControllerTest {
         ClientRequest updates = ClientRequest.builder()
                 .nom("NewNom").prenom("NewPrenom")
                 .email("new@example.com")
+                .motDePasse("changeMe1")
+                .immatriculation("AB-123-CD")
                 .telephone("1111111111")
                 .adresseLigne1("1 rue A")
                 .adresseLigne2("2 rue B")
@@ -171,6 +177,7 @@ class ClientControllerTest {
                 .idClient(7)
                 .nom("NewNom").prenom("NewPrenom")
                 .email("new@example.com")
+                .immatriculation("AB-123-CD")
                 .telephone("1111111111")
                 .adresseLigne1("1 rue A")
                 .adresseLigne2("2 rue B")
@@ -195,6 +202,8 @@ class ClientControllerTest {
         ClientRequest updates = ClientRequest.builder()
                 .nom("X").prenom("Y")
                 .email("x@y.com")
+                .motDePasse("secret56")
+                .immatriculation("CD-456-EF")
                 .telephone("123")
                 .adresseLigne1("A")
                 .adresseLigne2("B")

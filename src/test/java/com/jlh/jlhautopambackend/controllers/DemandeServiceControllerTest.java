@@ -3,6 +3,8 @@ package com.jlh.jlhautopambackend.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlh.jlhautopambackend.dto.*;
 import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
+import com.jlh.jlhautopambackend.modeles.Client;
+import com.jlh.jlhautopambackend.modeles.Demande;
 import com.jlh.jlhautopambackend.repository.DemandeRepository;
 import com.jlh.jlhautopambackend.services.DemandeServiceService;
 import com.jlh.jlhautopambackend.services.support.AuthenticatedClientResolver;
@@ -20,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.util.*;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -101,8 +104,13 @@ class DemandeServiceControllerTest {
                 .prixUnitaire(BigDecimal.valueOf(190))
                 .build();
         Mockito.when(service.create(Mockito.any())).thenReturn(created);
+        Mockito.when(clientResolver.requireCurrentClient(Mockito.any())).thenReturn(Client.builder().idClient(1).build());
+        Mockito.when(demandeRepository.findById(5)).thenReturn(Optional.of(Demande.builder()
+                .client(Client.builder().idClient(1).build())
+                .build()));
 
         mvc.perform(post("/api/demandes-services")
+                        .with(user("client1").roles("CLIENT"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
@@ -123,8 +131,13 @@ class DemandeServiceControllerTest {
                 .build();
         Mockito.when(service.update(Mockito.eq(7),Mockito.eq(70),Mockito.any()))
                 .thenReturn(Optional.of(updated));
+        Mockito.when(clientResolver.requireCurrentClient(Mockito.any())).thenReturn(Client.builder().idClient(1).build());
+        Mockito.when(demandeRepository.findById(7)).thenReturn(Optional.of(Demande.builder()
+                .client(Client.builder().idClient(1).build())
+                .build()));
 
         mvc.perform(put("/api/demandes-services/7/70")
+                        .with(user("client1").roles("CLIENT"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -135,8 +148,13 @@ class DemandeServiceControllerTest {
     void testUpdateNotFound() throws Exception {
         Mockito.when(service.update(Mockito.eq(8),Mockito.eq(80),Mockito.any()))
                 .thenReturn(Optional.empty());
+        Mockito.when(clientResolver.requireCurrentClient(Mockito.any())).thenReturn(Client.builder().idClient(1).build());
+        Mockito.when(demandeRepository.findById(8)).thenReturn(Optional.of(Demande.builder()
+                .client(Client.builder().idClient(1).build())
+                .build()));
 
         mvc.perform(put("/api/demandes-services/8/80")
+                        .with(user("client1").roles("CLIENT"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isNotFound());
@@ -145,14 +163,22 @@ class DemandeServiceControllerTest {
     @Test @DisplayName("DELETE ➔ 204")
     void testDeleteFound() throws Exception {
         Mockito.when(service.delete(11,110)).thenReturn(true);
-        mvc.perform(delete("/api/demandes-services/11/110"))
+        Mockito.when(clientResolver.requireCurrentClient(Mockito.any())).thenReturn(Client.builder().idClient(1).build());
+        Mockito.when(demandeRepository.findById(11)).thenReturn(Optional.of(Demande.builder()
+                .client(Client.builder().idClient(1).build())
+                .build()));
+        mvc.perform(delete("/api/demandes-services/11/110").with(user("client1").roles("CLIENT")))
                 .andExpect(status().isNoContent());
     }
 
     @Test @DisplayName("DELETE ➔ 404")
     void testDeleteNotFound() throws Exception {
         Mockito.when(service.delete(12,120)).thenReturn(false);
-        mvc.perform(delete("/api/demandes-services/12/120"))
+        Mockito.when(clientResolver.requireCurrentClient(Mockito.any())).thenReturn(Client.builder().idClient(1).build());
+        Mockito.when(demandeRepository.findById(12)).thenReturn(Optional.of(Demande.builder()
+                .client(Client.builder().idClient(1).build())
+                .build()));
+        mvc.perform(delete("/api/demandes-services/12/120").with(user("client1").roles("CLIENT")))
                 .andExpect(status().isNotFound());
     }
 }

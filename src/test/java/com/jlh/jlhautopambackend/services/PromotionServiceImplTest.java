@@ -287,7 +287,7 @@ class PromotionServiceImplTest {
     }
 
     @Test
-    void testDelete_WhenExists() {
+    void testDelete_WhenExists() throws IOException {
         Promotion withImage = Promotion.builder()
                 .idPromotion(10)
                 .imageUrl("/promotions/images/promo.jpg")

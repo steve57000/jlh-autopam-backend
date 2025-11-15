@@ -15,6 +15,8 @@ public class ClientResponse {
     private String prenom;
     private String email;
     private String immatriculation;
+    private String vehiculeMarque;
+    private String vehiculeModele;
     private String telephone;
 
     // on garde la forme éclatée

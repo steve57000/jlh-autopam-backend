@@ -265,6 +265,16 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
             client.setImmatriculation(request.getImmatriculation().trim());
             dirty = true;
         }
+        if (request.getVehiculeMarque() != null) {
+            String value = request.getVehiculeMarque();
+            client.setVehiculeMarque(value != null && !value.isBlank() ? value.trim() : null);
+            dirty = true;
+        }
+        if (request.getVehiculeModele() != null) {
+            String value = request.getVehiculeModele();
+            client.setVehiculeModele(value != null && !value.isBlank() ? value.trim() : null);
+            dirty = true;
+        }
         if (request.getTelephone() != null && !request.getTelephone().isBlank()) {
             client.setTelephone(request.getTelephone().trim());
             dirty = true;

@@ -77,6 +77,8 @@ public class ClientServiceImpl implements ClientService {
             existing.setEmail(request.getEmail());
             existing.setTelephone(request.getTelephone());
             existing.setImmatriculation(request.getImmatriculation());
+            existing.setVehiculeMarque(request.getVehiculeMarque());
+            existing.setVehiculeModele(request.getVehiculeModele());
 
             // ✅ adresse éclatée
             existing.setAdresseLigne1(request.getAdresseLigne1());

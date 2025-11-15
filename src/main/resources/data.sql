@@ -25,6 +25,27 @@ SET @ddl := IF(@exists = 0,
             );
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+-- Ajout colonnes vehicule_marque / vehicule_modele
+SET @exists := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'client' AND COLUMN_NAME = 'vehicule_marque'
+);
+SET @ddl := IF(@exists = 0,
+               'ALTER TABLE client ADD COLUMN vehicule_marque VARCHAR(100) NULL',
+               'SELECT 1'
+            );
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exists := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'client' AND COLUMN_NAME = 'vehicule_modele'
+);
+SET @ddl := IF(@exists = 0,
+               'ALTER TABLE client ADD COLUMN vehicule_modele VARCHAR(100) NULL',
+               'SELECT 1'
+            );
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 -- Ajout colonne username (nullable au départ pour éviter l'échec si la table contient déjà des données)
 SET @exists := (
     SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
@@ -92,36 +113,36 @@ INSERT INTO service (id_service, libelle, description, prix_unitaire, quantite_m
 INSERT INTO client (
     id_client, nom, prenom, email, telephone,
     adresse_ligne1, adresse_ligne2, adresse_code_postal, adresse_ville,
-    immatriculation, mot_de_passe,
+    immatriculation, vehicule_marque, vehicule_modele, mot_de_passe,
     email_verified, email_verified_at
 ) VALUES
       (1,'Durand','Alice','test@client1.fr','0601020304',
        '12 rue Victor Hugo', NULL, '75003', 'Paris',
-       'AA-123-AA',
+       'AA-123-AA','Peugeot','208',
        '$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW',
        1, '2025-06-01 10:00:00'),
 
       (2,'Martin','Bob','test@client2.fr','0605060708',
        '45 av. Jean Jaurès', NULL, '69007', 'Lyon',
-       'BB-234-BB',
+       'BB-234-BB','Renault','Clio',
        '$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW',
        1, '2025-06-01 10:00:00'),
 
       (3,'Bernard','Claire','test@client3.fr','0611121314',
        '78 bd Haussmann', NULL, '75009', 'Paris',
-       'CC-345-CC',
+       'CC-345-CC','Citroen','C3',
        '$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW',
        1, '2025-06-01 10:00:00'),
 
       (4,'Lefevre','David','test@client4.fr','0622232425',
        '3 place Bellecour', NULL, '69002', 'Lyon',
-       'DD-456-DD',
+       'DD-456-DD','Volkswagen','Golf',
        '$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW',
        1, '2025-06-01 10:00:00'),
 
       (5,'Dupont','Eva','test@client5.fr','0633343536',
        '6 quai de la Loire', NULL, '44000', 'Nantes',
-       'EE-567-EE',
+       'EE-567-EE','Tesla','Model 3',
        '$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW',
        0, NULL);
 

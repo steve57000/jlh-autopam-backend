@@ -28,9 +28,13 @@ public abstract class ClientMapper {
     @Mapping(target = "adresseLigne2", source = "adresseLigne2")
     @Mapping(target = "adresseCodePostal", source = "codePostal")
     @Mapping(target = "adresseVille", source = "ville")
+    @Mapping(target = "vehiculeMarque", source = "vehiculeMarque")
+    @Mapping(target = "vehiculeModele", source = "vehiculeModele")
     public abstract Client toEntity(ClientRequest dto);
 
     @Mapping(target = "codePostal", source = "adresseCodePostal")
     @Mapping(target = "ville", source = "adresseVille")
+    @Mapping(target = "vehiculeMarque", source = "vehiculeMarque")
+    @Mapping(target = "vehiculeModele", source = "vehiculeModele")
     public abstract ClientResponse toResponse(Client entity);
 }

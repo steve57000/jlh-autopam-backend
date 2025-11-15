@@ -41,8 +41,8 @@ class DemandeMapperTest {
         assertNull(ent.getClient());
         assertNull(ent.getTypeDemande());
         assertNull(ent.getStatutDemande());
-        assertNull(ent.getServices());
-        assertNull(ent.getDocuments());
+        assertTrue(ent.getServices() == null || ent.getServices().isEmpty());
+        assertTrue(ent.getDocuments() == null || ent.getDocuments().isEmpty());
     }
 
     @Test

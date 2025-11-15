@@ -7,6 +7,7 @@ import com.jlh.jlhautopambackend.modeles.Administrateur;
 import com.jlh.jlhautopambackend.modeles.Promotion;
 import com.jlh.jlhautopambackend.repository.AdministrateurRepository;
 import com.jlh.jlhautopambackend.repository.PromotionRepository;
+import com.jlh.jlhautopambackend.services.FileStorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +34,9 @@ class PromotionServiceImplTest {
     private AdministrateurRepository adminRepo;
     @Mock
     private PromotionMapper mapper;
+
+    @Mock
+    private FileStorageService fileStorage;
 
     @InjectMocks
     private PromotionServiceImpl service;
@@ -284,23 +288,30 @@ class PromotionServiceImplTest {
 
     @Test
     void testDelete_WhenExists() {
-        when(promoRepo.existsById(10)).thenReturn(true);
+        Promotion withImage = Promotion.builder()
+                .idPromotion(10)
+                .imageUrl("/promotions/images/promo.jpg")
+                .administrateur(admin)
+                .build();
+        when(promoRepo.findById(10)).thenReturn(Optional.of(withImage));
 
         boolean result = service.delete(10);
 
         assertTrue(result);
-        verify(promoRepo).existsById(10);
-        verify(promoRepo).deleteById(10);
+        verify(promoRepo).findById(10);
+        verify(fileStorage).delete("promo.jpg");
+        verify(promoRepo).delete(withImage);
     }
 
     @Test
     void testDelete_WhenNotExists() {
-        when(promoRepo.existsById(11)).thenReturn(false);
+        when(promoRepo.findById(11)).thenReturn(Optional.empty());
 
         boolean result = service.delete(11);
 
         assertFalse(result);
-        verify(promoRepo).existsById(11);
-        verify(promoRepo, never()).deleteById(anyInt());
+        verify(promoRepo).findById(11);
+        verifyNoInteractions(fileStorage);
+        verify(promoRepo, never()).delete(any());
     }
 }

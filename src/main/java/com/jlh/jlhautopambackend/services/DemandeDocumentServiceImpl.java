@@ -76,7 +76,7 @@ public class DemandeDocumentServiceImpl implements DemandeDocumentService {
     @Override
     @Transactional(readOnly = true)
     public Optional<DemandeDocumentDownload> loadDocument(Integer demandeId, Long documentId) {
-        return documentRepository.findByIdAndDemande_IdDemande(documentId, demandeId)
+        return documentRepository.findByIdDocumentAndDemande_IdDemande(documentId, demandeId)
                 .map(doc -> DemandeDocumentDownload.builder()
                         .idDocument(doc.getIdDocument())
                         .demandeId(demandeId)
@@ -93,7 +93,7 @@ public class DemandeDocumentServiceImpl implements DemandeDocumentService {
 
     @Override
     public boolean deleteDocument(Integer demandeId, Long documentId) {
-        Optional<DemandeDocument> existing = documentRepository.findByIdAndDemande_IdDemande(documentId, demandeId);
+        Optional<DemandeDocument> existing = documentRepository.findByIdDocumentAndDemande_IdDemande(documentId, demandeId);
         existing.ifPresent(documentRepository::delete);
         return existing.isPresent();
     }

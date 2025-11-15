@@ -12,5 +12,5 @@ public interface DemandeDocumentRepository extends JpaRepository<DemandeDocument
 
     List<DemandeDocument> findByDemande_IdDemandeOrderByCreeLeDesc(Integer demandeId);
 
-    Optional<DemandeDocument> findByIdAndDemande_IdDemande(Long documentId, Integer demandeId);
+    Optional<DemandeDocument> findByIdDocumentAndDemande_IdDemande(Long documentId, Integer demandeId);
 }

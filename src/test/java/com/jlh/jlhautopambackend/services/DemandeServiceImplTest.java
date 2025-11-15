@@ -95,6 +95,7 @@ class DemandeServiceImplTest {
                 .typeDemande(type)
                 .statutDemande(statut)
                 .services(Collections.emptyList())
+                .documents(Collections.emptyList())
                 .build();
 
         response = DemandeResponse.builder()
@@ -103,6 +104,7 @@ class DemandeServiceImplTest {
                 .typeDemande(new TypeDemandeDto(type.getCodeType(), type.getLibelle()))
                 .statutDemande(new StatutDemandeDto(statut.getCodeStatut(), statut.getLibelle()))
                 .services(Collections.emptyList())
+                .documents(Collections.emptyList())
                 .build();
     }
 
@@ -207,6 +209,7 @@ class DemandeServiceImplTest {
                 .typeDemande(type)
                 .statutDemande(statut)
                 .services(Collections.emptyList())
+                .documents(Collections.emptyList())
                 .build();
         DemandeResponse otherResp = DemandeResponse.builder()
                 .idDemande(2)
@@ -214,6 +217,7 @@ class DemandeServiceImplTest {
                 .typeDemande(new TypeDemandeDto(type.getCodeType(), type.getLibelle()))
                 .statutDemande(new StatutDemandeDto(statut.getCodeStatut(), statut.getLibelle()))
                 .services(Collections.emptyList())
+                .documents(Collections.emptyList())
                 .build();
 
         when(repository.findAll()).thenReturn(Arrays.asList(savedEntity, other));
@@ -249,6 +253,7 @@ class DemandeServiceImplTest {
                 .typeDemande(newType)
                 .statutDemande(newStatut)
                 .services(Collections.emptyList())
+                .documents(Collections.emptyList())
                 .build();
         DemandeResponse updatedResp = DemandeResponse.builder()
                 .idDemande(1)
@@ -256,6 +261,7 @@ class DemandeServiceImplTest {
                 .typeDemande(new TypeDemandeDto(newType.getCodeType(), null))
                 .statutDemande(new StatutDemandeDto(newStatut.getCodeStatut(), null))
                 .services(Collections.emptyList())
+                .documents(Collections.emptyList())
                 .build();
 
         when(repository.findById(1)).thenReturn(Optional.of(existing));

@@ -37,6 +37,8 @@ public interface DemandeMapper {
     @Mapping(target = "quantite", source = "quantite")
     DemandeServiceDto toDemandeServiceDto(DemandeService ds);
 
+    DemandeDocumentDto toDocumentDto(DemandeDocument document);
+
     @AfterMapping
     default void ensureServiceFallback(DemandeService source, @MappingTarget DemandeServiceDto target) {
         if (source == null || target == null) {
@@ -85,6 +87,7 @@ public interface DemandeMapper {
     @Mapping(target = "typeDemande", ignore = true)
     @Mapping(target = "statutDemande", ignore = true)
     @Mapping(target = "services", ignore = true)
+    @Mapping(target = "documents", ignore = true)
     @Mapping(target = "rendezVous", ignore = true) // si lien 1-1
     Demande toEntity(DemandeRequest req);
 }

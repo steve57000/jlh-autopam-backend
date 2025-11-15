@@ -73,8 +73,8 @@ class DemandeControllerTest {
     @WithMockUser(roles = "ADMIN")
     void getAll_ok() throws Exception {
         Mockito.when(service.findAll()).thenReturn(List.of(
-                DemandeResponse.builder().idDemande(1).services(List.of()).build(),
-                DemandeResponse.builder().idDemande(2).services(List.of()).build()
+                DemandeResponse.builder().idDemande(1).services(List.of()).documents(List.of()).build(),
+                DemandeResponse.builder().idDemande(2).services(List.of()).documents(List.of()).build()
         ));
 
         mvc.perform(get("/api/demandes").accept(MediaType.APPLICATION_JSON))
@@ -89,7 +89,7 @@ class DemandeControllerTest {
     void getById_found() throws Exception {
         var resp = DemandeResponse.builder()
                 .idDemande(3).dateDemande(Instant.parse("2025-01-03T12:00:00Z"))
-                .services(List.of()).build();
+                .services(List.of()).documents(List.of()).build();
 
         Mockito.when(service.findById(3)).thenReturn(Optional.of(resp));
 
@@ -128,6 +128,7 @@ class DemandeControllerTest {
                 .typeDemande(TypeDemandeDto.builder().codeType("Devis").libelle("Devis").build())
                 .statutDemande(StatutDemandeDto.builder().codeStatut("En_attente").libelle("En attente").build())
                 .services(List.of())
+                .documents(List.of())
                 .build();
 
         Mockito.when(service.createForClient(Mockito.eq(1), Mockito.any(DemandeRequest.class)))
@@ -151,7 +152,7 @@ class DemandeControllerTest {
                 .codeType("T4").codeStatut("S4").build();
 
         var updated = DemandeResponse.builder()
-                .idDemande(5).dateDemande(req.getDateDemande()).services(List.of()).build();
+                .idDemande(5).dateDemande(req.getDateDemande()).services(List.of()).documents(List.of()).build();
 
         Mockito.when(service.update(Mockito.eq(5), Mockito.any(DemandeRequest.class)))
                 .thenReturn(Optional.of(updated));

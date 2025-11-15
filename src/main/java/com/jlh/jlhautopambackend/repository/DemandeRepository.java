@@ -20,6 +20,7 @@ public interface DemandeRepository extends JpaRepository<Demande, Integer> {
             "statutDemande",
             "services",
             "services.service",   // libellé + prix
+            "documents",
             "rendezVous",
             "rendezVous.statut",
             "rendezVous.creneau",
@@ -34,6 +35,7 @@ public interface DemandeRepository extends JpaRepository<Demande, Integer> {
             "statutDemande",
             "services",
             "services.service",
+            "documents",
             "rendezVous",
             "rendezVous.statut",
             "rendezVous.creneau",
@@ -48,6 +50,7 @@ public interface DemandeRepository extends JpaRepository<Demande, Integer> {
             "statutDemande",
             "services",
             "services.service",
+            "documents",
             "rendezVous",
             "rendezVous.statut",
             "rendezVous.creneau",
@@ -58,7 +61,7 @@ public interface DemandeRepository extends JpaRepository<Demande, Integer> {
 
 
     // Variante 2 — Demande a une relation @ManyToOne Client client
-     Optional<Demande> findFirstByClient_IdClientAndStatutDemande_CodeStatutOrderByDateDemandeDesc(
+    Optional<Demande> findFirstByClient_IdClientAndStatutDemande_CodeStatutOrderByDateDemandeDesc(
             Integer clientId, String codeStatut);
 
     boolean existsByIdDemandeAndClient_IdClient(Integer idDemande, Integer idClient);

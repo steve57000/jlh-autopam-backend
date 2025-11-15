@@ -49,11 +49,11 @@ public class DemandeDocumentServiceImpl implements DemandeDocumentService {
 
         DemandeDocument document = DemandeDocument.builder()
                 .demande(demande)
-                .filename(sanitizedName)
-                .contentType(contentType)
-                .fileSize(file.getSize())
-                .data(file.getBytes())
-                .createdAt(Instant.now())
+                .nomFichier(sanitizedName)
+                .typeContenu(contentType)
+                .tailleOctets(file.getSize())
+                .visibleClient(true)
+                .creeLe(Instant.now())
                 .build();
 
         DemandeDocument saved = documentRepository.save(document);
@@ -67,7 +67,7 @@ public class DemandeDocumentServiceImpl implements DemandeDocumentService {
     @Override
     @Transactional(readOnly = true)
     public List<DemandeDocumentDto> listDocuments(Integer demandeId) {
-        return documentRepository.findByDemande_IdDemandeOrderByCreatedAtDesc(demandeId)
+        return documentRepository.findByDemande_IdDemandeOrderByCreeLeDesc(demandeId)
                 .stream()
                 .map(this::toDto)
                 .toList();
@@ -80,11 +80,14 @@ public class DemandeDocumentServiceImpl implements DemandeDocumentService {
                 .map(doc -> DemandeDocumentDownload.builder()
                         .idDocument(doc.getIdDocument())
                         .demandeId(demandeId)
-                        .filename(doc.getFilename())
-                        .contentType(doc.getContentType())
-                        .fileSize(doc.getFileSize())
-                        .createdAt(doc.getCreatedAt())
-                        .data(doc.getData())
+                        .nomFichier(doc.getNomFichier())
+                        .urlPublic(doc.getUrlPublic())
+                        .typeContenu(doc.getTypeContenu())
+                        .tailleOctets(doc.getTailleOctets())
+                        .visibleClient(doc.isVisibleClient())
+                        .creePar(doc.getCreePar())
+                        .creeParRole(doc.getCreeParRole())
+                        .creeLe(doc.getCreeLe())
                         .build());
     }
 
@@ -104,10 +107,14 @@ public class DemandeDocumentServiceImpl implements DemandeDocumentService {
     private DemandeDocumentDto toDto(DemandeDocument doc) {
         return DemandeDocumentDto.builder()
                 .idDocument(doc.getIdDocument())
-                .filename(doc.getFilename())
-                .contentType(doc.getContentType())
-                .fileSize(doc.getFileSize())
-                .createdAt(doc.getCreatedAt())
+                .nomFichier(doc.getNomFichier())
+                .urlPublic(doc.getUrlPublic())
+                .typeContenu(doc.getTypeContenu())
+                .tailleOctets(doc.getTailleOctets())
+                .visibleClient(doc.isVisibleClient())
+                .creePar(doc.getCreePar())
+                .creeParRole(doc.getCreeParRole())
+                .creeLe(doc.getCreeLe())
                 .build();
     }
 

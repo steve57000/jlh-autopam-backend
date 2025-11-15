@@ -49,6 +49,18 @@ CREATE TABLE Demande (
   FOREIGN KEY (code_statut) REFERENCES Statut_Demande(code_statut)
 );
 
+-- Table des documents attachés aux demandes
+CREATE TABLE Demande_Document (
+  id_document   BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id_demande    INT NOT NULL,
+  filename      VARCHAR(255) NOT NULL,
+  content_type  VARCHAR(150) NOT NULL,
+  file_size     BIGINT NOT NULL,
+  data          LONGBLOB NOT NULL,
+  created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_demande) REFERENCES Demande(id_demande) ON DELETE CASCADE
+);
+
 -- Table de jointure Demande ↔ Service
 CREATE TABLE Demande_Service (
   id_demande      INT NOT NULL,

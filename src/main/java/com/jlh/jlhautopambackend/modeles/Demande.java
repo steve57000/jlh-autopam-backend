@@ -2,6 +2,7 @@ package com.jlh.jlhautopambackend.modeles;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,4 +47,8 @@ public class Demande {
 
     @OneToMany(mappedBy = "demande") // via DemandeService.id.idDemande
     private List<DemandeService> services;
+
+    @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<DemandeDocument> documents = new ArrayList<>();
 }

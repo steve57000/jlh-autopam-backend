@@ -42,6 +42,7 @@ class DemandeMapperTest {
         assertNull(ent.getTypeDemande());
         assertNull(ent.getStatutDemande());
         assertNull(ent.getServices());
+        assertNull(ent.getDocuments());
     }
 
     @Test
@@ -85,6 +86,14 @@ class DemandeMapperTest {
                 .prixUnitaireService(BigDecimal.valueOf(59.90))
                 .build();
 
+        DemandeDocument document = DemandeDocument.builder()
+                .idDocument(321L)
+                .filename("devis.pdf")
+                .contentType("application/pdf")
+                .fileSize(2048L)
+                .createdAt(Instant.parse("2025-06-01T08:31:00Z"))
+                .build();
+
         Demande ent = Demande.builder()
                 .idDemande(99)
                 .dateDemande(dt)
@@ -92,7 +101,10 @@ class DemandeMapperTest {
                 .typeDemande(td)
                 .statutDemande(sd)
                 .services(List.of(ds))
+                .documents(List.of(document))
                 .build();
+
+        document.setDemande(ent);
 
         DemandeResponse resp = mapper.toResponse(ent);
 
@@ -128,5 +140,15 @@ class DemandeMapperTest {
         assertEquals("Vidange moteur", s0.getDescription());
         assertEquals(2, s0.getQuantite());
         assertEquals(BigDecimal.valueOf(59.90), s0.getPrixUnitaire());
+
+        List<DemandeDocumentDto> docs = resp.getDocuments();
+        assertNotNull(docs);
+        assertEquals(1, docs.size());
+        DemandeDocumentDto docDto = docs.get(0);
+        assertEquals(321L, docDto.getIdDocument());
+        assertEquals("devis.pdf", docDto.getFilename());
+        assertEquals("application/pdf", docDto.getContentType());
+        assertEquals(2048L, docDto.getFileSize());
+        assertEquals(Instant.parse("2025-06-01T08:31:00Z"), docDto.getCreatedAt());
     }
 }

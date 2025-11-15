@@ -21,7 +21,10 @@ public interface DemandeRepository extends JpaRepository<Demande, Integer> {
             "services",
             "services.service",   // libellé + prix
             "rendezVous",
-            "rendezVous.statut"
+            "rendezVous.statut",
+            "rendezVous.creneau",
+            "documents",
+            "timelineEntries"
     })
     List<Demande> findAll();
 
@@ -32,7 +35,10 @@ public interface DemandeRepository extends JpaRepository<Demande, Integer> {
             "services",
             "services.service",
             "rendezVous",
-            "rendezVous.statut"
+            "rendezVous.statut",
+            "rendezVous.creneau",
+            "documents",
+            "timelineEntries"
     })
     Optional<Demande> findById(Integer id);
 
@@ -43,7 +49,10 @@ public interface DemandeRepository extends JpaRepository<Demande, Integer> {
             "services",
             "services.service",
             "rendezVous",
-            "rendezVous.statut"
+            "rendezVous.statut",
+            "rendezVous.creneau",
+            "documents",
+            "timelineEntries"
     })
     List<Demande> findByClient_IdClient(Integer clientId);
 
@@ -51,4 +60,6 @@ public interface DemandeRepository extends JpaRepository<Demande, Integer> {
     // Variante 2 — Demande a une relation @ManyToOne Client client
      Optional<Demande> findFirstByClient_IdClientAndStatutDemande_CodeStatutOrderByDateDemandeDesc(
             Integer clientId, String codeStatut);
+
+    boolean existsByIdDemandeAndClient_IdClient(Integer idDemande, Integer idClient);
 }

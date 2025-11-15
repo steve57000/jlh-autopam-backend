@@ -5,8 +5,10 @@ import com.jlh.jlhautopambackend.dto.DevisResponse;
 import com.jlh.jlhautopambackend.mapper.DevisMapper;
 import com.jlh.jlhautopambackend.modeles.Devis;
 import com.jlh.jlhautopambackend.modeles.Demande;
+import com.jlh.jlhautopambackend.modeles.StatutDemande;
 import com.jlh.jlhautopambackend.repository.DevisRepository;
 import com.jlh.jlhautopambackend.repository.DemandeRepository;
+import com.jlh.jlhautopambackend.repository.StatutDemandeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +34,11 @@ class DevisServiceImplTest {
     @Mock
     private DemandeRepository demandeRepo;
     @Mock
+    private StatutDemandeRepository statutRepo;
+    @Mock
     private DevisMapper mapper;
+    @Mock
+    private DemandeTimelineService timelineService;
 
     @InjectMocks
     private DevisServiceImpl service;
@@ -134,9 +140,12 @@ class DevisServiceImplTest {
 
     @Test
     void testCreate_ShouldSetDemandeAndReturnResponse() {
+        StatutDemande enAttente = StatutDemande.builder().codeStatut("En_attente").libelle("En attente").build();
         when(demandeRepo.findById(42)).thenReturn(Optional.of(demande));
         when(mapper.toEntity(request)).thenReturn(entityWithoutRel);
         when(devisRepo.save(entityWithoutRel)).thenReturn(savedEntity);
+        when(statutRepo.findById("En_attente")).thenReturn(Optional.of(enAttente));
+        when(demandeRepo.save(demande)).thenReturn(demande);
         when(mapper.toResponse(savedEntity)).thenReturn(response);
 
         DevisResponse result = service.create(request);
@@ -151,6 +160,8 @@ class DevisServiceImplTest {
         assertEquals(dateDevis, passed.getDateDevis());
         assertEquals(montant, passed.getMontantTotal());
         verify(mapper).toResponse(savedEntity);
+        verify(timelineService).logMontantValidation(demande, montant, "Montant du devis validé", null, "ADMIN");
+        verify(timelineService).logStatusChange(demande, enAttente, null, null, null);
     }
 
     @Test
@@ -163,7 +174,7 @@ class DevisServiceImplTest {
         );
         assertEquals("Demande introuvable", ex.getMessage());
         verify(demandeRepo).findById(42);
-        verifyNoMoreInteractions(mapper, devisRepo);
+        verifyNoMoreInteractions(mapper, devisRepo, timelineService, statutRepo);
     }
 
     @Test
@@ -204,6 +215,7 @@ class DevisServiceImplTest {
         verify(devisRepo).findById(7);
         verify(devisRepo).save(existing);
         verify(mapper).toResponse(updatedEntity);
+        verify(timelineService).logMontantValidation(demande, newMontant, "Montant du devis mis à jour", null, null);
     }
 
     @Test

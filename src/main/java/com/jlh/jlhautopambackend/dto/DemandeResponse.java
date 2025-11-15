@@ -18,4 +18,6 @@ public class DemandeResponse {
 
     // AU LIEU de clés {idDemande,idService} seulement -> on envoie les infos affichables
     private List<DemandeServiceDto> services;
+
+    private List<DemandeTimelineEntryDto> timeline;
 }

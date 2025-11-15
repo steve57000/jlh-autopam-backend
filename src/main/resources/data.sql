@@ -239,6 +239,34 @@ INSERT INTO rendez_vous (id_rdv, id_demande, id_admin, id_creneau, code_statut) 
                                                                                     (3,6,1,6,'Annule');
 
 -- ==================================================
+-- 10) Documents et timeline des demandes
+-- ==================================================
+INSERT INTO demande_document (
+    id_document, id_demande, nom_fichier, url_public, type_contenu,
+    taille_octets, visible_client, cree_par, cree_par_role, cree_le
+) VALUES (
+    1, 1, 'controle-technique.pdf',
+    'https://exemple.com/docs/controle-technique.pdf',
+    'application/pdf', 20480, 1,
+    'test@admin.fr', 'ADMIN', '2025-06-20 09:00:00'
+);
+
+INSERT INTO demande_timeline (
+    id_timeline, id_demande, type_evenement, cree_le, cree_par, cree_par_role, visible_client,
+    statut_code, statut_libelle, commentaire, montant_valide,
+    document_id, document_nom, document_url,
+    rendezvous_id, rendezvous_statut_code, rendezvous_statut_libelle, rendezvous_date_debut, rendezvous_date_fin
+) VALUES
+    (1, 1, 'MONTANT', '2025-06-20 08:30:00', 'test@admin.fr', 'ADMIN', 1,
+     'En_attente', 'En attente', 'Création du devis', 138.90,
+     NULL, NULL, NULL,
+     NULL, NULL, NULL, NULL, NULL),
+    (2, 1, 'DOCUMENT', '2025-06-20 09:00:00', 'test@admin.fr', 'ADMIN', 1,
+     NULL, NULL, 'Ajout du contrôle technique', NULL,
+     1, 'controle-technique.pdf', 'https://exemple.com/docs/controle-technique.pdf',
+     NULL, NULL, NULL, NULL, NULL);
+
+-- ==================================================
 -- 11) 🔥 Nouveau cas de test ICS pour Alice (client1)
 --     RDV futur (>= aujourd’hui), statut Confirmé, créneau réservé.
 -- ==================================================

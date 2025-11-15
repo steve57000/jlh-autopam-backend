@@ -3,6 +3,7 @@ package com.jlh.jlhautopambackend.controllers;
 import com.jlh.jlhautopambackend.dto.ClientStatsDto;
 import com.jlh.jlhautopambackend.dto.DemandeRequest;
 import com.jlh.jlhautopambackend.dto.DemandeResponse;
+import com.jlh.jlhautopambackend.dto.DemandeTimelineEntryDto;
 import com.jlh.jlhautopambackend.dto.ProchainRdvDto;
 import com.jlh.jlhautopambackend.modeles.Client;
 import com.jlh.jlhautopambackend.services.DemandeService;
@@ -32,6 +33,18 @@ public class DemandeController {
 
     private Client requireClient(Authentication auth) {
         return clientResolver.requireCurrentClient(auth);
+    }
+
+    private DemandeResponse filterTimelineForClient(DemandeResponse response) {
+        if (response == null) {
+            return null;
+        }
+        if (response.getTimeline() != null) {
+            response.setTimeline(response.getTimeline().stream()
+                    .filter(DemandeTimelineEntryDto::isVisibleClient)
+                    .toList());
+        }
+        return response;
     }
 
     @GetMapping
@@ -161,7 +174,7 @@ public class DemandeController {
         var req = new DemandeRequest();
         req.setCodeStatut("En_attente");
         return service.update(id, req)
-                .map(ResponseEntity::ok)
+                .map(resp -> ResponseEntity.ok(filterTimelineForClient(resp)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -169,11 +182,15 @@ public class DemandeController {
     @PreAuthorize("hasAnyRole('CLIENT','ADMIN')")
     public ResponseEntity<DemandeResponse> changeType(
             @PathVariable Integer id,
-            @RequestBody Map<String,String> body
+            @RequestBody Map<String,String> body,
+            Authentication auth
     ) {
         String codeType = body.get("codeType");
         if (codeType == null || codeType.isBlank()) return ResponseEntity.badRequest().build();
+        boolean isClient = auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_CLIENT"));
         return service.update(id, DemandeRequest.builder().codeType(codeType).build())
+                .map(resp -> isClient ? filterTimelineForClient(resp) : resp)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

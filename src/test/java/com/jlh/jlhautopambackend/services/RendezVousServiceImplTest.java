@@ -157,8 +157,6 @@ class RendezVousServiceImplTest {
     void testCreate_ShouldThrowWhenCreneauNotFound() {
         TypeDemande typeRdv = TypeDemande.builder().codeType("RendezVous").build();
         when(demandeRepo.findById(1)).thenReturn(Optional.of(demande));
-        when(typeDemandeRepo.findById("RendezVous")).thenReturn(Optional.of(typeRdv));
-        when(demandeRepo.save(demande)).thenReturn(demande);
         when(creneauRepo.findById(2)).thenReturn(Optional.empty());
 
         IllegalArgumentException ex = assertThrows(
@@ -172,8 +170,6 @@ class RendezVousServiceImplTest {
     @Test
     void testCreate_ShouldThrowWhenAdminNotFound() {
         when(demandeRepo.findById(1)).thenReturn(Optional.of(demande));
-        when(typeDemandeRepo.findById("RendezVous")).thenReturn(Optional.of(TypeDemande.builder().codeType("RendezVous").build()));
-        when(demandeRepo.save(demande)).thenReturn(demande);
         when(creneauRepo.findById(2)).thenReturn(Optional.of(creneau));
         when(adminRepo.findById(3)).thenReturn(Optional.empty());
 
@@ -188,8 +184,6 @@ class RendezVousServiceImplTest {
     @Test
     void testCreate_ShouldThrowWhenStatutNotFound() {
         when(demandeRepo.findById(1)).thenReturn(Optional.of(demande));
-        when(typeDemandeRepo.findById("RendezVous")).thenReturn(Optional.of(TypeDemande.builder().codeType("RendezVous").build()));
-        when(demandeRepo.save(demande)).thenReturn(demande);
         when(creneauRepo.findById(2)).thenReturn(Optional.of(creneau));
         when(adminRepo.findById(3)).thenReturn(Optional.of(admin));
         when(statutRepo.findById("ST1")).thenReturn(Optional.empty());

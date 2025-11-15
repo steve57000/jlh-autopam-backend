@@ -99,7 +99,6 @@ class ClientServiceImplTest {
                 .codePostal(savedEntity.getAdresseCodePostal())
                 .build();
 
-        when(passwordEncoder.encode(any())).thenAnswer(inv -> "ENC(" + inv.getArgument(0, String.class) + ")");
     }
 
     @Test
@@ -241,6 +240,7 @@ class ClientServiceImplTest {
         when(repository.findById(3)).thenReturn(Optional.of(existing));
         when(repository.save(existing)).thenReturn(updatedEntity);
         when(mapper.toResponse(updatedEntity)).thenReturn(updatedResp);
+        when(passwordEncoder.encode("password999")).thenReturn("ENC(password999)");
 
         Optional<ClientResponse> result = service.update(3, updateReq);
 

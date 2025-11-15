@@ -30,5 +30,7 @@ public abstract class ClientMapper {
     @Mapping(target = "adresseVille", source = "ville")
     public abstract Client toEntity(ClientRequest dto);
 
+    @Mapping(target = "codePostal", source = "adresseCodePostal")
+    @Mapping(target = "ville", source = "adresseVille")
     public abstract ClientResponse toResponse(Client entity);
 }

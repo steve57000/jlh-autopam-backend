@@ -84,6 +84,8 @@ public class AuthController {
                 .motDePasse(req.motDePasse())
                 .telephone(req.telephone())
                 .immatriculation(req.immatriculation())
+                .vehiculeMarque(req.vehiculeMarque())
+                .vehiculeModele(req.vehiculeModele())
                 .adresseLigne1(req.adresseLigne1())
                 .adresseLigne2(req.adresseLigne2())
                 .codePostal(req.codePostal())

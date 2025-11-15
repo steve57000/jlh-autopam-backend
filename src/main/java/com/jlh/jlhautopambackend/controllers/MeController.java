@@ -55,6 +55,8 @@ public class MeController {
                 .email(c.getEmail())
                 .telephone(c.getTelephone())
                 .immatriculation(c.getImmatriculation())
+                .vehiculeMarque(c.getVehiculeMarque())
+                .vehiculeModele(c.getVehiculeModele())
                 .adresse(ClientMeDto.AddressDto.builder()
                         .ligne1(c.getAdresseLigne1())
                         .ligne2(c.getAdresseLigne2())
@@ -77,6 +79,8 @@ public class MeController {
         c.setImmatriculation(
                 req.getImmatriculation() == null ? null : req.getImmatriculation().trim().toUpperCase()
         );
+        c.setVehiculeMarque(nullIfBlank(req.getVehiculeMarque()));
+        c.setVehiculeModele(nullIfBlank(req.getVehiculeModele()));
 
         if (req.getAdresse() != null) {
             c.setAdresseLigne1(nullIfBlank(req.getAdresse().getLigne1()));
@@ -94,6 +98,8 @@ public class MeController {
                 .email(c.getEmail())
                 .telephone(c.getTelephone())
                 .immatriculation(c.getImmatriculation())
+                .vehiculeMarque(c.getVehiculeMarque())
+                .vehiculeModele(c.getVehiculeModele())
                 .adresse(ClientMeDto.AddressDto.builder()
                         .ligne1(c.getAdresseLigne1())
                         .ligne2(c.getAdresseLigne2())

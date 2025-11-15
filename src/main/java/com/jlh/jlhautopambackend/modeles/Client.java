@@ -40,6 +40,12 @@ public class Client {
     @Column(nullable = false)
     private String immatriculation;
 
+    @Column(name = "vehicule_marque", length = 100)
+    private String vehiculeMarque;
+
+    @Column(name = "vehicule_modele", length = 100)
+    private String vehiculeModele;
+
     @Column(length = 20, nullable = false)
     private String telephone;
 

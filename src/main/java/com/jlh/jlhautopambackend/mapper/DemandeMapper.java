@@ -24,6 +24,8 @@ public interface DemandeMapper {
     @Mapping(target = "email", source = "email")
     @Mapping(target = "telephone", source = "telephone")
     @Mapping(target = "immatriculation", source = "immatriculation")
+    @Mapping(target = "vehiculeMarque", source = "vehiculeMarque")
+    @Mapping(target = "vehiculeModele", source = "vehiculeModele")
     @Mapping(target = "adresseLigne1", source = "adresseLigne1")
     @Mapping(target = "adresseLigne2", source = "adresseLigne2")
     @Mapping(target = "adresseCodePostal", source = "adresseCodePostal")

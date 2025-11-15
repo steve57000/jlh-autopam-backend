@@ -25,6 +25,14 @@ public record RegisterRequest(
         @Pattern(regexp = "^[A-Z]{2}-\\d{3}-[A-Z]{2}$", message = "Format immatriculation invalide (AA-123-AA)")
         String immatriculation,
 
+        @NotBlank
+        @Size(max = 100, message = "Marque de véhicule trop longue")
+        String vehiculeMarque,
+
+        @NotBlank
+        @Size(max = 100, message = "Modèle de véhicule trop long")
+        String vehiculeModele,
+
         // ✅ Adresse éclatée
         @NotBlank String adresseLigne1,
         String adresseLigne2,

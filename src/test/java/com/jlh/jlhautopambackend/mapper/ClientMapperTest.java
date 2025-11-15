@@ -45,6 +45,8 @@ class ClientMapperTest {
                 .email("jean@dupont.fr")
                 .motDePasse("secret123")         // ajouté
                 .immatriculation("AA-123-AA")    // ajouté
+                .vehiculeMarque("Renault")
+                .vehiculeModele("Megane")
                 .telephone("0102030405")
                 .adresseLigne1("1 bis ter")
                 .adresseLigne2("2 bis ter")
@@ -61,6 +63,8 @@ class ClientMapperTest {
         assertEquals("Jean", ent.getPrenom());
         assertEquals("jean@dupont.fr", ent.getEmail());
         assertEquals("AA-123-AA", ent.getImmatriculation());
+        assertEquals("Renault", ent.getVehiculeMarque());
+        assertEquals("Megane", ent.getVehiculeModele());
         assertEquals("0102030405", ent.getTelephone());
         assertEquals("1 bis ter", ent.getAdresseLigne1());
         assertEquals("2 bis ter", ent.getAdresseLigne2());
@@ -82,6 +86,8 @@ class ClientMapperTest {
         assertEquals("jean@dupont.fr", res.getEmail());
         assertEquals("0102030405", res.getTelephone());
         assertEquals("AA-123-AA", res.getImmatriculation());
+        assertEquals("Renault", res.getVehiculeMarque());
+        assertEquals("Megane", res.getVehiculeModele());
         assertEquals("1 bis ter", res.getAdresseLigne1());
         assertEquals("2 bis ter", res.getAdresseLigne2());
         assertEquals("654", res.getCodePostal());

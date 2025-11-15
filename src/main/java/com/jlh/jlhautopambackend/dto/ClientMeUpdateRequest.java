@@ -16,6 +16,12 @@ public class ClientMeUpdateRequest {
     @Pattern(regexp = "^[A-Z]{2}-\\d{3}-[A-Z]{2}$", message = "Immatriculation invalide (format AA-123-AA)")
     private String immatriculation;
 
+    @Size(max = 100, message = "Marque du véhicule trop longue")
+    private String vehiculeMarque;
+
+    @Size(max = 100, message = "Modèle du véhicule trop long")
+    private String vehiculeModele;
+
     @Valid
     private Adresse adresse;
 

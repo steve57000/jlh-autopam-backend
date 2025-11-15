@@ -12,6 +12,8 @@ public class ClientMeDto {
     private String email;
     private String telephone;
     private String immatriculation;
+    private String vehiculeMarque;
+    private String vehiculeModele;
     private AddressDto adresse;
 
     @Data @Builder

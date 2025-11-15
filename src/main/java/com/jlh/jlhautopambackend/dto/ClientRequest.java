@@ -28,6 +28,14 @@ public class ClientRequest {
     @NotBlank(message = "L'immatriculation est obligatoire")
     private String immatriculation;
 
+    @NotBlank(message = "La marque du véhicule est obligatoire")
+    @Size(max = 100, message = "La marque du véhicule est trop longue")
+    private String vehiculeMarque;
+
+    @NotBlank(message = "Le modèle du véhicule est obligatoire")
+    @Size(max = 100, message = "Le modèle du véhicule est trop long")
+    private String vehiculeModele;
+
     @NotBlank(message = "Le téléphone est obligatoire")
     private String telephone;
 

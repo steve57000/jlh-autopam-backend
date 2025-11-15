@@ -9,6 +9,8 @@ public class ClientSummaryDto {
     private String prenom;
     private String email;
     private String immatriculation;
+    private String vehiculeMarque;
+    private String vehiculeModele;
     private String telephone;
     private String adresseLigne1;
     private String adresseLigne2;

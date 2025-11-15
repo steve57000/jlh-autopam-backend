@@ -5,6 +5,7 @@ import com.jlh.jlhautopambackend.dto.ClientStatsDto;
 import com.jlh.jlhautopambackend.dto.DemandeRequest;
 import com.jlh.jlhautopambackend.dto.DemandeResponse;
 import com.jlh.jlhautopambackend.dto.DemandeServiceDto;
+import com.jlh.jlhautopambackend.dto.DemandeTimelineEntryDto;
 import com.jlh.jlhautopambackend.dto.ProchainRdvDto;
 import com.jlh.jlhautopambackend.mapper.DemandeMapper;
 import com.jlh.jlhautopambackend.modeles.Client;
@@ -39,6 +40,7 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
     private final RendezVousRepository    rendezVousRepo;
     private final GarageProperties        garageProps;
     private final DemandeServiceRepository demandeServiceRepository;
+    private final DemandeTimelineService  timelineService;
 
     public DemandeServiceImpl(
             DemandeRepository repo,
@@ -48,7 +50,8 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
             DemandeMapper mapper,
             RendezVousRepository rendezVousRepo,
             GarageProperties garageProps,
-            DemandeServiceRepository demandeServiceRepository
+            DemandeServiceRepository demandeServiceRepository,
+            DemandeTimelineService timelineService
     ) {
         this.repo = repo;
         this.clientRepo = clientRepo;
@@ -58,6 +61,7 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
         this.rendezVousRepo = rendezVousRepo;
         this.garageProps = garageProps;
         this.demandeServiceRepository = demandeServiceRepository;
+        this.timelineService = timelineService;
     }
 
     private static final String STATUT_BROUILLON  = "Brouillon";
@@ -106,7 +110,9 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
 
         ensureDateDemandeSet(entity);
 
-        return mapper.toResponse(repo.save(entity));
+        Demande saved = repo.save(entity);
+        timelineService.logStatusChange(saved, saved.getStatutDemande(), null, null, "ADMIN");
+        return sortTimeline(mapper.toResponse(saved));
     }
 
     /** (utilisé si jamais tu gardes createPublic) */
@@ -116,7 +122,9 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
         entity.setTypeDemande(getDefaultType());
         entity.setStatutDemande(getDefaultStatut()); // ⬅️ Brouillon
         ensureDateDemandeSet(entity);
-        return mapper.toResponse(repo.save(entity));
+        Demande saved = repo.save(entity);
+        timelineService.logStatusChange(saved, saved.getStatutDemande(), null, null, null);
+        return sortTimeline(mapper.toResponse(saved));
     }
 
     @Override
@@ -135,7 +143,9 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
 
         ensureDateDemandeSet(entity);
 
-        return mapper.toResponse(repo.save(entity));
+        Demande saved = repo.save(entity);
+        timelineService.logStatusChange(saved, saved.getStatutDemande(), null, client.getEmail(), "CLIENT");
+        return sanitizeForClient(mapper.toResponse(saved));
     }
 
     @Override
@@ -150,7 +160,8 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
     @Transactional(readOnly = true)
     public Optional<DemandeResponse> findCurrentForClient(Integer clientId) {
         return repo.findFirstByClient_IdClientAndStatutDemande_CodeStatutOrderByDateDemandeDesc(clientId, STATUT_BROUILLON)
-                .map(mapper::toResponse);
+                .map(mapper::toResponse)
+                .map(this::sanitizeForClient);
     }
 
     @Override
@@ -167,20 +178,25 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
             entity.setTypeDemande(type);
             entity.setStatutDemande(statut);
 
-            return mapper.toResponse(repo.save(entity));
+            Demande saved = repo.save(entity);
+            timelineService.logStatusChange(saved, saved.getStatutDemande(), null, client.getEmail(), "CLIENT");
+            return sanitizeForClient(mapper.toResponse(saved));
         });
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<DemandeResponse> findById(Integer id) {
-        return repo.findById(id).map(mapper::toResponse);
+        return repo.findById(id).map(mapper::toResponse).map(this::sortTimeline);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<DemandeResponse> findAll() {
-        return repo.findAll().stream().map(mapper::toResponse).collect(Collectors.toList());
+        return repo.findAll().stream()
+                .map(mapper::toResponse)
+                .map(this::sortTimeline)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -189,6 +205,7 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
         return repo.findByClient_IdClient(clientId)
                 .stream()
                 .map(mapper::toResponse)
+                .map(this::sanitizeForClient)
                 // ⛔️ on masque tout brouillon sans service par sécurité
                 .filter(d -> {
                     String code = d.getStatutDemande() != null ? d.getStatutDemande().getCodeStatut() : null;
@@ -201,6 +218,9 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
     @Override
     public Optional<DemandeResponse> update(Integer id, DemandeRequest request) {
         return repo.findById(id).map(existing -> {
+            String previousStatut = existing.getStatutDemande() != null
+                    ? existing.getStatutDemande().getCodeStatut()
+                    : null;
             if (request.getDateDemande() != null) {
                 existing.setDateDemande(request.getDateDemande());
             }
@@ -224,11 +244,12 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
 
             ensureDateDemandeSet(existing);
             Demande saved = repo.save(existing);
+            timelineService.logStatusChange(saved, saved.getStatutDemande(), previousStatut, null, null);
             if (!updatedLines.isEmpty()) {
                 demandeServiceRepository.saveAll(updatedLines);
             }
 
-            return mapper.toResponse(saved);
+            return sortTimeline(mapper.toResponse(saved));
         });
     }
 
@@ -348,6 +369,32 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
         if (!repo.existsById(id)) return false;
         repo.deleteById(id);
         return true;
+    }
+
+    private DemandeResponse sortTimeline(DemandeResponse response) {
+        if (response == null) {
+            return null;
+        }
+        if (response.getTimeline() != null) {
+            response.setTimeline(response.getTimeline().stream()
+                    .sorted(Comparator.comparing(DemandeTimelineEntryDto::getCreatedAt,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
+                    .toList());
+        }
+        return response;
+    }
+
+    private DemandeResponse sanitizeForClient(DemandeResponse response) {
+        if (response == null) {
+            return null;
+        }
+        sortTimeline(response);
+        if (response.getTimeline() != null) {
+            response.setTimeline(response.getTimeline().stream()
+                    .filter(DemandeTimelineEntryDto::isVisibleClient)
+                    .toList());
+        }
+        return response;
     }
 
     @Override

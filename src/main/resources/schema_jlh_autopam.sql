@@ -128,3 +128,42 @@ CREATE TABLE RendezVous (
   FOREIGN KEY (id_creneau)  REFERENCES Creneau(id_creneau),
   FOREIGN KEY (code_statut) REFERENCES Statut_RendezVous(code_statut)
 );
+
+-- Table des documents associés aux demandes
+CREATE TABLE demande_document (
+  id_document      BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id_demande       INT NOT NULL,
+  nom_fichier      VARCHAR(255) NOT NULL,
+  url_public       VARCHAR(512),
+  type_contenu     VARCHAR(100),
+  taille_octets    BIGINT,
+  visible_client   TINYINT(1) NOT NULL DEFAULT 1,
+  cree_par         VARCHAR(150),
+  cree_par_role    VARCHAR(30),
+  cree_le          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_demande) REFERENCES Demande(id_demande)
+);
+
+-- Timeline des demandes (statuts, commentaires, montants, rendez-vous...)
+CREATE TABLE demande_timeline (
+  id_timeline                  BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id_demande                   INT NOT NULL,
+  type_evenement               VARCHAR(30) NOT NULL,
+  cree_le                      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  cree_par                     VARCHAR(150),
+  cree_par_role                VARCHAR(30),
+  visible_client               TINYINT(1) NOT NULL DEFAULT 1,
+  statut_code                  VARCHAR(20),
+  statut_libelle               VARCHAR(100),
+  commentaire                  TEXT,
+  montant_valide               DECIMAL(12,2),
+  document_id                  BIGINT,
+  document_nom                 VARCHAR(255),
+  document_url                 VARCHAR(512),
+  rendezvous_id                INT,
+  rendezvous_statut_code       VARCHAR(20),
+  rendezvous_statut_libelle    VARCHAR(100),
+  rendezvous_date_debut        DATETIME,
+  rendezvous_date_fin          DATETIME,
+  FOREIGN KEY (id_demande) REFERENCES Demande(id_demande)
+);

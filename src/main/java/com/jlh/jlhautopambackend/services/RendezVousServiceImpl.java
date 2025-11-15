@@ -23,6 +23,7 @@ public class RendezVousServiceImpl implements RendezVousService {
     private final StatutDemandeRepository statutDemandeRepo;
     private final TypeDemandeRepository typeDemandeRepo;
     private final RendezVousMapper mapper;
+    private final DemandeTimelineService timelineService;
 
     private static final String STATUT_BROUILLON  = "Brouillon";
     private static final String STATUT_EN_ATTENTE = "En_attente";
@@ -35,7 +36,8 @@ public class RendezVousServiceImpl implements RendezVousService {
                                  StatutRendezVousRepository statutRendezVousRepo,
                                  StatutDemandeRepository statutDemandeRepo,
                                  TypeDemandeRepository typeDemandeRepo,
-                                 RendezVousMapper mapper) {
+                                 RendezVousMapper mapper,
+                                 DemandeTimelineService timelineService) {
         this.repo = repo;
         this.demandeRepo = demandeRepo;
         this.creneauRepo = creneauRepo;
@@ -44,6 +46,7 @@ public class RendezVousServiceImpl implements RendezVousService {
         this.statutDemandeRepo = statutDemandeRepo;
         this.typeDemandeRepo = typeDemandeRepo;
         this.mapper = mapper;
+        this.timelineService = timelineService;
     }
 
     @Override
@@ -87,6 +90,7 @@ public class RendezVousServiceImpl implements RendezVousService {
         ent.setStatut(statutRdv);
 
         RendezVous saved = repo.save(ent);
+        timelineService.logRendezVousEvent(demande, saved, "Rendez-vous planifié", admin.getEmail(), "ADMIN");
 
         // 3) Brouillon -> En_attente si nécessaire
         String current = demande.getStatutDemande() != null ? demande.getStatutDemande().getCodeStatut() : null;
@@ -94,7 +98,8 @@ public class RendezVousServiceImpl implements RendezVousService {
             var enAttente = statutDemandeRepo.findById(STATUT_EN_ATTENTE)
                     .orElseThrow(() -> new IllegalStateException("Statut 'En_attente' manquant en base"));
             demande.setStatutDemande(enAttente);
-            demandeRepo.save(demande);
+            Demande updated = demandeRepo.save(demande);
+            timelineService.logStatusChange(updated, enAttente, current, admin.getEmail(), "ADMIN");
         }
 
         return mapper.toResponse(saved);
@@ -112,6 +117,8 @@ public class RendezVousServiceImpl implements RendezVousService {
             existing.setStatut(statutRendezVousRepo.findById(req.getCodeStatut())
                     .orElseThrow(() -> new IllegalArgumentException("Statut RDV introuvable: " + req.getCodeStatut())));
             RendezVous updated = repo.save(existing);
+            timelineService.logRendezVousEvent(updated.getDemande(), updated, "Rendez-vous mis à jour",
+                    updated.getAdministrateur() != null ? updated.getAdministrateur().getEmail() : null, "ADMIN");
             return mapper.toResponse(updated);
         });
     }
@@ -133,7 +140,8 @@ public class RendezVousServiceImpl implements RendezVousService {
             StatutDemande enAttente = statutDemandeRepo.findById(STATUT_EN_ATTENTE)
                     .orElseThrow(() -> new IllegalStateException("Statut 'En_attente' manquant en base"));
             demande.setStatutDemande(enAttente);
-            demandeRepo.save(demande);
+            Demande updated = demandeRepo.save(demande);
+            timelineService.logStatusChange(updated, enAttente, current, null, null);
         }
 
         return Optional.of(mapper.toResponse(rdv));

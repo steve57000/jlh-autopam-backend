@@ -33,6 +33,11 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
+    public ClientResponse create(ClientRequest request, boolean sendVerification) {
+        return null;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Optional<ClientResponse> findById(Integer id) {
         return repository.findById(id)

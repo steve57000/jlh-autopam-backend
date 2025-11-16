@@ -1,7 +1,9 @@
 package com.jlh.jlhautopambackend.services;
 
+import com.jlh.jlhautopambackend.dto.ClientStatsDto;
 import com.jlh.jlhautopambackend.dto.DemandeRequest;
 import com.jlh.jlhautopambackend.dto.DemandeResponse;
+import com.jlh.jlhautopambackend.dto.ProchainRdvDto;
 import com.jlh.jlhautopambackend.mapper.DemandeMapper;
 import com.jlh.jlhautopambackend.modeles.Client;
 import com.jlh.jlhautopambackend.modeles.Demande;
@@ -40,6 +42,16 @@ public class DemandeServiceImpl implements DemandeService {
     }
 
     @Override
+    public ClientStatsDto findStatsByClientId(Integer clientId) {
+        return null;
+    }
+
+    @Override
+    public Optional<ProchainRdvDto> findProchainRdvByClientId(Integer clientId) {
+        return Optional.empty();
+    }
+
+    @Override
     public DemandeResponse create(DemandeRequest request) {
         Demande entity = mapper.toEntity(request);
         Client client = clientRepo.findById(request.getClientId())
@@ -56,6 +68,16 @@ public class DemandeServiceImpl implements DemandeService {
     }
 
     @Override
+    public DemandeResponse createPublic() {
+        return null;
+    }
+
+    @Override
+    public DemandeResponse createForClient(Integer clientId, DemandeRequest request) {
+        return null;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Optional<DemandeResponse> findById(Integer id) {
         return repository.findById(id).map(mapper::toResponse);
@@ -68,6 +90,11 @@ public class DemandeServiceImpl implements DemandeService {
                 .stream()
                 .map(mapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<DemandeResponse> findByClientId(Integer clientId) {
+        return List.of();
     }
 
     @Override
@@ -94,5 +121,30 @@ public class DemandeServiceImpl implements DemandeService {
         if (!repository.existsById(id)) return false;
         repository.deleteById(id);
         return true;
+    }
+
+    @Override
+    public Optional<String> buildProchainRendezVousIcs(Integer clientId) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<String> buildRendezVousIcs(Integer rdvId, Integer clientIdOrNullIfAdmin) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Integer> findCurrentIdForClient(Integer clientId) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<DemandeResponse> findCurrentForClient(Integer clientId) {
+        return Optional.empty();
+    }
+
+    @Override
+    public DemandeResponse getOrCreateForClient(Integer clientId) {
+        return null;
     }
 }

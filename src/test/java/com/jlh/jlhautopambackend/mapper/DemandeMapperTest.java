@@ -5,6 +5,7 @@ import com.jlh.jlhautopambackend.modeles.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -19,7 +20,38 @@ class DemandeMapperTest {
 
     @BeforeEach
     void setUp() {
-        mapper = Mappers.getMapper(DemandeMapper.class);
+        DemandeMapperImpl impl = (DemandeMapperImpl) Mappers.getMapper(DemandeMapper.class);
+
+        ClientMapper clientMapper = Mappers.getMapper(ClientMapper.class);
+        clientMapper.setPasswordEncoder(new PasswordEncoder() {
+            @Override
+            public String encode(CharSequence rawPassword) {
+                return rawPassword == null ? null : rawPassword.toString();
+            }
+
+            @Override
+            public boolean matches(CharSequence rawPassword, String encodedPassword) {
+                if (rawPassword == null && encodedPassword == null) {
+                    return true;
+                }
+                if (rawPassword == null || encodedPassword == null) {
+                    return false;
+                }
+                return encodedPassword.contentEquals(rawPassword);
+            }
+
+            @Override
+            public boolean upgradeEncoding(String encodedPassword) {
+                return false;
+            }
+        });
+
+        DemandeTimelineMapper timelineMapper = Mappers.getMapper(DemandeTimelineMapper.class);
+
+        impl.setClientMapper(clientMapper);
+        impl.setDemandeTimelineMapper(timelineMapper);
+
+        mapper = impl;
     }
 
     @Test

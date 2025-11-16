@@ -54,18 +54,39 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
 
     @Override
     public DemandeServiceResponse create(DemandeServiceRequest req) {
-        Demande demande = demandeRepo.findById(req.getDemandeId())
+        var demande = demandeRepo.findById(req.getDemandeId())
                 .orElseThrow(() -> new IllegalArgumentException("Demande introuvable"));
-        com.jlh.jlhautopambackend.modeles.Service serviceEntity =
-                serviceRepo.findById(req.getServiceId())
-                        .orElseThrow(() -> new IllegalArgumentException("Service introuvable"));
+        var serviceEntity = serviceRepo.findByIdServiceAndArchivedFalse(req.getServiceId())
+                .orElseThrow(() -> new IllegalArgumentException("Service introuvable"));
+
+        var key = new DemandeServiceKey(req.getDemandeId(), req.getServiceId());
+        var existing = dsRepo.findById(key).orElse(null);
+
+        int requestedQty = req.getQuantite() == null ? 1 : Math.max(1, req.getQuantite());
+        Integer maxQty = serviceEntity.getQuantiteMax();
+        if (maxQty != null && maxQty > 0 && requestedQty > maxQty) {
+            throw new IllegalArgumentException("Quantité demandée supérieure au maximum autorisé pour ce service.");
+        }
+
+        if (existing != null) {
+            int base = existing.getQuantite() == null ? 0 : existing.getQuantite();
+            int q = base + requestedQty;
+            if (maxQty != null && maxQty > 0 && q > maxQty) {
+                throw new IllegalArgumentException("La quantité totale dépasse la limite pour ce service.");
+            }
+            existing.setQuantite(q);
+            existing.snapshotFromService(serviceEntity);
+            return mapper.toDto(dsRepo.save(existing));
+        }
 
         DemandeService entity = mapper.toEntity(req);
+        // defaults robustes
+        entity.setQuantite(requestedQty);
         entity.setDemande(demande);
         entity.setService(serviceEntity);
+        entity.snapshotFromService(serviceEntity);
 
-        DemandeService saved = dsRepo.save(entity);
-        return mapper.toDto(saved);
+        return mapper.toDto(dsRepo.save(entity));
     }
 
     @Override
@@ -73,7 +94,15 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
         DemandeServiceKey key = new DemandeServiceKey(demandeId, serviceId);
         return dsRepo.findById(key)
                 .map(entity -> {
-                    entity.setQuantite(req.getQuantite());
+                    int requested = req.getQuantite() == null ? 1 : Math.max(1, req.getQuantite());
+                    Integer maxQty = entity.getService() != null ? entity.getService().getQuantiteMax() : null;
+                    if (maxQty != null && maxQty > 0 && requested > maxQty) {
+                        throw new IllegalArgumentException("Quantité demandée supérieure au maximum autorisé pour ce service.");
+                    }
+                    entity.setQuantite(requested);
+                    if (entity.getService() != null) {
+                        entity.snapshotFromService(entity.getService());
+                    }
                     DemandeService saved = dsRepo.save(entity);
                     return mapper.toDto(saved);
                 });
@@ -86,6 +115,18 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
             return false;
         }
         dsRepo.deleteById(key);
+
+        // 🔍 Combien de lignes restent ?
+        long remaining = dsRepo.countByDemande_IdDemande(demandeId);
+        if (remaining == 0) {
+            // Si la demande est un brouillon -> on la supprime
+            demandeRepo.findById(demandeId).ifPresent(d -> {
+                String code = d.getStatutDemande() != null ? d.getStatutDemande().getCodeStatut() : null;
+                if ("Brouillon".equals(code)) {
+                    demandeRepo.deleteById(demandeId);
+                }
+            });
+        }
         return true;
     }
 }

@@ -1,184 +1,191 @@
 package com.jlh.jlhautopambackend.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlh.jlhautopambackend.dto.DemandeRequest;
 import com.jlh.jlhautopambackend.dto.DemandeResponse;
+import com.jlh.jlhautopambackend.dto.StatutDemandeDto;
+import com.jlh.jlhautopambackend.dto.TypeDemandeDto;
+import com.jlh.jlhautopambackend.modeles.Client;
 import com.jlh.jlhautopambackend.services.DemandeService;
-import com.jlh.jlhautopambackend.utils.JwtUtil;
-import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
+import com.jlh.jlhautopambackend.services.support.AuthenticatedClientResolver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-@WebMvcTest(
-        controllers = DemandeController.class,
-        excludeAutoConfiguration = SecurityAutoConfiguration.class
-)
-@AutoConfigureMockMvc(addFilters = false)
+@ExtendWith(MockitoExtension.class)
 class DemandeControllerTest {
 
-    @Autowired
-    private MockMvc mvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @MockitoBean
+    @Mock
     private DemandeService service;
 
-    // **Ajout des beans pour désactiver la sécurité JWT**
-    @MockitoBean
-    private JwtUtil jwtUtil;
+    @Mock
+    private AuthenticatedClientResolver clientResolver;
 
-    @MockitoBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @InjectMocks
+    private DemandeController controller;
+
+    private static DemandeResponse buildResponse(int id) {
+        return DemandeResponse.builder()
+                .idDemande(id)
+                .services(List.of())
+                .documents(List.of())
+                .build();
+    }
 
     @Test
-    @DisplayName("GET /api/demandes ➔ 200, json list")
-    void testGetAll() throws Exception {
-        DemandeResponse r1 = DemandeResponse.builder()
-                .idDemande(1)
-                .dateDemande(Instant.parse("2025-01-01T10:00:00Z"))
-                .services(List.of())
-                .build();
-        DemandeResponse r2 = DemandeResponse.builder()
-                .idDemande(2)
-                .dateDemande(Instant.parse("2025-01-02T11:00:00Z"))
-                .services(List.of())
-                .build();
-        Mockito.when(service.findAll()).thenReturn(List.of(r1, r2));
+    @DisplayName("GET /api/demandes ➔ 200")
+    void getAll_ok() {
+        when(service.findAll()).thenReturn(List.of(buildResponse(1), buildResponse(2)));
 
-        mvc.perform(get("/api/demandes").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].idDemande").value(1))
-                .andExpect(jsonPath("$[1].idDemande").value(2));
+        List<DemandeResponse> result = controller.getAll();
+
+        assertEquals(2, result.size());
+        assertEquals(1, result.get(0).getIdDemande());
+        assertEquals(2, result.get(1).getIdDemande());
+        verify(service).findAll();
     }
 
     @Test
     @DisplayName("GET /api/demandes/{id} ➔ 200")
-    void testGetByIdFound() throws Exception {
+    void getById_found() {
         DemandeResponse resp = DemandeResponse.builder()
                 .idDemande(3)
                 .dateDemande(Instant.parse("2025-01-03T12:00:00Z"))
                 .services(List.of())
+                .documents(List.of())
                 .build();
-        Mockito.when(service.findById(3)).thenReturn(Optional.of(resp));
+        when(service.findById(3)).thenReturn(Optional.of(resp));
 
-        mvc.perform(get("/api/demandes/3").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idDemande").value(3));
+        ResponseEntity<DemandeResponse> result = controller.getById(3);
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertNotNull(result.getBody());
+        assertEquals(3, result.getBody().getIdDemande());
+        verify(service).findById(3);
     }
 
     @Test
     @DisplayName("GET /api/demandes/{id} ➔ 404")
-    void testGetByIdNotFound() throws Exception {
-        Mockito.when(service.findById(99)).thenReturn(Optional.empty());
+    void getById_notFound() {
+        when(service.findById(99)).thenReturn(Optional.empty());
 
-        mvc.perform(get("/api/demandes/99").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
+        ResponseEntity<DemandeResponse> result = controller.getById(99);
+
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+        assertNull(result.getBody());
+        verify(service).findById(99);
     }
 
     @Test
-    @DisplayName("POST /api/demandes ➔ 201, JSON retourné")
-    void testCreate() throws Exception {
+    @DisplayName("POST /api/demandes (CLIENT) ➔ 201")
+    void createForClient_created() {
+        String email = "test@client100.fr";
         DemandeRequest req = DemandeRequest.builder()
-                .dateDemande(Instant.parse("2025-01-04T08:00:00Z"))
-                .clientId(10)
-                .codeType("T1")
-                .codeStatut("S1")
+                .dateDemande(Instant.parse("2025-08-15T10:00:00Z"))
+                .codeType("Devis")
+                .codeStatut("En_attente")
                 .build();
+
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                email,
+                "password",
+                List.of(new SimpleGrantedAuthority("ROLE_CLIENT"))
+        );
+
+        when(clientResolver.requireCurrentClient(auth)).thenReturn(Client.builder().idClient(1).email(email).build());
+
         DemandeResponse created = DemandeResponse.builder()
                 .idDemande(10)
                 .dateDemande(req.getDateDemande())
-                .clientId(10)
-                .typeDemande(null)
-                .statutDemande(null)
+                .typeDemande(TypeDemandeDto.builder().codeType("Devis").libelle("Devis").build())
+                .statutDemande(StatutDemandeDto.builder().codeStatut("En_attente").libelle("En attente").build())
                 .services(List.of())
+                .documents(List.of())
                 .build();
-        Mockito.when(service.create(Mockito.any(DemandeRequest.class))).thenReturn(created);
 
-        mvc.perform(post("/api/demandes")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "/api/demandes/10"))
-                .andExpect(jsonPath("$.idDemande").value(10));
+        when(service.createForClient(eq(1), any(DemandeRequest.class))).thenReturn(created);
+
+        ResponseEntity<?> result = controller.createForClient(auth, req);
+
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+        assertEquals("/api/demandes/10", result.getHeaders().getLocation().toString());
+        assertEquals(created, result.getBody());
+        verify(service).createForClient(eq(1), any(DemandeRequest.class));
     }
 
     @Test
-    @DisplayName("PUT /api/demandes/{id} ➔ 200, JSON mis à jour")
-    void testUpdateFound() throws Exception {
+    @DisplayName("PUT /api/demandes/{id} ➔ 200")
+    void update_ok() {
         DemandeRequest req = DemandeRequest.builder()
                 .dateDemande(Instant.parse("2025-02-05T09:00:00Z"))
-                .clientId(4)
                 .codeType("T4")
                 .codeStatut("S4")
                 .build();
         DemandeResponse updated = DemandeResponse.builder()
                 .idDemande(5)
                 .dateDemande(req.getDateDemande())
-                .clientId(4)
-                .typeDemande(null)
-                .statutDemande(null)
                 .services(List.of())
+                .documents(List.of())
                 .build();
-        Mockito.when(service.update(Mockito.eq(5), Mockito.any(DemandeRequest.class)))
-                .thenReturn(Optional.of(updated));
+        when(service.update(eq(5), any(DemandeRequest.class))).thenReturn(Optional.of(updated));
 
-        mvc.perform(put("/api/demandes/5")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.dateDemande").value("2025-02-05T09:00:00Z"));
+        ResponseEntity<DemandeResponse> result = controller.update(5, req);
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertEquals("2025-02-05T09:00:00Z", result.getBody().getDateDemande().toString());
+        verify(service).update(eq(5), any(DemandeRequest.class));
     }
 
     @Test
     @DisplayName("PUT /api/demandes/{id} ➔ 404")
-    void testUpdateNotFound() throws Exception {
+    void update_notFound() {
         DemandeRequest req = DemandeRequest.builder()
                 .dateDemande(Instant.parse("2025-03-01T07:00:00Z"))
-                .clientId(1)
                 .codeType("T1")
                 .codeStatut("S1")
                 .build();
-        Mockito.when(service.update(Mockito.eq(99), Mockito.any(DemandeRequest.class)))
-                .thenReturn(Optional.empty());
+        when(service.update(eq(99), any(DemandeRequest.class))).thenReturn(Optional.empty());
 
-        mvc.perform(put("/api/demandes/99")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isNotFound());
+        ResponseEntity<DemandeResponse> result = controller.update(99, req);
+
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+        assertNull(result.getBody());
+        verify(service).update(eq(99), any(DemandeRequest.class));
     }
 
     @Test
     @DisplayName("DELETE /api/demandes/{id} ➔ 204")
-    void testDeleteFound() throws Exception {
-        Mockito.when(service.delete(1)).thenReturn(true);
+    void delete_ok() {
+        when(service.delete(1)).thenReturn(true);
 
-        mvc.perform(delete("/api/demandes/1"))
-                .andExpect(status().isNoContent());
+        ResponseEntity<Void> result = controller.delete(1);
+
+        assertEquals(HttpStatus.NO_CONTENT, result.getStatusCode());
+        verify(service).delete(1);
     }
 
     @Test
     @DisplayName("DELETE /api/demandes/{id} ➔ 404")
-    void testDeleteNotFound() throws Exception {
-        Mockito.when(service.delete(99)).thenReturn(false);
+    void delete_notFound() {
+        when(service.delete(99)).thenReturn(false);
 
-        mvc.perform(delete("/api/demandes/99"))
-                .andExpect(status().isNotFound());
+        ResponseEntity<Void> result = controller.delete(99);
+
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+        verify(service).delete(99);
     }
 }

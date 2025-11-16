@@ -50,12 +50,14 @@ class AdministrateurControllerTest {
     void testGetAll() throws Exception {
         AdministrateurResponse r1 = AdministrateurResponse.builder()
                 .idAdmin(1)
+                .email("alice")
                 .username("alice")
                 .nom("Alice").prenom("A")
                 .disponibilites(Collections.emptyList())
                 .build();
         AdministrateurResponse r2 = AdministrateurResponse.builder()
                 .idAdmin(2)
+                .email("bob")
                 .username("bob")
                 .nom("Bob").prenom("B")
                 .disponibilites(Collections.emptyList())
@@ -75,6 +77,7 @@ class AdministrateurControllerTest {
     void testGetByIdFound() throws Exception {
         AdministrateurResponse resp = AdministrateurResponse.builder()
                 .idAdmin(1)
+                .email("alice")
                 .username("alice")
                 .nom("Alice").prenom("A")
                 .disponibilites(Collections.emptyList())
@@ -100,14 +103,14 @@ class AdministrateurControllerTest {
     @DisplayName("POST /api/administrateurs ➔ 201, Location header")
     void testCreate() throws Exception {
         AdministrateurRequest req = AdministrateurRequest.builder()
-                .username("charlie")
+                .email("charlie")
                 .motDePasse("pwd3")
                 .nom("Charlie").prenom("C")
                 .build();
         AdministrateurResponse created = AdministrateurResponse.builder()
                 .idAdmin(3)
+                .email("Charlie").prenom("C")
                 .username("charlie")
-                .nom("Charlie").prenom("C")
                 .disponibilites(Collections.emptyList())
                 .build();
 
@@ -127,12 +130,13 @@ class AdministrateurControllerTest {
     @DisplayName("PUT /api/administrateurs/{id} ➔ 200 when exists")
     void testUpdateFound() throws Exception {
         AdministrateurRequest updates = AdministrateurRequest.builder()
-                .username("alice2")
+                .email("alice2")
                 .motDePasse("newpwd")
                 .nom("Alice").prenom("A2")
                 .build();
         AdministrateurResponse updated = AdministrateurResponse.builder()
                 .idAdmin(1)
+                .email("alice2")
                 .username("alice2")
                 .nom("Alice").prenom("A2")
                 .disponibilites(Collections.emptyList())
@@ -152,7 +156,7 @@ class AdministrateurControllerTest {
     @DisplayName("PUT /api/administrateurs/{id} ➔ 404 when not found")
     void testUpdateNotFound() throws Exception {
         AdministrateurRequest updates = AdministrateurRequest.builder()
-                .username("doesnt")
+                .email("doesnt")
                 .motDePasse("none")
                 .nom("No").prenom("One")
                 .build();

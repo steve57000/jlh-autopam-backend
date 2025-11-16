@@ -4,8 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlh.jlhautopambackend.dto.RendezVousRequest;
 import com.jlh.jlhautopambackend.dto.RendezVousResponse;
 import com.jlh.jlhautopambackend.services.RendezVousService;
-import com.jlh.jlhautopambackend.utils.JwtUtil;
 import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
+import com.jlh.jlhautopambackend.services.support.AuthenticatedClientResolver;
+import com.jlh.jlhautopambackend.utils.JwtUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -34,6 +35,7 @@ class RendezVousControllerTest {
     @Autowired private ObjectMapper objectMapper;
 
     @MockitoBean private RendezVousService service;
+    @MockitoBean private AuthenticatedClientResolver clientResolver;
     // mocks JWT pour bypasser le filtre
     @MockitoBean private JwtUtil jwtUtil;
     @MockitoBean private JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -106,7 +108,7 @@ class RendezVousControllerTest {
 
         mvc.perform(put("/api/rendezvous/99")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(objectMapper.writeValueAsString(new RendezVousRequest(1, 2, 3, "S"))))
                 .andExpect(status().isNotFound());
     }
 

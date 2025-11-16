@@ -93,7 +93,10 @@ class DisponibiliteControllerTest {
     void testCreateSuccess() throws Exception {
         int adminId = 4, creneauId = 400;
         Disponibilite input = Disponibilite.builder()
-                .administrateur(Administrateur.builder().idAdmin(adminId).build())
+                .administrateur(Administrateur.builder()
+                        .idAdmin(adminId)
+                        .username("admin" + adminId)
+                        .build())
                 .creneau(Creneau.builder().idCreneau(creneauId).build())
                 .build();
         Disponibilite saved = Disponibilite.builder()
@@ -117,7 +120,10 @@ class DisponibiliteControllerTest {
     @DisplayName("POST /api/disponibilites ➔ 400 when admin missing")
     void testCreateBadRequestAdminMissing() throws Exception {
         Disponibilite input = Disponibilite.builder()
-                .administrateur(Administrateur.builder().idAdmin(5).build())
+                .administrateur(Administrateur.builder()
+                        .idAdmin(5)
+                        .username("admin5")
+                        .build())
                 .creneau(Creneau.builder().idCreneau(500).build())
                 .build();
 
@@ -134,7 +140,10 @@ class DisponibiliteControllerTest {
     @DisplayName("POST /api/disponibilites ➔ 400 when creneau missing")
     void testCreateBadRequestCreneauMissing() throws Exception {
         Disponibilite input = Disponibilite.builder()
-                .administrateur(Administrateur.builder().idAdmin(6).build())
+                .administrateur(Administrateur.builder()
+                        .idAdmin(6)
+                        .username("admin6")
+                        .build())
                 .creneau(Creneau.builder().idCreneau(600).build())
                 .build();
 

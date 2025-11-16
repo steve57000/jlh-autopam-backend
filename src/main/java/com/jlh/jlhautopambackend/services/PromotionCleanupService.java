@@ -8,11 +8,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Service
@@ -22,11 +26,13 @@ public class PromotionCleanupService {
 
     private final PromotionRepository promoRepo;
     private final Path uploadDir;
+    private final ZoneId systemZone;
 
     public PromotionCleanupService(PromotionRepository promoRepo,
                                    @Value("${app.upload-dir}") String uploadDir) {
         this.promoRepo = promoRepo;
         this.uploadDir = Paths.get(uploadDir);
+        this.systemZone = ZoneId.systemDefault();
     }
 
     /**
@@ -36,13 +42,24 @@ public class PromotionCleanupService {
     @Scheduled(cron = "0 59 23 * * *")
     @Transactional
     public void removeExpiredPromotions() {
-        Instant now = Instant.now();
+        // On supprime uniquement les promotions dont la fin de validité est strictement avant
+        // le début de la journée en cours. Ainsi, une promotion valable jusqu'à 23h59 reste
+        // visible toute la journée et n'est supprimée qu'au passage au jour suivant.
+        Instant cutoff = startOfToday();
         // 1. Récupère d'abord les promotions expirées
-        List<Promotion> expired = promoRepo.findByValidToBefore(now);
+        List<Promotion> expired = promoRepo.findByValidToBefore(cutoff);
 
         for (Promotion promo : expired) {
             String imageUrl = promo.getImageUrl();
+            if (!StringUtils.hasText(imageUrl)) {
+                continue;
+            }
+
             String filename = extractFilename(imageUrl);
+            if (!StringUtils.hasText(filename)) {
+                continue;
+            }
+
             Path filePath = uploadDir.resolve(filename);
             try {
                 if (Files.deleteIfExists(filePath)) {
@@ -57,13 +74,17 @@ public class PromotionCleanupService {
 
         // 2. Puis supprime définitivement les promotions en base
         promoRepo.deleteAll(expired);
-        log.info("{} promotions expirées supprimées.", expired.size());
+        log.info("{} promotions expirées supprimées (validTo < {}).", expired.size(), cutoff);
     }
 
     /**
      * Extrait le nom de fichier à partir de l’URL (tout ce qui suit le dernier '/').
      */
     private String extractFilename(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            return "";
+        }
+
         try {
             URI uri = URI.create(imageUrl);
             String path = uri.getPath();
@@ -73,5 +94,10 @@ public class PromotionCleanupService {
             // si échec, on renvoie l’intégralité de l’URL en nom (improbable mais sûr)
             return imageUrl;
         }
+    }
+
+    private Instant startOfToday() {
+        LocalDate today = ZonedDateTime.now(systemZone).toLocalDate();
+        return today.atStartOfDay(systemZone).toInstant();
     }
 }

@@ -13,6 +13,8 @@ public class ServiceMapper {
                 .libelle(s.getLibelle())
                 .description(s.getDescription())
                 .prixUnitaire(s.getPrixUnitaire())
+                .quantiteMax(s.getQuantiteMax())
+                .archived(s.isArchived())
                 .build();
     }
 
@@ -21,6 +23,8 @@ public class ServiceMapper {
                 .libelle(req.getLibelle())
                 .description(req.getDescription())
                 .prixUnitaire(req.getPrixUnitaire())
+                .quantiteMax(req.getQuantiteMax())
+                .archived(false)
                 .build();
     }
 }

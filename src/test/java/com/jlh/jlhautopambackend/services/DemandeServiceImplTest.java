@@ -37,6 +37,8 @@ class DemandeServiceImplTest {
     private StatutDemandeRepository statutRepo;
     @Mock
     private DemandeMapper mapper;
+    @Mock
+    private DemandeTimelineService timelineService;
 
     @InjectMocks
     private DemandeServiceImpl service;
@@ -70,7 +72,10 @@ class DemandeServiceImplTest {
                 .prenom("John")
                 .email("john@example.com")
                 .telephone("0123456789")
-                .adresse("Addr")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .adresseVille("Metz")
+                .adresseCodePostal("12345")
                 .build();
 
         type = TypeDemande.builder()
@@ -89,16 +94,17 @@ class DemandeServiceImplTest {
                 .client(client)
                 .typeDemande(type)
                 .statutDemande(statut)
-                .services(Collections.emptyList())
+                .services(Collections.emptySet())
+                .documents(Collections.emptyList())
                 .build();
 
         response = DemandeResponse.builder()
                 .idDemande(1)
                 .dateDemande(date)
-                .clientId(100)
                 .typeDemande(new TypeDemandeDto(type.getCodeType(), type.getLibelle()))
                 .statutDemande(new StatutDemandeDto(statut.getCodeStatut(), statut.getLibelle()))
                 .services(Collections.emptyList())
+                .documents(Collections.emptyList())
                 .build();
     }
 
@@ -125,6 +131,7 @@ class DemandeServiceImplTest {
         assertEquals(type, passed.getTypeDemande());
         assertEquals(statut, passed.getStatutDemande());
         verify(mapper).toResponse(savedEntity);
+        verify(timelineService).logStatusChange(savedEntity, statut, null, null, "ADMIN");
     }
 
     @Test
@@ -134,9 +141,9 @@ class DemandeServiceImplTest {
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.create(request));
-        assertEquals("Client introuvable", ex.getMessage());
+        assertEquals("Client introuvable : 100", ex.getMessage());
         verify(clientRepo).findById(100);
-        verifyNoMoreInteractions(typeRepo, statutRepo, repository, mapper);
+        verifyNoMoreInteractions(typeRepo, statutRepo, repository, mapper, timelineService);
     }
 
     @Test
@@ -147,10 +154,10 @@ class DemandeServiceImplTest {
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.create(request));
-        assertEquals("Type introuvable", ex.getMessage());
+        assertEquals("TypeDemande introuvable: TYPE1", ex.getMessage());
         verify(clientRepo).findById(100);
         verify(typeRepo).findById("TYPE1");
-        verifyNoMoreInteractions(statutRepo, repository, mapper);
+        verifyNoMoreInteractions(statutRepo, repository, mapper, timelineService);
     }
 
     @Test
@@ -162,11 +169,11 @@ class DemandeServiceImplTest {
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.create(request));
-        assertEquals("Statut introuvable", ex.getMessage());
+        assertEquals("StatutDemande introuvable: STAT1", ex.getMessage());
         verify(clientRepo).findById(100);
         verify(typeRepo).findById("TYPE1");
         verify(statutRepo).findById("STAT1");
-        verifyNoMoreInteractions(repository, mapper);
+        verifyNoMoreInteractions(repository, mapper, timelineService);
     }
 
     @Test
@@ -201,15 +208,16 @@ class DemandeServiceImplTest {
                 .client(client)
                 .typeDemande(type)
                 .statutDemande(statut)
-                .services(Collections.emptyList())
+                .services(Collections.emptySet())
+                .documents(Collections.emptyList())
                 .build();
         DemandeResponse otherResp = DemandeResponse.builder()
                 .idDemande(2)
                 .dateDemande(date)
-                .clientId(100)
                 .typeDemande(new TypeDemandeDto(type.getCodeType(), type.getLibelle()))
                 .statutDemande(new StatutDemandeDto(statut.getCodeStatut(), statut.getLibelle()))
                 .services(Collections.emptyList())
+                .documents(Collections.emptyList())
                 .build();
 
         when(repository.findAll()).thenReturn(Arrays.asList(savedEntity, other));
@@ -244,15 +252,16 @@ class DemandeServiceImplTest {
                 .client(newClient)
                 .typeDemande(newType)
                 .statutDemande(newStatut)
-                .services(Collections.emptyList())
+                .services(Collections.emptySet())
+                .documents(Collections.emptyList())
                 .build();
         DemandeResponse updatedResp = DemandeResponse.builder()
                 .idDemande(1)
                 .dateDemande(updateReq.getDateDemande())
-                .clientId(200)
                 .typeDemande(new TypeDemandeDto(newType.getCodeType(), null))
                 .statutDemande(new StatutDemandeDto(newStatut.getCodeStatut(), null))
                 .services(Collections.emptyList())
+                .documents(Collections.emptyList())
                 .build();
 
         when(repository.findById(1)).thenReturn(Optional.of(existing));
@@ -272,6 +281,7 @@ class DemandeServiceImplTest {
         verify(statutRepo).findById("STAT2");
         verify(repository).save(existing);
         verify(mapper).toResponse(updatedEntity);
+        verify(timelineService).logStatusChange(updatedEntity, newStatut, "STAT1", null, null);
     }
 
     @Test
@@ -282,7 +292,7 @@ class DemandeServiceImplTest {
 
         assertFalse(result.isPresent());
         verify(repository).findById(3);
-        verifyNoMoreInteractions(clientRepo, typeRepo, statutRepo, mapper);
+        verifyNoMoreInteractions(clientRepo, typeRepo, statutRepo, mapper, timelineService);
     }
 
     @Test

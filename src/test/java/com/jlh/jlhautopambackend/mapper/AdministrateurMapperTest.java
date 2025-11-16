@@ -16,6 +16,7 @@ class AdministrateurMapperTest {
     @Test
     void toEntity_ignoreIdAndDisponibilites() {
         AdministrateurRequest req = AdministrateurRequest.builder()
+                .email("user1")
                 .username("user1")
                 .motDePasse("pwd")
                 .nom("Dupont")
@@ -23,6 +24,7 @@ class AdministrateurMapperTest {
                 .build();
 
         Administrateur ent = mapper.toEntity(req);
+        assertThat(ent.getEmail()).isEqualTo("user1");
         assertThat(ent.getUsername()).isEqualTo("user1");
         assertThat(ent.getMotDePasse()).isEqualTo("pwd");
         assertThat(ent.getNom()).isEqualTo("Dupont");
@@ -38,6 +40,7 @@ class AdministrateurMapperTest {
                 .build();
         Administrateur ent = Administrateur.builder()
                 .idAdmin(5)
+                .email("u")
                 .username("u")
                 .nom("X")
                 .prenom("Y")
@@ -46,6 +49,7 @@ class AdministrateurMapperTest {
 
         AdministrateurResponse resp = mapper.toResponse(ent);
         assertThat(resp.getIdAdmin()).isEqualTo(5);
+        assertThat(resp.getEmail()).isEqualTo("u");
         assertThat(resp.getUsername()).isEqualTo("u");
         assertThat(resp.getNom()).isEqualTo("X");
         // vérifie le mapping de la liste des IDs

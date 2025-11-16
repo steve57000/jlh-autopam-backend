@@ -1,88 +1,178 @@
--- --------------------------------------------------
--- Lookup tables : Type_Demande, Statut_Demande, Statut_Creneau, Statut_RendezVous
--- --------------------------------------------------
+-- ==================================================
+-- 0) Sécurité : colonnes de vérification e-mail (MySQL-safe)
+-- ==================================================
+SET @db := DATABASE();
 
+-- Ajout colonne email_verified (bool = tinyint(1))
+SET @exists := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'client' AND COLUMN_NAME = 'email_verified'
+);
+SET @ddl := IF(@exists = 0,
+               'ALTER TABLE client ADD COLUMN email_verified TINYINT(1) NOT NULL DEFAULT 0',
+               'SELECT 1'
+            );
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Ajout colonne email_verified_at (sans time zone en MySQL)
+SET @exists := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'client' AND COLUMN_NAME = 'email_verified_at'
+);
+SET @ddl := IF(@exists = 0,
+               'ALTER TABLE client ADD COLUMN email_verified_at DATETIME NULL',
+               'SELECT 1'
+            );
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Ajout colonnes vehicule_marque / vehicule_modele
+SET @exists := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'client' AND COLUMN_NAME = 'vehicule_marque'
+);
+SET @ddl := IF(@exists = 0,
+               'ALTER TABLE client ADD COLUMN vehicule_marque VARCHAR(100) NULL',
+               'SELECT 1'
+            );
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exists := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'client' AND COLUMN_NAME = 'vehicule_modele'
+);
+SET @ddl := IF(@exists = 0,
+               'ALTER TABLE client ADD COLUMN vehicule_modele VARCHAR(100) NULL',
+               'SELECT 1'
+            );
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Ajout colonne username (nullable au départ pour éviter l'échec si la table contient déjà des données)
+SET @exists := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'administrateur' AND COLUMN_NAME = 'username'
+);
+SET @ddl := IF(@exists = 0,
+               'ALTER TABLE administrateur ADD COLUMN username VARCHAR(50) UNIQUE',
+               'SELECT 1'
+            );
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Valorise username à partir de l'e-mail pour les administrateurs existants
+UPDATE administrateur
+SET username = email
+WHERE username IS NULL OR username = '';
+
+-- ==================================================
+-- 1) Lookups
+-- ==================================================
 INSERT INTO type_demande (code_type, libelle) VALUES
-    ('Devis',       'Devis'),
-    ('RendezVous',  'Rendez-vous');
+                                                  ('Devis', 'Devis'),
+                                                  ('Service', 'Service'),
+                                                  ('RendezVous', 'Rendez-vous');
 
 INSERT INTO statut_demande (code_statut, libelle) VALUES
-    ('En_attente',  'En attente'),
-    ('Traitee',     'Traitée'),
-    ('Annulee',     'Annulée');
+                                                      ('Brouillon', 'Brouillon'),
+                                                      ('En_attente', 'En attente'),
+                                                      ('Traitee',    'Traitée'),
+                                                      ('Annulee',    'Annulée');
 
 INSERT INTO statut_creneau (code_statut, libelle) VALUES
-    ('Libre',        'Libre'),
-    ('Reserve',      'Réservé'),
-    ('Indisponible', 'Indisponible');
+                                                      ('Libre',        'Libre'),
+                                                      ('Reserve',      'Réservé'),
+                                                      ('Indisponible', 'Indisponible');
 
 INSERT INTO statut_rendez_vous (code_statut, libelle) VALUES
-    ('Confirme', 'Confirmé'),
-    ('Reporte',  'Reporté'),
-    ('Annule',   'Annulé');
+                                                          ('Confirme', 'Confirmé'),
+                                                          ('Reporte',  'Reporté'),
+                                                          ('Annule',   'Annulé');
+
+-- ==================================================
+-- 2) Services
+-- ==================================================
+INSERT INTO service (id_service, libelle, description, prix_unitaire, quantite_max, archived) VALUES
+                                                                          (1, 'Vidange',
+                                                                           'Vidange moteur complète avec huile synthétique haute performance et remplacement du filtre à huile pour optimiser la longévité de votre moteur',
+                                                                           59.90, 1, 0),
+                                                                          (2, 'Révision',
+                                                                           'Révision générale incluant le contrôle et le remplacement des courroies, filtres (air, habitacle, carburant) et bougies, ainsi que la vérification des niveaux de liquide',
+                                                                           129.90, 1, 0),
+                                                                          (3, 'Freinage',
+                                                                           'Remplacement des plaquettes de frein avant par des plaquettes haute performance, contrôle des disques et purge complète du circuit de freinage pour une sécurité maximale',
+                                                                           199.00, 2, 0),
+                                                                          (4, 'Pneumatiques',
+                                                                           'Montage et équilibrage de quatre pneus toutes saisons, vérification de la géométrie et conseil personnalisé pour un confort et une adhérence optimaux',
+                                                                           449.00, 4, 0),
+                                                                          (5, 'Diagnostic',
+                                                                           'Diagnostic électronique multimarque complet avec intervention valise électronique, analyse des défauts et remise d’un rapport détaillé',
+                                                                           79.00, 1, 0);
+
+-- ==================================================
+-- 3) Clients (mots de passe déjà hashés)
+--    On renseigne explicitement email_verified / email_verified_at
+-- ==================================================
+INSERT INTO client (
+    id_client, nom, prenom, email, telephone,
+    adresse_ligne1, adresse_ligne2, adresse_code_postal, adresse_ville,
+    immatriculation, vehicule_marque, vehicule_modele, mot_de_passe,
+    email_verified, email_verified_at
+) VALUES
+      (1,'Durand','Alice','test@client1.fr','0601020304',
+       '12 rue Victor Hugo', NULL, '75003', 'Paris',
+       'AA-123-AA','Peugeot','208',
+       '$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW',
+       1, '2025-06-01 10:00:00'),
+
+      (2,'Martin','Bob','test@client2.fr','0605060708',
+       '45 av. Jean Jaurès', NULL, '69007', 'Lyon',
+       'BB-234-BB','Renault','Clio',
+       '$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW',
+       1, '2025-06-01 10:00:00'),
+
+      (3,'Bernard','Claire','test@client3.fr','0611121314',
+       '78 bd Haussmann', NULL, '75009', 'Paris',
+       'CC-345-CC','Citroen','C3',
+       '$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW',
+       1, '2025-06-01 10:00:00'),
+
+      (4,'Lefevre','David','test@client4.fr','0622232425',
+       '3 place Bellecour', NULL, '69002', 'Lyon',
+       'DD-456-DD','Volkswagen','Golf',
+       '$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW',
+       1, '2025-06-01 10:00:00'),
+
+      (5,'Dupont','Eva','test@client5.fr','0633343536',
+       '6 quai de la Loire', NULL, '44000', 'Nantes',
+       'EE-567-EE','Tesla','Model 3',
+       '$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW',
+       0, NULL);
 
 
--- --------------------------------------------------
--- Services
--- --------------------------------------------------
+-- ==================================================
+-- 4) Admins
+-- ==================================================
+INSERT INTO administrateur (id_admin, username, email, mot_de_passe, nom, prenom) VALUES
+    (1,'test@admin.fr','test@admin.fr','$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW','Bongeot','Michael');
 
-INSERT INTO service (id_service, libelle, description, prix_unitaire) VALUES
-    (1, 'Vidange',         'Vidange complète avec filtre',       59.90),
-    (2, 'Révision',        'Révision générale (courroies, filtres)', 129.90),
-    (3, 'Freinage',        'Changement plaquettes avant',         199.00),
-    (4, 'Pneumatiques',    'Remplacement 4 pneus toutes saisons', 449.00),
-    (5, 'Diagnostic',      'Diagnostic électronique complet',      79.00);
-
-
--- --------------------------------------------------
--- Clients
--- --------------------------------------------------
-
-INSERT INTO client (id_client, nom, prenom, email, telephone, adresse) VALUES
-    (1, 'Durand',    'Alice',  'alice.durand@example.com',  '0601020304', '12 rue Victor Hugo, 75003 Paris'),
-    (2, 'Martin',    'Bob',    'bob.martin@example.com',    '0605060708', '45 avenue Jean Jaurès, 69007 Lyon'),
-    (3, 'Bernard',   'Claire', 'claire.bernard@example.com','0611121314', '78 boulevard Haussmann, 75009 Paris'),
-    (4, 'Lefevre',   'David',  'david.lefevre@example.com', '0622232425', '3 place Bellecour, 69002 Lyon'),
-    (5, 'Dupont',    'Eva',    'eva.dupont@example.com',    '0633343536', '6 quai de la Loire, 44000 Nantes');
-
-
--- --------------------------------------------------
--- Administrateurs
--- --------------------------------------------------
-
-INSERT INTO administrateur (id_admin, username, mot_de_passe, nom, prenom) VALUES
-    (1, 'admin1', '$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW', 'Bongeot', 'Michael');
-
-
--- --------------------------------------------------
--- Créneaux
--- --------------------------------------------------
-
+-- ==================================================
+-- 5) Créneaux
+-- ==================================================
 INSERT INTO creneau (id_creneau, date_debut, date_fin, code_statut) VALUES
-    (1, '2025-07-01 09:00:00', '2025-07-01 10:00:00', 'Libre'),
-    (2, '2025-07-01 10:00:00', '2025-07-01 11:00:00', 'Libre'),
-    (3, '2025-07-01 11:00:00', '2025-07-01 12:00:00', 'Reserve'),
-    (4, '2025-07-01 14:00:00', '2025-07-01 15:00:00', 'Indisponible'),
-    (5, '2025-07-02 09:00:00', '2025-07-02 10:00:00', 'Libre'),
-    (6, '2025-07-02 10:00:00', '2025-07-02 11:00:00', 'Reserve');
+                                                                        (1,'2025-07-01 09:00:00','2025-07-01 10:00:00','Reserve'),   -- utilisé par RDV#1 (Confirmé)
+                                                                        (2,'2025-07-01 10:00:00','2025-07-01 11:00:00','Libre'),
+                                                                        (3,'2025-07-01 11:00:00','2025-07-01 12:00:00','Reserve'),   -- utilisé par RDV#2 (Reporté)
+                                                                        (4,'2025-07-01 14:00:00','2025-07-01 15:00:00','Indisponible'),
+                                                                        (5,'2025-07-02 09:00:00','2025-07-02 10:00:00','Libre'),
+                                                                        (6,'2025-07-02 10:00:00','2025-07-02 11:00:00','Reserve');   -- utilisé par RDV#3 (Annulé)
 
-
--- --------------------------------------------------
--- Disponibilités (admins ↔ créneaux)
--- --------------------------------------------------
-
+-- ==================================================
+-- 6) Disponibilités
+-- ==================================================
 INSERT INTO disponibilite (id_admin, id_creneau) VALUES
-    (1, 1),
-    (1, 2),
-    (1, 3),
-    (1, 5),
-    (1, 6);
+                                                     (1,1),(1,2),(1,3),(1,5),(1,6);
 
-
--- --------------------------------------------------
--- Demandes
--- --------------------------------------------------
-
+-- ==================================================
+-- 7) Demandes
+-- ==================================================
 -- Devis: Alice (En attente), multiple services
 INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut) VALUES
     (1, 1, '2025-06-20 08:15:00', 'Devis',     'En_attente');
@@ -91,11 +181,11 @@ INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut
 INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut) VALUES
     (2, 2, '2025-06-19 09:30:00', 'Devis',     'Traitee');
 
--- RDV: Claire (Confirmé)
+-- RDV: Claire (Confirmé ensuite via RDV)
 INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut) VALUES
     (3, 3, '2025-06-18 10:45:00', 'RendezVous','En_attente');
 
--- RDV: David (Reporté)
+-- RDV: David (Reporté ensuite via RDV)
 INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut) VALUES
     (4, 4, '2025-06-17 11:00:00', 'RendezVous','Traitee');
 
@@ -103,49 +193,127 @@ INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut
 INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut) VALUES
     (5, 5, '2025-06-16 12:00:00', 'Devis',     'Annulee');
 
--- RDV: Alice (Annulé)
+-- RDV: Alice (Annulé ensuite via RDV)
 INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut) VALUES
     (6, 1, '2025-06-15 13:00:00', 'RendezVous','Annulee');
 
-
--- --------------------------------------------------
--- Demande_Service (liaisons)
--- --------------------------------------------------
-
+-- ==================================================
+-- 8) Demande_Service
+-- ==================================================
 -- Demande 1 : Alice veut Vidange + Diagnostic
-INSERT INTO demande_service (id_demande, id_service, quantite) VALUES
-    (1, 1, 1),
-    (1, 5, 1);
+INSERT INTO demande_service (
+    id_demande, id_service, quantite,
+    libelle_service, description_service, prix_unitaire_service
+) VALUES
+    (1, 1, 1,
+     'Vidange',
+     'Vidange moteur complète avec huile synthétique haute performance et remplacement du filtre à huile pour optimiser la longévité de votre moteur',
+     59.90),
+    (1, 5, 1,
+     'Diagnostic',
+     'Diagnostic électronique multimarque complet avec intervention valise électronique, analyse des défauts et remise d’un rapport détaillé',
+     79.00);
 
 -- Demande 2 : Bob veut Révision
-INSERT INTO demande_service (id_demande, id_service, quantite) VALUES
-    (2, 2, 1);
+INSERT INTO demande_service (
+    id_demande, id_service, quantite,
+    libelle_service, description_service, prix_unitaire_service
+) VALUES
+    (2, 2, 1,
+     'Révision',
+     'Révision générale incluant le contrôle et le remplacement des courroies, filtres (air, habitacle, carburant) et bougies, ainsi que la vérification des niveaux de liquide',
+     129.90);
 
 -- Demande 3 : Claire veut Changement pneus x4
-INSERT INTO demande_service (id_demande, id_service, quantite) VALUES
-    (3, 4, 4);
+INSERT INTO demande_service (
+    id_demande, id_service, quantite,
+    libelle_service, description_service, prix_unitaire_service
+) VALUES
+    (3, 4, 1,
+     'Pneumatiques',
+     'Montage et équilibrage de quatre pneus toutes saisons, vérification de la géométrie et conseil personnalisé pour un confort et une adhérence optimaux',
+     449.00);
 
 -- Demande 5 : Eva voulait Diagnostic
-INSERT INTO demande_service (id_demande, id_service, quantite) VALUES
-    (5, 5, 1);
+INSERT INTO demande_service (
+    id_demande, id_service, quantite,
+    libelle_service, description_service, prix_unitaire_service
+) VALUES
+    (5, 5, 1,
+     'Diagnostic',
+     'Diagnostic électronique multimarque complet avec intervention valise électronique, analyse des défauts et remise d’un rapport détaillé',
+     79.00);
 
-
--- --------------------------------------------------
--- Devis
--- --------------------------------------------------
-
+-- ==================================================
+-- 9) Devis
+-- ==================================================
 INSERT INTO devis (id_devis, id_demande, date_devis, montant_total) VALUES
-    (1, 1, '2025-06-21 14:00:00', 59.90 + 79.00),  -- Alice
-    (2, 2, '2025-06-20 15:00:00', 129.90);        -- Bob
+                                                                        (1,1,'2025-06-21 14:00:00', 59.90 + 79.00),
+                                                                        (2,2,'2025-06-20 15:00:00', 129.90);
 
-
--- --------------------------------------------------
--- RendezVous
--- --------------------------------------------------
-
+-- ==================================================
+-- 10) Rendez-vous (statut propre RDV)
+-- ==================================================
 INSERT INTO rendez_vous (id_rdv, id_demande, id_admin, id_creneau, code_statut) VALUES
-    (1, 3, 1, 1, 'Confirme'),   -- Claire sur créneau 1
-    (2, 4, 1, 3, 'Reporte'),    -- David déplacé sur créneau 3
-    (3, 6, 1, 6, 'Annule');     -- Alice annulé, créneau 6
+                                                                                    (1,3,1,1,'Confirme'),
+                                                                                    (2,4,1,3,'Reporte'),
+                                                                                    (3,6,1,6,'Annule');
 
+-- ==================================================
+-- 10) Documents et timeline des demandes
+-- ==================================================
+INSERT INTO demande_document (
+    id_document, id_demande, nom_fichier, url_public, type_contenu,
+    taille_octets, visible_client, cree_par, cree_par_role, cree_le
+) VALUES (
+    1, 1, 'controle-technique.pdf',
+    'https://exemple.com/docs/controle-technique.pdf',
+    'application/pdf', 20480, 1,
+    'test@admin.fr', 'ADMIN', '2025-06-20 09:00:00'
+);
 
+INSERT INTO demande_timeline (
+    id_timeline, id_demande, type_evenement, cree_le, cree_par, cree_par_role, visible_client,
+    statut_code, statut_libelle, commentaire, montant_valide,
+    document_id, document_nom, document_url,
+    rendezvous_id, rendezvous_statut_code, rendezvous_statut_libelle, rendezvous_date_debut, rendezvous_date_fin
+) VALUES
+    (1, 1, 'MONTANT', '2025-06-20 08:30:00', 'test@admin.fr', 'ADMIN', 1,
+     'En_attente', 'En attente', 'Création du devis', 138.90,
+     NULL, NULL, NULL,
+     NULL, NULL, NULL, NULL, NULL),
+    (2, 1, 'DOCUMENT', '2025-06-20 09:00:00', 'test@admin.fr', 'ADMIN', 1,
+     NULL, NULL, 'Ajout du contrôle technique', NULL,
+     1, 'controle-technique.pdf', 'https://exemple.com/docs/controle-technique.pdf',
+     NULL, NULL, NULL, NULL, NULL);
+
+-- ==================================================
+-- 11) 🔥 Nouveau cas de test ICS pour Alice (client1)
+--     RDV futur (>= aujourd’hui), statut Confirmé, créneau réservé.
+-- ==================================================
+
+-- Nouvelle demande de RDV pour Alice
+INSERT INTO demande (id_demande, id_client, date_demande, code_type, code_statut)
+VALUES (7, 1, '2025-06-25 09:00:00', 'RendezVous', 'En_attente');
+
+-- Services associés (ex: révision complète)
+INSERT INTO demande_service (
+    id_demande, id_service, quantite,
+    libelle_service, description_service, prix_unitaire_service
+)
+VALUES (7, 2, 1,
+        'Révision',
+        'Révision générale incluant le contrôle et le remplacement des courroies, filtres (air, habitacle, carburant) et bougies, ainsi que la vérification des niveaux de liquide',
+        129.90);
+
+-- Créneau réservé pour ce RDV (futur)
+INSERT INTO creneau (id_creneau, date_debut, date_fin, code_statut)
+VALUES (7, '2025-10-02 09:00:00', '2025-10-02 10:00:00', 'Reserve');
+
+-- Disponibilité de l’admin sur ce créneau
+INSERT INTO disponibilite (id_admin, id_creneau)
+VALUES (1, 7);
+
+-- RDV Confirmé pour Alice (future date => visible par findUpcomingByClientId)
+INSERT INTO rendez_vous (id_rdv, id_demande, id_admin, id_creneau, code_statut)
+VALUES (4, 7, 1, 7, 'Confirme');

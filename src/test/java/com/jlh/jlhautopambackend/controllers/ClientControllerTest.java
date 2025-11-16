@@ -52,15 +52,25 @@ class ClientControllerTest {
                 .idClient(1)
                 .nom("Dupont").prenom("Jean")
                 .email("jean.dupont@example.com")
+                .vehiculeMarque("Peugeot")
+                .vehiculeModele("208")
                 .telephone("0123456789")
-                .adresse("1 rue A")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
         ClientResponse r2 = ClientResponse.builder()
                 .idClient(2)
                 .nom("Martin").prenom("Marie")
                 .email("marie.martin@example.com")
+                .vehiculeMarque("Renault")
+                .vehiculeModele("Clio")
                 .telephone("0987654321")
-                .adresse("2 avenue B")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
 
         Mockito.when(service.findAll()).thenReturn(List.of(r1, r2));
@@ -91,8 +101,13 @@ class ClientControllerTest {
                 .idClient(5)
                 .nom("Durand").prenom("Luc")
                 .email("luc.durand@example.com")
+                .vehiculeMarque("Tesla")
+                .vehiculeModele("Model 3")
                 .telephone("0112233445")
-                .adresse("3 chemin C")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
         Mockito.when(service.findById(5)).thenReturn(Optional.of(resp));
 
@@ -118,15 +133,28 @@ class ClientControllerTest {
         ClientRequest req = ClientRequest.builder()
                 .nom("Petit").prenom("Anne")
                 .email("anne.petit@example.com")
+                .motDePasse("secret123")
+                .immatriculation("AB-123-CD")
+                .vehiculeMarque("Peugeot")
+                .vehiculeModele("308")
                 .telephone("0223344556")
-                .adresse("4 boulevard D")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
         ClientResponse created = ClientResponse.builder()
                 .idClient(10)
                 .nom(req.getNom()).prenom(req.getPrenom())
                 .email(req.getEmail())
+                .immatriculation(req.getImmatriculation())
+                .vehiculeMarque(req.getVehiculeMarque())
+                .vehiculeModele(req.getVehiculeModele())
                 .telephone(req.getTelephone())
-                .adresse(req.getAdresse())
+                .adresseLigne1(req.getAdresseLigne1())
+                .adresseLigne2(req.getAdresseLigne2())
+                .ville(req.getVille())
+                .codePostal(req.getCodePostal())
                 .build();
 
         Mockito.when(service.create(Mockito.any(ClientRequest.class))).thenReturn(created);
@@ -137,7 +165,10 @@ class ClientControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/api/clients/10"))
                 .andExpect(jsonPath("$.idClient").value(10))
-                .andExpect(jsonPath("$.adresse").value("4 boulevard D"));
+                .andExpect(jsonPath("$.vehiculeMarque").value("Peugeot"))
+                .andExpect(jsonPath("$.vehiculeModele").value("308"))
+                .andExpect(jsonPath("$.adresseLigne1").value("1 rue A"))
+                .andExpect(jsonPath("$.adresseLigne2").value("2 rue B"));
     }
 
     @Test
@@ -146,15 +177,28 @@ class ClientControllerTest {
         ClientRequest updates = ClientRequest.builder()
                 .nom("NewNom").prenom("NewPrenom")
                 .email("new@example.com")
+                .motDePasse("changeMe1")
+                .immatriculation("AB-123-CD")
+                .vehiculeMarque("Citroen")
+                .vehiculeModele("C3")
                 .telephone("1111111111")
-                .adresse("NewAdresse")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
         ClientResponse updated = ClientResponse.builder()
                 .idClient(7)
                 .nom("NewNom").prenom("NewPrenom")
                 .email("new@example.com")
+                .immatriculation("AB-123-CD")
+                .vehiculeMarque("Citroen")
+                .vehiculeModele("C3")
                 .telephone("1111111111")
-                .adresse("NewAdresse")
+                .adresseLigne1("1 rue A")
+                .adresseLigne2("2 rue B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
 
         Mockito.when(service.update(Mockito.eq(7), Mockito.any(ClientRequest.class)))
@@ -174,8 +218,15 @@ class ClientControllerTest {
         ClientRequest updates = ClientRequest.builder()
                 .nom("X").prenom("Y")
                 .email("x@y.com")
+                .motDePasse("secret56")
+                .immatriculation("CD-456-EF")
+                .vehiculeMarque("Ford")
+                .vehiculeModele("Focus")
                 .telephone("123")
-                .adresse("Z")
+                .adresseLigne1("A")
+                .adresseLigne2("B")
+                .ville("Metz")
+                .codePostal("12345")
                 .build();
         Mockito.when(service.update(Mockito.eq(42), Mockito.any(ClientRequest.class)))
                 .thenReturn(Optional.empty());

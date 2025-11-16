@@ -52,12 +52,16 @@ class ServiceControllerTest {
                 .libelle("S1")
                 .description("Desc1")
                 .prixUnitaire(new BigDecimal("12.34"))
+                .quantiteMax(5)
+                .archived(false)
                 .build();
         ServiceResponse r2 = ServiceResponse.builder()
                 .idService(2)
                 .libelle("S2")
                 .description("Desc2")
                 .prixUnitaire(new BigDecimal("56.78"))
+                .quantiteMax(2)
+                .archived(false)
                 .build();
 
         Mockito.when(service.findAll()).thenReturn(Arrays.asList(r1, r2));
@@ -66,6 +70,8 @@ class ServiceControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idService").value(1))
+                .andExpect(jsonPath("$[0].archived").value(false))
+                .andExpect(jsonPath("$[0].quantiteMax").value(5))
                 .andExpect(jsonPath("$[1].libelle").value("S2"));
     }
 
@@ -77,13 +83,17 @@ class ServiceControllerTest {
                 .libelle("S1")
                 .description("Desc1")
                 .prixUnitaire(new BigDecimal("12.34"))
+                .quantiteMax(3)
+                .archived(false)
                 .build();
         Mockito.when(service.findById(1)).thenReturn(Optional.of(resp));
 
         mvc.perform(get("/api/services/1")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.description").value("Desc1"));
+                .andExpect(jsonPath("$.description").value("Desc1"))
+                .andExpect(jsonPath("$.quantiteMax").value(3))
+                .andExpect(jsonPath("$.archived").value(false));
     }
 
     @Test
@@ -103,12 +113,15 @@ class ServiceControllerTest {
                 .libelle("New")
                 .description("NewDesc")
                 .prixUnitaire(new BigDecimal("99.99"))
+                .quantiteMax(7)
                 .build();
         ServiceResponse saved = ServiceResponse.builder()
                 .idService(3)
                 .libelle("New")
                 .description("NewDesc")
                 .prixUnitaire(new BigDecimal("99.99"))
+                .quantiteMax(7)
+                .archived(false)
                 .build();
 
         Mockito.when(service.create(Mockito.any(ServiceRequest.class)))
@@ -120,7 +133,9 @@ class ServiceControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/api/services/3"))
                 .andExpect(jsonPath("$.idService").value(3))
-                .andExpect(jsonPath("$.prixUnitaire").value(99.99));
+                .andExpect(jsonPath("$.prixUnitaire").value(99.99))
+                .andExpect(jsonPath("$.quantiteMax").value(7))
+                .andExpect(jsonPath("$.archived").value(false));
     }
 
     @Test
@@ -130,12 +145,15 @@ class ServiceControllerTest {
                 .libelle("Updated")
                 .description("UpdDesc")
                 .prixUnitaire(new BigDecimal("20.00"))
+                .quantiteMax(6)
                 .build();
         ServiceResponse saved = ServiceResponse.builder()
                 .idService(1)
                 .libelle("Updated")
                 .description("UpdDesc")
                 .prixUnitaire(new BigDecimal("20.00"))
+                .quantiteMax(6)
+                .archived(false)
                 .build();
 
         Mockito.when(service.update(Mockito.eq(1), Mockito.any(ServiceRequest.class)))
@@ -146,7 +164,9 @@ class ServiceControllerTest {
                         .content(objectMapper.writeValueAsString(updates)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.libelle").value("Updated"))
-                .andExpect(jsonPath("$.prixUnitaire").value(20.00));
+                .andExpect(jsonPath("$.prixUnitaire").value(20.00))
+                .andExpect(jsonPath("$.quantiteMax").value(6))
+                .andExpect(jsonPath("$.archived").value(false));
     }
 
     @Test
@@ -156,6 +176,7 @@ class ServiceControllerTest {
                 .libelle("X")
                 .description("X")
                 .prixUnitaire(new BigDecimal("1.00"))
+                .quantiteMax(1)
                 .build();
         Mockito.when(service.update(Mockito.eq(99), Mockito.any(ServiceRequest.class)))
                 .thenReturn(Optional.empty());

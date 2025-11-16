@@ -2,7 +2,13 @@ package com.jlh.jlhautopambackend.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jlh.jlhautopambackend.controllers.AuthController.LoginRequest;
+import com.jlh.jlhautopambackend.modeles.Client;
+import com.jlh.jlhautopambackend.repository.ClientRepository;
+import com.jlh.jlhautopambackend.services.ClientService;
+import com.jlh.jlhautopambackend.services.EmailVerificationService;
+import com.jlh.jlhautopambackend.services.PasswordResetService;
 import com.jlh.jlhautopambackend.utils.JwtUtil;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -14,6 +20,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -43,22 +50,48 @@ class AuthControllerTest {
     @MockitoBean
     private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
 
+    @MockitoBean
+    private ClientService clientService;
+
+    @MockitoBean
+    private ClientRepository clientRepository;
+
+    @MockitoBean
+    private EmailVerificationService emailVerificationService;
+
+    @MockitoBean
+    private PasswordResetService passwordResetService;
+
     @Test
     @DisplayName("POST /api/auth/login ➔ 200, retourne un token JWT")
     void testLoginSuccess() throws Exception {
         // Prépare la requête
         LoginRequest req = new LoginRequest();
-        req.setUsername("user");
+        req.setEmail("user");
         req.setPassword("pass");
 
         // Stub de l'AuthenticationManager pour simuler un login réussi
         Authentication auth = Mockito.mock(Authentication.class);
+        UserDetails userDetails = org.springframework.security.core.userdetails.User
+                .withUsername("user")
+                .password("pass")
+                .roles("ADMIN")
+                .build();
+
         Mockito.when(authManager.authenticate(
                 Mockito.any(UsernamePasswordAuthenticationToken.class))
         ).thenReturn(auth);
 
-        // Stub du JwtUtil pour renvoyer un token fixe
-        Mockito.when(jwtUtil.generateToken("user")).thenReturn("jwt-token");
+        // Stub pour que auth.getPrincipal() retourne le UserDetails simulé
+        Mockito.when(auth.getPrincipal()).thenReturn(userDetails);
+
+        // Stub repository pour vérifier l'état de vérification
+        Mockito.when(clientRepository.findByEmail("user")).thenReturn(Optional.of(
+                Client.builder().email("user").emailVerified(true).idClient(42).build()
+        ));
+
+        // Stub du JwtUtil pour renvoyer un token fixe (pour un UserDetails)
+        Mockito.when(jwtUtil.generateToken(userDetails)).thenReturn("jwt-token");
 
         // Exécution et assertions
         mvc.perform(post("/api/auth/login")
@@ -69,11 +102,11 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/auth/login ➔ 401, identifiants invalides")
+    @DisplayName("POST /api/auth/login ➔ 403, identifiants invalides")
     void testLoginFailure() throws Exception {
         // Prépare la requête
         LoginRequest req = new LoginRequest();
-        req.setUsername("bad");
+        req.setEmail("bad");
         req.setPassword("credentials");
 
         // Stub pour lever une exception d'authentification
@@ -85,7 +118,7 @@ class AuthControllerTest {
         mvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(content().string("Identifiants invalides"));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Bad credentials"));
     }
 }

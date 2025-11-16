@@ -45,14 +45,16 @@ class AdministrateurServiceImplTest {
     void setUp() {
         // Common test data
         request = AdministrateurRequest.builder()
-                .username("adminUser")
+                .email("adminUser")
+                .username(null)
                 .motDePasse("rawPass")
                 .nom("Dupont")
                 .prenom("Jean")
                 .build();
 
         entity = Administrateur.builder()
-                .username(request.getUsername())
+                .email(request.getEmail())
+                .username(null)
                 .motDePasse(null)
                 .nom(request.getNom())
                 .prenom(request.getPrenom())
@@ -60,7 +62,8 @@ class AdministrateurServiceImplTest {
 
         savedEntity = Administrateur.builder()
                 .idAdmin(1)
-                .username(request.getUsername())
+                .email(request.getEmail())
+                .username(request.getEmail())
                 .motDePasse("encodedPass")
                 .nom(request.getNom())
                 .prenom(request.getPrenom())
@@ -68,6 +71,7 @@ class AdministrateurServiceImplTest {
 
         response = AdministrateurResponse.builder()
                 .idAdmin(savedEntity.getIdAdmin())
+                .email(savedEntity.getEmail())
                 .username(savedEntity.getUsername())
                 .nom(savedEntity.getNom())
                 .prenom(savedEntity.getPrenom())
@@ -87,6 +91,7 @@ class AdministrateurServiceImplTest {
         assertEquals(response, result);
         verify(mapper).toEntity(request);
         verify(passwordEncoder).encode("rawPass");
+        assertEquals("adminUser", entity.getUsername());
         assertEquals("encodedPass", entity.getMotDePasse());
         verify(repository).save(entity);
         verify(mapper).toResponse(savedEntity);
@@ -120,6 +125,7 @@ class AdministrateurServiceImplTest {
     void testFindAll_ShouldReturnListOfResponses() {
         Administrateur other = Administrateur.builder()
                 .idAdmin(2)
+                .email("user2")
                 .username("user2")
                 .motDePasse("pwd2")
                 .nom("Martin")
@@ -127,6 +133,7 @@ class AdministrateurServiceImplTest {
                 .build();
         AdministrateurResponse otherResp = AdministrateurResponse.builder()
                 .idAdmin(2)
+                .email("user2")
                 .username("user2")
                 .nom("Martin")
                 .prenom("Paul")
@@ -150,7 +157,8 @@ class AdministrateurServiceImplTest {
     @Test
     void testUpdate_WhenExistsAndPasswordProvided() {
         AdministrateurRequest updateReq = AdministrateurRequest.builder()
-                .username("newUser")
+                .email("newUser")
+                .username(null)
                 .motDePasse("newPass")
                 .nom("NewNom")
                 .prenom("NewPrenom")
@@ -158,6 +166,7 @@ class AdministrateurServiceImplTest {
 
         Administrateur existing = Administrateur.builder()
                 .idAdmin(3)
+                .email("oldUser")
                 .username("oldUser")
                 .motDePasse("oldPass")
                 .nom("OldNom")
@@ -166,6 +175,7 @@ class AdministrateurServiceImplTest {
 
         Administrateur updatedEntity = Administrateur.builder()
                 .idAdmin(3)
+                .email("newUser")
                 .username("newUser")
                 .motDePasse("encodedNewPass")
                 .nom("NewNom")
@@ -174,6 +184,7 @@ class AdministrateurServiceImplTest {
 
         AdministrateurResponse updatedResp = AdministrateurResponse.builder()
                 .idAdmin(3)
+                .email("newUser")
                 .username("newUser")
                 .nom("NewNom")
                 .prenom("NewPrenom")
@@ -189,6 +200,7 @@ class AdministrateurServiceImplTest {
 
         assertTrue(result.isPresent());
         assertEquals(updatedResp, result.get());
+        assertEquals("newUser", existing.getUsername());
         verify(repository).findById(3);
         verify(passwordEncoder).encode("newPass");
         verify(repository).save(existing);
@@ -198,7 +210,7 @@ class AdministrateurServiceImplTest {
     @Test
     void testUpdate_WhenExistsAndPasswordBlank() {
         AdministrateurRequest updateReq = AdministrateurRequest.builder()
-                .username("userNoPwd")
+                .email("userNoPwd")
                 .motDePasse("")  // motDePasse vide
                 .nom("NomNoPwd")
                 .prenom("PrenomNoPwd")
@@ -206,6 +218,7 @@ class AdministrateurServiceImplTest {
 
         Administrateur existing = Administrateur.builder()
                 .idAdmin(4)
+                .email("origUser")
                 .username("origUser")
                 .motDePasse("origPass")
                 .nom("OrigNom")
@@ -214,6 +227,7 @@ class AdministrateurServiceImplTest {
 
         AdministrateurResponse respNoPwd = AdministrateurResponse.builder()
                 .idAdmin(4)
+                .email("userNoPwd")
                 .username("userNoPwd")
                 .nom("NomNoPwd")
                 .prenom("PrenomNoPwd")

@@ -14,7 +14,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/promotions")
-@CrossOrigin
 public class PromotionController {
 
     private final PromotionService service;
@@ -25,6 +24,7 @@ public class PromotionController {
 
     @GetMapping
     public List<PromotionResponse> getAll() {
+        // Chaque PromotionResponse inclura désormais .getDescription()
         return service.findAll();
     }
 
@@ -40,19 +40,20 @@ public class PromotionController {
             @RequestPart("data") PromotionRequest req,
             @RequestPart("file") MultipartFile file
     ) throws IOException {
-        PromotionResponse resp = service.create(req, file);  // passe les 2 args
+        // req.getDescription() est automatiquement renseigné
+        PromotionResponse resp = service.create(req, file);
         URI location = URI.create("/api/promotions/" + resp.getIdPromotion());
         return ResponseEntity.created(location).body(resp);
     }
 
-    // Mise à jour avec trois arguments : id + req + file (file optionnel)
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PromotionResponse> update(
             @PathVariable Integer id,
             @RequestPart("data") PromotionRequest req,
             @RequestPart(value = "file", required = false) MultipartFile file
     ) throws IOException {
-        return service.update(id, req, file)   // passe les 3 args
+        // Même chose ici : req.getDescription() contient la nouvelle description
+        return service.update(id, req, file)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -64,7 +65,6 @@ public class PromotionController {
                 : ResponseEntity.notFound().build();
     }
 
-    // Ajout du handler pour IllegalArgumentException
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Void> handleBadRequest(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().build();

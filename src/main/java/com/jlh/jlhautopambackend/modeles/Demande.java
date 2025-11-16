@@ -1,34 +1,63 @@
 package com.jlh.jlhautopambackend.modeles;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.*;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
-@Table(name = "Demande")
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Table(name = "demande")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Demande {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_demande")
+    @EqualsAndHashCode.Include
     private Integer idDemande;
 
-    @Column(nullable = false)
-    private Instant dateDemande;
-
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_client", nullable = false)
     private Client client;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "code_type", nullable = false)
+    @Column(name = "date_demande", nullable = false)
+    private Instant dateDemande;
+
+    @ManyToOne
+    @JoinColumn(name = "code_type", referencedColumnName = "code_type", nullable = false)
     private TypeDemande typeDemande;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "code_statut", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "code_statut", referencedColumnName = "code_statut", nullable = false)
     private StatutDemande statutDemande;
 
+    // Si RDV :
+    @OneToOne(mappedBy = "demande") // ou @OneToOne @JoinColumn(name="id_demande") selon ton modèle
+    private RendezVous rendezVous;
+
+    @OneToMany(mappedBy = "demande") // via DemandeService.id.idDemande
+    @Builder.Default
+    private Set<DemandeService> services = new LinkedHashSet<>();
+
     @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private List<DemandeService> services;
+    @OrderBy("creeLe ASC")
+    @Builder.Default
+    private List<DemandeDocument> documents = new ArrayList<>();
+
+    @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC")
+    @Builder.Default
+    private List<DemandeTimeline> timelineEntries = new ArrayList<>();
 }

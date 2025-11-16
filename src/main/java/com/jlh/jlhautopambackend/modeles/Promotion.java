@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "Promotion")
+@Table(name = "promotion")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class Promotion {
 
@@ -26,4 +26,7 @@ public class Promotion {
 
     @Column(nullable = false)
     private Instant validTo;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String description;
 }

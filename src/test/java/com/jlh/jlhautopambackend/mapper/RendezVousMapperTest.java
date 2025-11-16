@@ -54,7 +54,10 @@ class RendezVousMapperTest {
         // given
         Demande demande = Demande.builder().idDemande(11).build();
         Creneau creneau = Creneau.builder().idCreneau(22).build();
-        Administrateur admin = Administrateur.builder().idAdmin(33).build();
+        Administrateur admin = Administrateur.builder()
+                .idAdmin(33)
+                .username("admin33")
+                .build();
         StatutRendezVous statut = StatutRendezVous.builder()
                 .codeStatut("OK")
                 .libelle("Validé")

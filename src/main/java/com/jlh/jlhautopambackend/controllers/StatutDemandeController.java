@@ -11,7 +11,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/statut-demandes")
-@CrossOrigin
 public class StatutDemandeController {
     private final StatutDemandeService service;
 

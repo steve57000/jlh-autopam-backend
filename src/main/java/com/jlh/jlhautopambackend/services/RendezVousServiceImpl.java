@@ -19,24 +19,38 @@ public class RendezVousServiceImpl implements RendezVousService {
     private final DemandeRepository demandeRepo;
     private final CreneauRepository creneauRepo;
     private final AdministrateurRepository adminRepo;
-    private final StatutRendezVousRepository statutRepo;
+    private final StatutRendezVousRepository statutRendezVousRepo;
+    private final StatutDemandeRepository statutDemandeRepo;
+    private final TypeDemandeRepository typeDemandeRepo;
     private final RendezVousMapper mapper;
+    private final DemandeTimelineService timelineService;
+
+    private static final String STATUT_BROUILLON  = "Brouillon";
+    private static final String STATUT_EN_ATTENTE = "En_attente";
+    private static final String TYPE_RDV          = "RendezVous";
 
     public RendezVousServiceImpl(RendezVousRepository repo,
                                  DemandeRepository demandeRepo,
                                  CreneauRepository creneauRepo,
                                  AdministrateurRepository adminRepo,
-                                 StatutRendezVousRepository statutRepo,
-                                 RendezVousMapper mapper) {
+                                 StatutRendezVousRepository statutRendezVousRepo,
+                                 StatutDemandeRepository statutDemandeRepo,
+                                 TypeDemandeRepository typeDemandeRepo,
+                                 RendezVousMapper mapper,
+                                 DemandeTimelineService timelineService) {
         this.repo = repo;
         this.demandeRepo = demandeRepo;
         this.creneauRepo = creneauRepo;
         this.adminRepo = adminRepo;
-        this.statutRepo = statutRepo;
+        this.statutRendezVousRepo = statutRendezVousRepo;
+        this.statutDemandeRepo = statutDemandeRepo;
+        this.typeDemandeRepo = typeDemandeRepo;
         this.mapper = mapper;
+        this.timelineService = timelineService;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<RendezVousResponse> findAll() {
         return repo.findAll().stream()
                 .map(mapper::toResponse)
@@ -44,9 +58,9 @@ public class RendezVousServiceImpl implements RendezVousService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<RendezVousResponse> findById(Integer id) {
-        return repo.findById(id)
-                .map(mapper::toResponse);
+        return repo.findById(id).map(mapper::toResponse);
     }
 
     @Override
@@ -57,16 +71,37 @@ public class RendezVousServiceImpl implements RendezVousService {
                 .orElseThrow(() -> new IllegalArgumentException("Creneau introuvable: " + req.getCreneauId()));
         Administrateur admin = adminRepo.findById(req.getAdministrateurId())
                 .orElseThrow(() -> new IllegalArgumentException("Administrateur introuvable: " + req.getAdministrateurId()));
-        StatutRendezVous statut = statutRepo.findById(req.getCodeStatut())
-                .orElseThrow(() -> new IllegalArgumentException("Statut introuvable: " + req.getCodeStatut()));
+        StatutRendezVous statutRdv = statutRendezVousRepo.findById(req.getCodeStatut())
+                .orElseThrow(() -> new IllegalArgumentException("Statut RDV introuvable: " + req.getCodeStatut()));
 
+        // 1) Basculer la demande en type RendezVous si besoin
+        if (demande.getTypeDemande() == null || !TYPE_RDV.equals(demande.getTypeDemande().getCodeType())) {
+            var typeRdv = typeDemandeRepo.findById(TYPE_RDV)
+                    .orElseThrow(() -> new IllegalStateException("TypeDemande 'RendezVous' manquant"));
+            demande.setTypeDemande(typeRdv);
+            demandeRepo.save(demande);
+        }
+
+        // 2) Créer le RDV
         RendezVous ent = mapper.toEntity(req);
         ent.setDemande(demande);
         ent.setCreneau(creneau);
         ent.setAdministrateur(admin);
-        ent.setStatut(statut);
+        ent.setStatut(statutRdv);
 
         RendezVous saved = repo.save(ent);
+        timelineService.logRendezVousEvent(demande, saved, "Rendez-vous planifié", admin.getEmail(), "ADMIN");
+
+        // 3) Brouillon -> En_attente si nécessaire
+        String current = demande.getStatutDemande() != null ? demande.getStatutDemande().getCodeStatut() : null;
+        if (current == null || STATUT_BROUILLON.equals(current)) {
+            var enAttente = statutDemandeRepo.findById(STATUT_EN_ATTENTE)
+                    .orElseThrow(() -> new IllegalStateException("Statut 'En_attente' manquant en base"));
+            demande.setStatutDemande(enAttente);
+            Demande updated = demandeRepo.save(demande);
+            timelineService.logStatusChange(updated, enAttente, current, admin.getEmail(), "ADMIN");
+        }
+
         return mapper.toResponse(saved);
     }
 
@@ -79,11 +114,37 @@ public class RendezVousServiceImpl implements RendezVousService {
                     .orElseThrow(() -> new IllegalArgumentException("Creneau introuvable: " + req.getCreneauId())));
             existing.setAdministrateur(adminRepo.findById(req.getAdministrateurId())
                     .orElseThrow(() -> new IllegalArgumentException("Administrateur introuvable: " + req.getAdministrateurId())));
-            existing.setStatut(statutRepo.findById(req.getCodeStatut())
-                    .orElseThrow(() -> new IllegalArgumentException("Statut introuvable: " + req.getCodeStatut())));
+            existing.setStatut(statutRendezVousRepo.findById(req.getCodeStatut())
+                    .orElseThrow(() -> new IllegalArgumentException("Statut RDV introuvable: " + req.getCodeStatut())));
             RendezVous updated = repo.save(existing);
+            timelineService.logRendezVousEvent(updated.getDemande(), updated, "Rendez-vous mis à jour",
+                    updated.getAdministrateur() != null ? updated.getAdministrateur().getEmail() : null, "ADMIN");
             return mapper.toResponse(updated);
         });
+    }
+
+    @Override
+    public Optional<RendezVousResponse> submit(Integer rdvId, Integer clientIdOrNullIfAdmin) {
+        Optional<RendezVous> opt = (clientIdOrNullIfAdmin == null)
+                ? repo.findById(rdvId) // ADMIN
+                : repo.findByIdAndClient(rdvId, clientIdOrNullIfAdmin); // CLIENT (ownership)
+
+        if (opt.isEmpty()) return Optional.empty();
+
+        RendezVous rdv = opt.get();
+        Demande demande = rdv.getDemande();
+        if (demande == null) return Optional.empty();
+
+        String current = demande.getStatutDemande() != null ? demande.getStatutDemande().getCodeStatut() : null;
+        if (current == null || STATUT_BROUILLON.equals(current)) {
+            StatutDemande enAttente = statutDemandeRepo.findById(STATUT_EN_ATTENTE)
+                    .orElseThrow(() -> new IllegalStateException("Statut 'En_attente' manquant en base"));
+            demande.setStatutDemande(enAttente);
+            Demande updated = demandeRepo.save(demande);
+            timelineService.logStatusChange(updated, enAttente, current, null, null);
+        }
+
+        return Optional.of(mapper.toResponse(rdv));
     }
 
     @Override

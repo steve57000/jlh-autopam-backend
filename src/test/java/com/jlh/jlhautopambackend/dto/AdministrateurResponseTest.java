@@ -30,13 +30,14 @@ class AdministrateurResponseTest {
 
         AdministrateurResponse resp = AdministrateurResponse.builder()
                 .idAdmin(42)
-                .username("user42")
+                .email("user42")
                 .nom("Dupont")
                 .prenom("Jean")
                 .disponibilites(dispos)
                 .build();
 
         assertEquals(42, resp.getIdAdmin());
+        assertEquals("user42", resp.getEmail());
         assertEquals("user42", resp.getUsername());
         assertEquals("Dupont", resp.getNom());
         assertEquals("Jean", resp.getPrenom());
@@ -48,12 +49,13 @@ class AdministrateurResponseTest {
     void testNoArgsAndSetters() {
         AdministrateurResponse resp = new AdministrateurResponse();
         resp.setIdAdmin(7);
-        resp.setUsername("u7");
+        resp.setEmail("u7");
         resp.setNom("Martin");
         resp.setPrenom("Marie");
         resp.setDisponibilites(List.of());
 
         assertEquals(7, resp.getIdAdmin());
+        assertEquals("u7", resp.getEmail());
         assertEquals("u7", resp.getUsername());
         assertEquals("Martin", resp.getNom());
         assertEquals("Marie", resp.getPrenom());
@@ -68,15 +70,15 @@ class AdministrateurResponseTest {
         );
 
         AdministrateurResponse a = AdministrateurResponse.builder()
-                .idAdmin(2).username("u2").nom("Leroy").prenom("Luc")
+                .idAdmin(2).email("u2").nom("Leroy").prenom("Luc")
                 .disponibilites(dispos).build();
 
         AdministrateurResponse b = AdministrateurResponse.builder()
-                .idAdmin(2).username("u2").nom("Leroy").prenom("Luc")
+                .idAdmin(2).email("u2").nom("Leroy").prenom("Luc")
                 .disponibilites(dispos).build();
 
         AdministrateurResponse c = AdministrateurResponse.builder()
-                .idAdmin(3).username("u3").nom("Durand").prenom("Luc")
+                .idAdmin(3).email("u3").nom("Durand").prenom("Luc")
                 .disponibilites(dispos).build();
 
         assertEquals(a, b);
@@ -93,11 +95,12 @@ class AdministrateurResponseTest {
 
         AdministrateurResponse original = AdministrateurResponse.builder()
                 .idAdmin(5)
-                .username("user5")
+                .email("user5")
                 .nom("Petit")
                 .prenom("Anne")
                 .disponibilites(dispos)
                 .build();
+        original.setUsername(original.getEmail());
 
         String json = objectMapper.writeValueAsString(original);
         AdministrateurResponse fromJson = objectMapper.readValue(json, AdministrateurResponse.class);

@@ -16,11 +16,12 @@ Ce document liste les commandes Docker indispensables pour gérer les environnem
 Avant de repartir sur une base propre, exécutez :
 
 ```bash
+
 # Arrêter et supprimer les conteneurs de production
-docker-compose -f docker-compose.prod.yml down
+docker-compose -f ../docker-compose.prod.yml down
 
 # Arrêter et supprimer les conteneurs de développement
-docker-compose -f docker-compose.dev.yml down
+docker-compose -f ../docker-compose.dev.yml down
 
 # Supprimer les conteneurs orphelins
 docker container prune -f
@@ -42,23 +43,50 @@ docker network prune -f
 Pour lancer la stack de développement (API, base MySQL, interface Adminer) :
 
 ```bash
-docker-compose -f docker-compose.dev.yml up --build
+  docker-compose -f ../docker-compose.dev.yml up --build
 ```
 
 * **API** : [http://localhost:8080](http://localhost:8080)
 * **MySQL** : 127.0.0.1:3306 (utilisateur `root`, mot de passe `password`)
 * **Adminer** : [http://localhost:8081](http://localhost:8081)
+* **MailHog** :
+* SMTP :
+* mailhog:1025 Interface Web : http://localhost:8025
+* **Nginx** (images statiques) : http://localhost
+
+Tests emails (MailHog)
+
+En développement, tous les emails envoyés par l’application Spring Boot sont interceptés par MailHog :
+ils ne sortent pas réellement, mais sont consultables sur http://localhost:8025
+.
+
+Cela permet de vérifier :
+
+* l’objet et le contenu HTML,
+
+* les variables dynamiques (nom, lien de vérification…),
+
+* les pièces jointes.
+
+Exemple de configuration dans application-dev.properties :
+
+```code
+spring.mail.host=${MAIL_HOST:mailhog}
+spring.mail.port=${MAIL_PORT:1025}
+spring.mail.properties.mail.smtp.auth=false
+spring.mail.properties.mail.smtp.starttls.enable=false
+```
 
 ### Journaux (logs)
 
 ```bash
-docker-compose -f docker-compose.dev.yml logs -f backend
+  docker-compose -f ../docker-compose.dev.yml logs -f backend
 ```
 
 ### Arrêter les conteneurs de développement
 
 ```bash
-docker-compose -f docker-compose.dev.yml down
+  docker-compose -f ../docker-compose.dev.yml down
 ```
 
 ---
@@ -68,20 +96,20 @@ docker-compose -f docker-compose.dev.yml down
 Démarrer la stack de production en arrière-plan :
 
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+  docker-compose -f ../docker-compose.prod.yml up -d
 ```
 
 Arrêter et supprimer les conteneurs de production :
 
 ```bash
-docker-compose -f docker-compose.prod.yml down
+  docker-compose -f ../docker-compose.prod.yml down
 ```
 
 Mettre à jour l’image backend et redémarrer le service :
 
 ```bash
-docker-compose -f docker-compose.prod.yml pull backend
-docker-compose -f docker-compose.prod.yml up -d backend
+  docker-compose -f ../docker-compose.prod.yml pull backend
+  docker-compose -f ../docker-compose.prod.yml up -d backend
 ```
 
 ---

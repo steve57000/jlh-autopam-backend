@@ -13,4 +13,6 @@ public class ServiceResponse {
     private String libelle;
     private String description;
     private BigDecimal prixUnitaire;
+    private boolean archived;
+    private Integer quantiteMax;
 }

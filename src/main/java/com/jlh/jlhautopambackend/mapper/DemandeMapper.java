@@ -9,7 +9,8 @@ import java.util.List;
 @Mapper(
         componentModel = "spring",
         uses = {DemandeTimelineMapper.class, ClientMapper.class},
-        builder = @Builder(disableBuilder = true)
+        builder = @Builder(disableBuilder = true),
+        injectionStrategy = InjectionStrategy.CONSTRUCTOR
 )
 public interface DemandeMapper {
 

@@ -6,7 +6,11 @@ import org.mapstruct.*;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", uses = {DemandeTimelineMapper.class, ClientMapper.class})
+@Mapper(
+        componentModel = "spring",
+        uses = {DemandeTimelineMapper.class, ClientMapper.class},
+        builder = @Builder(disableBuilder = true)
+)
 public interface DemandeMapper {
 
     // ----------- ENTITY -> DTO -----------

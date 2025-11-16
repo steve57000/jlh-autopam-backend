@@ -8,7 +8,6 @@ import java.time.Instant;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class DemandeServiceDto {
     private Integer idDemande;
     private Integer idService;

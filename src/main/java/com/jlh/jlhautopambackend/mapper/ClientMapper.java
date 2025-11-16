@@ -1,6 +1,7 @@
 // src/main/java/com/jlh/jlhautopambackend/mapper/ClientMapper.java
 package com.jlh.jlhautopambackend.mapper;
 
+import com.jlh.jlhautopambackend.dto.ClientDto;
 import com.jlh.jlhautopambackend.dto.ClientRequest;
 import com.jlh.jlhautopambackend.dto.ClientResponse;
 import com.jlh.jlhautopambackend.modeles.Client;
@@ -37,4 +38,36 @@ public abstract class ClientMapper {
     @Mapping(target = "vehiculeMarque", source = "vehiculeMarque")
     @Mapping(target = "vehiculeModele", source = "vehiculeModele")
     public abstract ClientResponse toResponse(Client entity);
+
+    @Mapping(target = "adresse", expression = "java(formatAdresse(entity))")
+    public abstract ClientDto toDto(Client entity);
+
+    protected String formatAdresse(Client entity) {
+        if (entity == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        if (entity.getAdresseLigne1() != null && !entity.getAdresseLigne1().isBlank()) {
+            sb.append(entity.getAdresseLigne1().trim());
+        }
+        if (entity.getAdresseLigne2() != null && !entity.getAdresseLigne2().isBlank()) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(entity.getAdresseLigne2().trim());
+        }
+        if (entity.getAdresseCodePostal() != null && !entity.getAdresseCodePostal().isBlank()) {
+            if (sb.length() > 0) {
+                sb.append(" ");
+            }
+            sb.append(entity.getAdresseCodePostal().trim());
+        }
+        if (entity.getAdresseVille() != null && !entity.getAdresseVille().isBlank()) {
+            if (sb.length() > 0) {
+                sb.append(" ");
+            }
+            sb.append(entity.getAdresseVille().trim());
+        }
+        return sb.length() == 0 ? null : sb.toString();
+    }
 }

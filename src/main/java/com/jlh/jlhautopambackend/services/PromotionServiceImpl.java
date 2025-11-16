@@ -7,38 +7,38 @@ import com.jlh.jlhautopambackend.modeles.Administrateur;
 import com.jlh.jlhautopambackend.modeles.Promotion;
 import com.jlh.jlhautopambackend.repository.AdministrateurRepository;
 import com.jlh.jlhautopambackend.repository.PromotionRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class PromotionServiceImpl implements PromotionService {
 
-    private static final Logger log = LoggerFactory.getLogger(PromotionServiceImpl.class);
-
     private final PromotionRepository promoRepo;
     private final AdministrateurRepository adminRepo;
     private final PromotionMapper mapper;
-    private final FileStorageService fileStorage;
+
+    /** Chemin absolu sur le disque où stocker les images */
+    @Value("${app.upload-dir}")
+    private String uploadDir;
 
     public PromotionServiceImpl(PromotionRepository promoRepo,
                                 AdministrateurRepository adminRepo,
-                                PromotionMapper mapper,
-                                FileStorageService fileStorage) {
+                                PromotionMapper mapper) {
         this.promoRepo = promoRepo;
         this.adminRepo = adminRepo;
         this.mapper = mapper;
-        this.fileStorage = fileStorage;
     }
 
     @Override
@@ -75,37 +75,20 @@ public class PromotionServiceImpl implements PromotionService {
         validateDates(req.getValidFrom(), req.getValidTo());
         Promotion existing = opt.get();
         handleAdminChange(existing, req.getAdministrateurId());
-
-        // NE METTRE à jour que si req.imageUrl non-null ET non-blank
-        if (StringUtils.hasText(req.getImageUrl())) {
-            existing.setImageUrl(req.getImageUrl());
-        }
-
+        existing.setImageUrl(req.getImageUrl());
         existing.setValidFrom(req.getValidFrom());
         existing.setValidTo(req.getValidTo());
-        existing.setDescription(req.getDescription());
-
         Promotion saved = promoRepo.save(existing);
         return Optional.of(mapper.toResponse(saved));
     }
 
     @Override
     public boolean delete(Integer id) {
-        Optional<Promotion> opt = promoRepo.findById(id);
-        if (opt.isEmpty()) {
+        if (!promoRepo.existsById(id)) {
             return false;
         }
-
-        Promotion promo = opt.get();
-        resolveRelativePath(promo.getImageUrl()).ifPresent(path -> {
-            try {
-                fileStorage.delete(path);
-            } catch (IOException e) {
-                log.warn("Impossible de supprimer l'image associée à la promotion {} : {}", id, e.getMessage());
-            }
-        });
-
-        promoRepo.delete(promo);
+        // On pourrait supprimer le fichier ici si on stocke le chemin dans la DB
+        promoRepo.deleteById(id);
         return true;
     }
 
@@ -115,7 +98,7 @@ public class PromotionServiceImpl implements PromotionService {
     public PromotionResponse create(PromotionRequest req, MultipartFile file) throws IOException {
         // si un fichier est fourni, on le stocke
         if (file != null && !file.isEmpty()) {
-            String filename = fileStorage.store(file);
+            String filename = storeFile(file);
             req.setImageUrl("/promotions/images/" + filename);
         }
         return create(req);
@@ -128,15 +111,12 @@ public class PromotionServiceImpl implements PromotionService {
             // charger l'ancienne entité pour récupérer l'URL
             promoRepo.findById(id).ifPresent(old -> {
                 String oldUrl = old.getImageUrl();
-                resolveRelativePath(oldUrl).ifPresent(path -> {
-                    try {
-                        fileStorage.delete(path);
-                    } catch (IOException e) {
-                        log.warn("Impossible de supprimer l'ancienne image de la promotion {} : {}", id, e.getMessage());
-                    }
-                });
+                if (oldUrl != null && oldUrl.startsWith("/promotions/images/")) {
+                    Path oldPath = Paths.get(uploadDir, oldUrl.substring("/promotions/images/".length()));
+                    try { Files.deleteIfExists(oldPath); } catch (IOException ignored) {}
+                }
             });
-            String filename = fileStorage.store(file);
+            String filename = storeFile(file);
             req.setImageUrl("/promotions/images/" + filename);
         }
         return update(id, req);
@@ -164,14 +144,24 @@ public class PromotionServiceImpl implements PromotionService {
         }
     }
 
-    private Optional<String> resolveRelativePath(String imageUrl) {
-        if (imageUrl == null) {
-            return Optional.empty();
-        }
-        String prefix = "/promotions/images/";
-        if (!imageUrl.startsWith(prefix)) {
-            return Optional.empty();
-        }
-        return Optional.of(imageUrl.substring(prefix.length()));
+    private String storeFile(MultipartFile file) throws IOException {
+        // Récupère le nom original, ou "" si null
+        String originalName = Optional.ofNullable(file.getOriginalFilename()).orElse("");
+
+        // Nettoie le chemin pour éviter les séquences malveillantes
+        String safeName = StringUtils.cleanPath(originalName);
+
+        // Construit un nom unique : UUID + (–nomNettoyé si présent)
+        String filename = UUID.randomUUID()
+                + (safeName.isEmpty() ? "" : "-" + safeName);
+
+        // Crée le dossier si besoin
+        Path targetDir = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Files.createDirectories(targetDir);
+
+        // Transfère le fichier
+        Path target = targetDir.resolve(filename);
+        file.transferTo(target);
+        return filename;
     }
 }

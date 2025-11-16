@@ -2,10 +2,12 @@ package com.jlh.jlhautopambackend.services;
 
 import com.jlh.jlhautopambackend.repository.AdministrateurRepository;
 import com.jlh.jlhautopambackend.repository.ClientRepository;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 
-@Service
+@Service("userService")
+@Primary
 public class UserService implements UserDetailsService {
     private final AdministrateurRepository adminRepo;
     private final ClientRepository clientRepo;

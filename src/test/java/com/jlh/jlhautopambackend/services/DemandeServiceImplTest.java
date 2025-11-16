@@ -94,7 +94,7 @@ class DemandeServiceImplTest {
                 .client(client)
                 .typeDemande(type)
                 .statutDemande(statut)
-                .services(Collections.emptyList())
+                .services(Collections.emptySet())
                 .documents(Collections.emptyList())
                 .build();
 
@@ -208,7 +208,7 @@ class DemandeServiceImplTest {
                 .client(client)
                 .typeDemande(type)
                 .statutDemande(statut)
-                .services(Collections.emptyList())
+                .services(Collections.emptySet())
                 .documents(Collections.emptyList())
                 .build();
         DemandeResponse otherResp = DemandeResponse.builder()
@@ -252,7 +252,7 @@ class DemandeServiceImplTest {
                 .client(newClient)
                 .typeDemande(newType)
                 .statutDemande(newStatut)
-                .services(Collections.emptyList())
+                .services(Collections.emptySet())
                 .documents(Collections.emptyList())
                 .build();
         DemandeResponse updatedResp = DemandeResponse.builder()

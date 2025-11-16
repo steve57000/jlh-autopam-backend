@@ -9,6 +9,7 @@ import org.mapstruct.factory.Mappers;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -104,7 +105,7 @@ class DemandeMapperTest {
                 .client(client)
                 .typeDemande(td)
                 .statutDemande(sd)
-                .services(List.of(ds))
+                .services(Set.of(ds))
                 .documents(List.of(document))
                 .build();
 
@@ -198,7 +199,7 @@ class DemandeMapperTest {
                 .client(client)
                 .typeDemande(td)
                 .statutDemande(sd)
-                .services(List.of(serviceLine))
+                .services(Set.of(serviceLine))
                 .build();
         serviceLine.setDemande(demande);
 

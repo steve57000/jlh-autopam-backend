@@ -60,6 +60,8 @@ public interface DemandeMapper {
     @Mapping(target = "prixUnitaireService", source = "prixUnitaireService")
     @Mapping(target = "quantite", source = "quantite")
     @Mapping(target = "quantiteMax", source = "service.quantiteMax")
+    @Mapping(target = "privateNoteService", ignore = true)
+    @Mapping(target = "dateHeureService", ignore = true)
     DemandeServiceDto toDemandeServiceDto(DemandeService ds);
 
     DemandeDocumentDto toDocumentDto(DemandeDocument document);
@@ -135,5 +137,6 @@ public interface DemandeMapper {
     @Mapping(target = "services", ignore = true)
     @Mapping(target = "documents", ignore = true)
     @Mapping(target = "rendezVous", ignore = true) // si lien 1-1
+    @Mapping(target = "timelineEntries", ignore = true)
     Demande toEntity(DemandeRequest req);
 }

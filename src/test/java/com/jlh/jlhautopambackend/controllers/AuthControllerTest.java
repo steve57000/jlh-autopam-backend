@@ -21,9 +21,15 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.context.annotation.Bean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Import;
+import org.springframework.beans.factory.annotation.Qualifier;
+import com.jlh.jlhautopambackend.config.JwtAuthenticationFilter;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -33,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         excludeAutoConfiguration = SecurityAutoConfiguration.class
 )
 @AutoConfigureMockMvc(addFilters = false)
+@Import(AuthControllerTest.MockBeans.class)
 class AuthControllerTest {
 
     @Autowired
@@ -48,7 +55,7 @@ class AuthControllerTest {
     private JwtUtil jwtUtil;
 
     @MockitoBean
-    private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @MockitoBean
     private ClientService clientService;
@@ -61,6 +68,15 @@ class AuthControllerTest {
 
     @MockitoBean
     private PasswordResetService passwordResetService;
+
+    @TestConfiguration
+    static class MockBeans {
+        @Bean
+        @Qualifier("userService")
+        UserDetailsService userDetailsService() {
+            return Mockito.mock(UserDetailsService.class);
+        }
+    }
 
     @Test
     @DisplayName("POST /api/auth/login ➔ 200, retourne un token JWT")

@@ -1,5 +1,6 @@
 package com.jlh.jlhautopambackend.services;
 
+import com.jlh.jlhautopambackend.config.GarageProperties;
 import com.jlh.jlhautopambackend.dto.DemandeRequest;
 import com.jlh.jlhautopambackend.dto.DemandeResponse;
 import com.jlh.jlhautopambackend.dto.StatutDemandeDto;
@@ -36,9 +37,13 @@ class DemandeServiceImplTest {
     @Mock
     private StatutDemandeRepository statutRepo;
     @Mock
+    private RendezVousRepository rendezVousRepository;
+    @Mock
     private DemandeMapper mapper;
     @Mock
     private DemandeTimelineService timelineService;
+    @Mock
+    private GarageProperties garageProperties;
 
     @InjectMocks
     private DemandeServiceImpl service;

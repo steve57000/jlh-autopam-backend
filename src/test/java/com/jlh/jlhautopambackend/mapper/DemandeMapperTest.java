@@ -132,7 +132,7 @@ class DemandeMapperTest {
                 .typeDemande(td)
                 .statutDemande(sd)
                 .services(Set.of(ds))
-                .documents(List.of(document))
+                .documents(Set.of(document))
                 .build();
 
         document.setDemande(ent);

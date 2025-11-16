@@ -28,17 +28,20 @@ public class DemandeServiceImpl implements DemandeService {
     private final TypeDemandeRepository typeRepo;
     private final StatutDemandeRepository statutRepo;
     private final DemandeMapper mapper;
+    private final DemandeTimelineService timelineService;
 
     public DemandeServiceImpl(DemandeRepository repository,
                               ClientRepository clientRepo,
                               TypeDemandeRepository typeRepo,
                               StatutDemandeRepository statutRepo,
-                              DemandeMapper mapper) {
+                              DemandeMapper mapper,
+                              DemandeTimelineService timelineService) {
         this.repository = repository;
         this.clientRepo = clientRepo;
         this.typeRepo = typeRepo;
         this.statutRepo = statutRepo;
         this.mapper = mapper;
+        this.timelineService = timelineService;
     }
 
     @Override
@@ -55,15 +58,16 @@ public class DemandeServiceImpl implements DemandeService {
     public DemandeResponse create(DemandeRequest request) {
         Demande entity = mapper.toEntity(request);
         Client client = clientRepo.findById(request.getClientId())
-                .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+                .orElseThrow(() -> new IllegalArgumentException("Client introuvable : " + request.getClientId()));
         TypeDemande type = typeRepo.findById(request.getCodeType())
-                .orElseThrow(() -> new IllegalArgumentException("Type introuvable"));
+                .orElseThrow(() -> new IllegalArgumentException("TypeDemande introuvable: " + request.getCodeType()));
         StatutDemande statut = statutRepo.findById(request.getCodeStatut())
-                .orElseThrow(() -> new IllegalArgumentException("Statut introuvable"));
+                .orElseThrow(() -> new IllegalArgumentException("StatutDemande introuvable: " + request.getCodeStatut()));
         entity.setClient(client);
         entity.setTypeDemande(type);
         entity.setStatutDemande(statut);
         Demande saved = repository.save(entity);
+        timelineService.logStatusChange(saved, statut, null, null, "ADMIN");
         return mapper.toResponse(saved);
     }
 
@@ -102,16 +106,20 @@ public class DemandeServiceImpl implements DemandeService {
         return repository.findById(id)
                 .map(existing -> {
                     existing.setDateDemande(request.getDateDemande());
+                    String previousStatut = existing.getStatutDemande() != null
+                            ? existing.getStatutDemande().getCodeStatut()
+                            : null;
                     Client client = clientRepo.findById(request.getClientId())
-                            .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
+                            .orElseThrow(() -> new IllegalArgumentException("Client introuvable : " + request.getClientId()));
                     TypeDemande type = typeRepo.findById(request.getCodeType())
-                            .orElseThrow(() -> new IllegalArgumentException("Type introuvable"));
+                            .orElseThrow(() -> new IllegalArgumentException("TypeDemande introuvable: " + request.getCodeType()));
                     StatutDemande statut = statutRepo.findById(request.getCodeStatut())
-                            .orElseThrow(() -> new IllegalArgumentException("Statut introuvable"));
+                            .orElseThrow(() -> new IllegalArgumentException("StatutDemande introuvable: " + request.getCodeStatut()));
                     existing.setClient(client);
                     existing.setTypeDemande(type);
                     existing.setStatutDemande(statut);
                     Demande saved = repository.save(existing);
+                    timelineService.logStatusChange(saved, statut, previousStatut, null, null);
                     return mapper.toResponse(saved);
                 });
     }

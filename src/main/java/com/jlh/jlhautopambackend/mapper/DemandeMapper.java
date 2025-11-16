@@ -4,7 +4,13 @@ import com.jlh.jlhautopambackend.dto.*;
 import com.jlh.jlhautopambackend.modeles.*;
 import org.mapstruct.*;
 
-@Mapper(componentModel = "spring", uses = {DemandeTimelineMapper.class})
+import java.util.List;
+
+@Mapper(
+        componentModel = "spring",
+        uses = {DemandeTimelineMapper.class, ClientMapper.class},
+        builder = @Builder(disableBuilder = true)
+)
 public interface DemandeMapper {
 
     // ----------- ENTITY -> DTO -----------
@@ -16,6 +22,17 @@ public interface DemandeMapper {
     @Mapping(target = "documents", source = "documents")
     @Mapping(target = "timeline", source = "timelineEntries")
     DemandeResponse toResponse(Demande ent);
+
+    @Mapping(target = "dateSoumission", source = "dateDemande")
+    @Mapping(target = "codeType", source = "typeDemande.codeType")
+    @Mapping(target = "typeLibelle", source = "typeDemande.libelle")
+    @Mapping(target = "codeStatut", source = "statutDemande.codeStatut")
+    @Mapping(target = "statutLibelle", source = "statutDemande.libelle")
+    @Mapping(target = "client", source = "client")
+    @Mapping(target = "services", source = "services")
+    DemandeDto toDto(Demande ent);
+
+    List<DemandeDto> toDtos(List<Demande> entities);
 
     // Client -> ClientSummaryDto
     @Mapping(target = "idClient", source = "idClient")
@@ -33,11 +50,18 @@ public interface DemandeMapper {
     ClientSummaryDto toClientSummaryDto(Client client);
 
     // DemandeService -> DemandeServiceDto
+    @Mapping(target = "idDemande", source = "demande.idDemande")
     @Mapping(target = "idService", source = "id.idService")
     @Mapping(target = "libelle", source = "libelleService")
+    @Mapping(target = "libelleService", source = "libelleService")
     @Mapping(target = "description", source = "descriptionService")
+    @Mapping(target = "descriptionService", source = "descriptionService")
     @Mapping(target = "prixUnitaire", source = "prixUnitaireService")
+    @Mapping(target = "prixUnitaireService", source = "prixUnitaireService")
     @Mapping(target = "quantite", source = "quantite")
+    @Mapping(target = "quantiteMax", source = "service.quantiteMax")
+    @Mapping(target = "privateNoteService", ignore = true)
+    @Mapping(target = "dateHeureService", ignore = true)
     DemandeServiceDto toDemandeServiceDto(DemandeService ds);
 
     DemandeDocumentDto toDocumentDto(DemandeDocument document);
@@ -47,17 +71,38 @@ public interface DemandeMapper {
         if (source == null || target == null) {
             return;
         }
+        if (target.getIdService() == null && source.getService() != null) {
+            target.setIdService(source.getService().getIdService());
+        }
+        if (target.getIdService() == null && source.getId() != null) {
+            target.setIdService(source.getId().getIdService());
+        }
+        if (target.getIdDemande() == null && source.getDemande() != null) {
+            target.setIdDemande(source.getDemande().getIdDemande());
+        }
+        if (target.getIdDemande() == null && source.getId() != null) {
+            target.setIdDemande(source.getId().getIdDemande());
+        }
         if (target.getQuantiteMax() == null && source.getService() != null) {
             target.setQuantiteMax(source.getService().getQuantiteMax());
         }
         if (target.getLibelle() == null && source.getService() != null) {
             target.setLibelle(source.getService().getLibelle());
         }
+        if (target.getLibelleService() == null && source.getService() != null) {
+            target.setLibelleService(source.getService().getLibelle());
+        }
         if (target.getDescription() == null && source.getService() != null) {
             target.setDescription(source.getService().getDescription());
         }
+        if (target.getDescriptionService() == null && source.getService() != null) {
+            target.setDescriptionService(source.getService().getDescription());
+        }
         if (target.getPrixUnitaire() == null && source.getService() != null) {
             target.setPrixUnitaire(source.getService().getPrixUnitaire());
+        }
+        if (target.getPrixUnitaireService() == null && source.getService() != null) {
+            target.setPrixUnitaireService(source.getService().getPrixUnitaire());
         }
     }
 
@@ -92,5 +137,6 @@ public interface DemandeMapper {
     @Mapping(target = "services", ignore = true)
     @Mapping(target = "documents", ignore = true)
     @Mapping(target = "rendezVous", ignore = true) // si lien 1-1
+    @Mapping(target = "timelineEntries", ignore = true)
     Demande toEntity(DemandeRequest req);
 }

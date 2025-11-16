@@ -3,7 +3,9 @@ package com.jlh.jlhautopambackend.modeles;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -46,7 +48,8 @@ public class Demande {
     private RendezVous rendezVous;
 
     @OneToMany(mappedBy = "demande") // via DemandeService.id.idDemande
-    private List<DemandeService> services;
+    @Builder.Default
+    private Set<DemandeService> services = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("creeLe ASC")

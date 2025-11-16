@@ -4,7 +4,6 @@ import com.jlh.jlhautopambackend.dto.*;
 import com.jlh.jlhautopambackend.modeles.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mapstruct.factory.Mappers;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
@@ -20,9 +19,7 @@ class DemandeMapperTest {
 
     @BeforeEach
     void setUp() {
-        DemandeMapperImpl impl = (DemandeMapperImpl) Mappers.getMapper(DemandeMapper.class);
-
-        ClientMapper clientMapper = Mappers.getMapper(ClientMapper.class);
+        ClientMapperImpl clientMapper = new ClientMapperImpl();
         clientMapper.setPasswordEncoder(new PasswordEncoder() {
             @Override
             public String encode(CharSequence rawPassword) {
@@ -46,12 +43,9 @@ class DemandeMapperTest {
             }
         });
 
-        DemandeTimelineMapper timelineMapper = Mappers.getMapper(DemandeTimelineMapper.class);
+        DemandeTimelineMapper timelineMapper = new DemandeTimelineMapperImpl();
 
-        impl.setClientMapper(clientMapper);
-        impl.setDemandeTimelineMapper(timelineMapper);
-
-        mapper = impl;
+        mapper = new DemandeMapperImpl(timelineMapper, clientMapper);
     }
 
     @Test

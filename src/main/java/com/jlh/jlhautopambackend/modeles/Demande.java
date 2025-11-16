@@ -2,8 +2,7 @@ package com.jlh.jlhautopambackend.modeles;
 
 import jakarta.persistence.*;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -52,10 +51,10 @@ public class Demande {
     @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("creeLe ASC")
     @Builder.Default
-    private List<DemandeDocument> documents = new ArrayList<>();
+    private Set<DemandeDocument> documents = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("createdAt ASC")
     @Builder.Default
-    private List<DemandeTimeline> timelineEntries = new ArrayList<>();
+    private Set<DemandeTimeline> timelineEntries = new LinkedHashSet<>();
 }

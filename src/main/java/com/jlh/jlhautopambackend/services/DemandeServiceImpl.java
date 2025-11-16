@@ -313,8 +313,8 @@ public class DemandeServiceImpl implements com.jlh.jlhautopambackend.services.De
             return Collections.emptyList();
         }
 
-        List<DemandeService> current =
-                demande.getServices() != null ? demande.getServices() : Collections.emptyList();
+        Set<DemandeService> current =
+                demande.getServices() != null ? demande.getServices() : Collections.emptySet();
         Map<Integer, DemandeService> indexed = new HashMap<>();
         for (DemandeService ds : current) {
             Integer sid = null;

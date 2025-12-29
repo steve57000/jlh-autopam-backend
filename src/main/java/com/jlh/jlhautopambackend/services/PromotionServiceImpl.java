@@ -99,7 +99,7 @@ public class PromotionServiceImpl implements PromotionService {
         // si un fichier est fourni, on le stocke
         if (file != null && !file.isEmpty()) {
             String filename = storeFile(file);
-            req.setImageUrl("/promotions/images/" + filename);
+            req.setImageUrl(uploadDir + filename);
         }
         return create(req);
     }
@@ -111,13 +111,13 @@ public class PromotionServiceImpl implements PromotionService {
             // charger l'ancienne entité pour récupérer l'URL
             promoRepo.findById(id).ifPresent(old -> {
                 String oldUrl = old.getImageUrl();
-                if (oldUrl != null && oldUrl.startsWith("/promotions/images/")) {
-                    Path oldPath = Paths.get(uploadDir, oldUrl.substring("/promotions/images/".length()));
+                if (oldUrl != null && oldUrl.startsWith(uploadDir)) {
+                    Path oldPath = Paths.get(uploadDir, oldUrl.substring(uploadDir.length()));
                     try { Files.deleteIfExists(oldPath); } catch (IOException ignored) {}
                 }
             });
             String filename = storeFile(file);
-            req.setImageUrl("/promotions/images/" + filename);
+            req.setImageUrl(uploadDir + filename);
         }
         return update(id, req);
     }

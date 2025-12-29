@@ -56,7 +56,7 @@ class UserServiceTest {
     void loadUserByUsername_whenNeitherAdminNorClient_throwsException() {
         when(adminRepo.findByEmail("nobody@example.com"))
                 .thenReturn(Optional.empty());
-        when(clientRepo.findByEmail("nobody@example.com"))
+        when(clientRepo.findByEmailIgnoreCase("nobody@example.com"))
                 .thenReturn(Optional.empty());
 
         assertThrows(

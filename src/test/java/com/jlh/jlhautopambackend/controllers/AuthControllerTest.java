@@ -102,7 +102,7 @@ class AuthControllerTest {
         Mockito.when(auth.getPrincipal()).thenReturn(userDetails);
 
         // Stub repository pour vérifier l'état de vérification
-        Mockito.when(clientRepository.findByEmail("user")).thenReturn(Optional.of(
+        Mockito.when(clientRepository.findByEmailIgnoreCase("user")).thenReturn(Optional.of(
                 Client.builder().email("user").emailVerified(true).idClient(42).build()
         ));
 

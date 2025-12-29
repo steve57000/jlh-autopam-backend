@@ -1,21 +1,25 @@
 package com.jlh.jlhautopambackend.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
-@Value
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class DemandeDocumentDownload {
-    Long idDocument;
-    Integer demandeId;
-    String nomFichier;
-    String urlPublic;
-    String typeContenu;
-    Long tailleOctets;
-    boolean visibleClient;
-    String creePar;
-    String creeParRole;
-    Instant creeLe;
+    private Long idDocument;
+    private Integer demandeId;
+    private String nomFichier;
+    private String urlPrivate;   // chemin relatif sur disque (ex: documents/uuid.pdf)
+    private String typeContenu;
+    private Long tailleOctets;
+    private boolean visibleClient;
+    private String creePar;
+    private String creeParRole;
+    private Instant creeLe;
 }

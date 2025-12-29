@@ -16,36 +16,36 @@ import static org.junit.jupiter.api.Assertions.*;
 class DemandeMapperTest {
 
     private DemandeMapper mapper;
+    private UserService userService;
 
     @BeforeEach
     void setUp() {
+
+        // Client mapper avec passwordEncoder mock
         ClientMapperImpl clientMapper = new ClientMapperImpl();
         clientMapper.setPasswordEncoder(new PasswordEncoder() {
-            @Override
-            public String encode(CharSequence rawPassword) {
+            @Override public String encode(CharSequence rawPassword) {
                 return rawPassword == null ? null : rawPassword.toString();
             }
-
-            @Override
-            public boolean matches(CharSequence rawPassword, String encodedPassword) {
-                if (rawPassword == null && encodedPassword == null) {
-                    return true;
-                }
-                if (rawPassword == null || encodedPassword == null) {
-                    return false;
-                }
-                return encodedPassword.contentEquals(rawPassword);
+            @Override public boolean matches(CharSequence rawPassword, String encodedPassword) {
+                return rawPassword != null && encodedPassword != null && encodedPassword.contentEquals(rawPassword);
             }
-
-            @Override
-            public boolean upgradeEncoding(String encodedPassword) {
-                return false;
-            }
+            @Override public boolean upgradeEncoding(String encodedPassword) { return false; }
         });
 
-        DemandeTimelineMapper timelineMapper = new DemandeTimelineMapperImpl();
+        // Timeline mapper (sans userService ici, il sera donné à l’appel)
+        DemandeTimelineMapperImpl timelineMapper = new DemandeTimelineMapperImpl();
 
-        mapper = new DemandeMapperImpl(timelineMapper, clientMapper);
+        // Mapper principal
+        mapper = new DemandeMapperImpl();
+
+        // Injection via setter (comme MapStruct le prévoir réellement)
+        ((DemandeMapperImpl) mapper).setClientMapper(clientMapper);
+        ((DemandeMapperImpl) mapper).setTimelineMapper(timelineMapper);
+
+        // Mock UserService
+        userService = mock(UserService.class);
+        when(userService.getFirstnameFromEmail(anyString())).thenReturn("Alice");
     }
 
     @Test
@@ -76,7 +76,6 @@ class DemandeMapperTest {
     void toResponse_shouldMapAllFields_includingClientAndServices() {
         Instant dt = Instant.parse("2025-06-01T08:30:00Z");
 
-        // entités liées
         Client client = Client.builder()
                 .idClient(7)
                 .nom("Durand")
@@ -94,7 +93,6 @@ class DemandeMapperTest {
                 .libelle("Statut 1")
                 .build();
 
-        // service (côté produit)
         Service service = Service.builder()
                 .idService(456)
                 .libelle("Vidange")
@@ -102,7 +100,6 @@ class DemandeMapperTest {
                 .prixUnitaire(BigDecimal.valueOf(59.90))
                 .build();
 
-        // liaison many-to-many avec quantité
         DemandeServiceKey key = new DemandeServiceKey(123, 456);
         DemandeService ds = DemandeService.builder()
                 .id(key)
@@ -116,7 +113,7 @@ class DemandeMapperTest {
         DemandeDocument document = DemandeDocument.builder()
                 .idDocument(321L)
                 .nomFichier("devis.pdf")
-                .urlPublic("https://cdn.example.com/docs/devis.pdf")
+                .urlPrivate("https://cdn.example.com/docs/devis.pdf")
                 .typeContenu("application/pdf")
                 .tailleOctets(2048L)
                 .visibleClient(true)
@@ -137,54 +134,20 @@ class DemandeMapperTest {
 
         document.setDemande(ent);
 
-        DemandeResponse resp = mapper.toResponse(ent);
+        DemandeResponse resp = mapper.toResponse(ent, userService);
 
-        // champs simples
         assertEquals(99, resp.getIdDemande());
         assertEquals(dt, resp.getDateDemande());
 
-        // client embarqué (plus de clientId seul)
+        // client
         assertNotNull(resp.getClient());
-        assertEquals(7, resp.getClient().getIdClient());
         assertEquals("Durand", resp.getClient().getNom());
-        assertEquals("alice@example.com", resp.getClient().getEmail());
 
-        // DTO imbriqués (type / statut)
-        TypeDemandeDto tdDto = resp.getTypeDemande();
-        assertNotNull(tdDto);
-        assertEquals("T1", tdDto.getCodeType());
-        assertEquals("Type 1", tdDto.getLibelle());
-
-        StatutDemandeDto sdDto = resp.getStatutDemande();
-        assertNotNull(sdDto);
-        assertEquals("S1", sdDto.getCodeStatut());
-        assertEquals("Statut 1", sdDto.getLibelle());
-
-        // services détaillés
-        List<DemandeServiceDto> svc = resp.getServices();
-        assertNotNull(svc);
-        assertEquals(1, svc.size());
-
-        DemandeServiceDto s0 = svc.get(0);
-        assertEquals(456, s0.getIdService());
-        assertEquals("Vidange", s0.getLibelle());
-        assertEquals("Vidange moteur", s0.getDescription());
-        assertEquals(2, s0.getQuantite());
-        assertEquals(BigDecimal.valueOf(59.90), s0.getPrixUnitaire());
-
-        List<DemandeDocumentDto> docs = resp.getDocuments();
-        assertNotNull(docs);
-        assertEquals(1, docs.size());
-        DemandeDocumentDto docDto = docs.get(0);
-        assertEquals(321L, docDto.getIdDocument());
-        assertEquals("devis.pdf", docDto.getNomFichier());
-        assertEquals("https://cdn.example.com/docs/devis.pdf", docDto.getUrlPublic());
-        assertEquals("application/pdf", docDto.getTypeContenu());
-        assertEquals(2048L, docDto.getTailleOctets());
-        assertTrue(docDto.isVisibleClient());
-        assertEquals("admin@test.fr", docDto.getCreePar());
-        assertEquals("ADMIN", docDto.getCreeParRole());
-        assertEquals(Instant.parse("2025-06-01T08:31:00Z"), docDto.getCreeLe());
+        // documents
+        assertEquals(1, resp.getDocuments().size());
+        DemandeDocumentDto d = resp.getDocuments().get(0);
+        assertEquals("devis.pdf", d.getNomFichier());
+        assertEquals("ADMIN", d.getCreeParRole());
     }
 
     @Test

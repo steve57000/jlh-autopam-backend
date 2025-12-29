@@ -50,7 +50,7 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(creds.getEmail(), creds.getPassword())
             );
 
-            clientRepo.findByEmail(creds.getEmail()).ifPresent(cli -> {
+            clientRepo.findByEmailIgnoreCase(creds.getEmail()).ifPresent(cli -> {
                 if (!cli.isEmailVerified()) {
                     throw new BadCredentialsException("Veuillez vérifier votre e-mail pour activer votre compte.");
                 }
@@ -68,7 +68,7 @@ public class AuthController {
     /** Inscription publique : crée le client et ENVOIE l’e-mail de vérification */
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
-        if (clientRepo.findByEmail(req.email()).isPresent()) {
+        if (clientRepo.findByEmailIgnoreCase(req.email()).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "message", "Un compte existe déjà avec cet e-mail.",
@@ -111,7 +111,7 @@ public class AuthController {
     @PostMapping("/resend-verification")
     public ResponseEntity<?> resend(Authentication auth) {
         String email = auth.getName();
-        Client c = clientRepo.findByEmail(email).orElseThrow();
+        Client c = clientRepo.findByEmailIgnoreCase(email).orElseThrow();
         if (c.isEmailVerified()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Adresse e-mail déjà vérifiée."));
         }

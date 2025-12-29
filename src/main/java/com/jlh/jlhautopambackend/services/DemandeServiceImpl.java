@@ -42,6 +42,7 @@ public class DemandeServiceImpl implements DemandeService {
     private final DemandeMapper mapper;
     private final DemandeTimelineService timelineService;
     private final GarageProperties garageProperties;
+    private final UserService userService;
 
     public DemandeServiceImpl(DemandeRepository repository,
                               ClientRepository clientRepo,
@@ -50,7 +51,7 @@ public class DemandeServiceImpl implements DemandeService {
                               DemandeMapper mapper,
                               RendezVousRepository rendezVousRepository,
                               DemandeTimelineService timelineService,
-                              GarageProperties garageProperties) {
+                              GarageProperties garageProperties, UserService userService) {
         this.repository = repository;
         this.clientRepo = clientRepo;
         this.typeRepo = typeRepo;
@@ -59,6 +60,7 @@ public class DemandeServiceImpl implements DemandeService {
         this.timelineService = timelineService;
         this.rendezVousRepository = rendezVousRepository;
         this.garageProperties = garageProperties;
+        this.userService = userService;
     }
 
     @Override

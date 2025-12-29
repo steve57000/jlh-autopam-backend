@@ -25,4 +25,7 @@ public class DemandeTimelineRequest {
     private BigDecimal montantValide;
 
     private Boolean visibleClient;
+
+    private Long documentId;
+    private String documentNom;
 }

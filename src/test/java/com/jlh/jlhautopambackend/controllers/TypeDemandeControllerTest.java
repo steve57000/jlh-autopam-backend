@@ -52,7 +52,7 @@ class TypeDemandeControllerTest {
         TypeDemandeDto t2 = TypeDemandeDto.builder().codeType("B").libelle("Beta").build();
         Mockito.when(service.findAll()).thenReturn(List.of(t1, t2));
 
-        mvc.perform(get("/api/types-demande").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/type-demandes").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].codeType").value("A"))
                 .andExpect(jsonPath("$[1].libelle").value("Beta"));
@@ -64,7 +64,7 @@ class TypeDemandeControllerTest {
         TypeDemandeDto dto = TypeDemandeDto.builder().codeType("X").libelle("Xray").build();
         Mockito.when(service.findById("X")).thenReturn(Optional.of(dto));
 
-        mvc.perform(get("/api/types-demande/X").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/type-demandes/X").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.libelle").value("Xray"));
     }
@@ -74,7 +74,7 @@ class TypeDemandeControllerTest {
     void testGetByCodeNotFound() throws Exception {
         Mockito.when(service.findById("Z")).thenReturn(Optional.empty());
 
-        mvc.perform(get("/api/types-demande/Z").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/type-demandes/Z").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
 
@@ -85,22 +85,22 @@ class TypeDemandeControllerTest {
         TypeDemandeDto saved = TypeDemandeDto.builder().codeType("C").libelle("Charlie").build();
         Mockito.when(service.create(Mockito.any())).thenReturn(saved);
 
-        mvc.perform(post("/api/types-demande")
+        mvc.perform(post("/api/type-demandes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(in)))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "/api/types-demande/C"))
+                .andExpect(header().string("Location", "/api/type-demandes/C"))
                 .andExpect(jsonPath("$.codeType").value("C"));
     }
 
     @Test
-    @DisplayName("POST /api/types-demande ➔ 409 si déjà existant")
+    @DisplayName("POST /api/type-demandes ➔ 409 si déjà existant")
     void testCreateConflict() throws Exception {
         TypeDemandeDto in = TypeDemandeDto.builder().codeType("D").libelle("Delta").build();
         Mockito.doThrow(new IllegalArgumentException())
                 .when(service).create(Mockito.any());
 
-        mvc.perform(post("/api/types-demande")
+        mvc.perform(post("/api/type-demandes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(in)))
                 .andExpect(status().isConflict());
@@ -114,7 +114,7 @@ class TypeDemandeControllerTest {
         Mockito.when(service.update(Mockito.eq("E"), Mockito.any()))
                 .thenReturn(Optional.of(saved));
 
-        mvc.perform(put("/api/types-demande/E")
+        mvc.perform(put("/api/type-demandes/E")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updates)))
                 .andExpect(status().isOk())
@@ -128,7 +128,7 @@ class TypeDemandeControllerTest {
         Mockito.when(service.update(Mockito.eq("F"), Mockito.any()))
                 .thenReturn(Optional.empty());
 
-        mvc.perform(put("/api/types-demande/F")
+        mvc.perform(put("/api/type-demandes/F")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updates)))
                 .andExpect(status().isNotFound());
@@ -139,7 +139,7 @@ class TypeDemandeControllerTest {
     void testDeleteFound() throws Exception {
         Mockito.when(service.delete("G")).thenReturn(true);
 
-        mvc.perform(delete("/api/types-demande/G"))
+        mvc.perform(delete("/api/type-demandes/G"))
                 .andExpect(status().isNoContent());
     }
 
@@ -148,7 +148,7 @@ class TypeDemandeControllerTest {
     void testDeleteNotFound() throws Exception {
         Mockito.when(service.delete("H")).thenReturn(false);
 
-        mvc.perform(delete("/api/types-demande/H"))
+        mvc.perform(delete("/api/type-demandes/H"))
                 .andExpect(status().isNotFound());
     }
 }

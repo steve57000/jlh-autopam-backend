@@ -1,18 +1,29 @@
 package com.jlh.jlhautopambackend.dto;
 
-import lombok.*;
-import java.time.Instant;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class DevisRequest {
-    /** Identifiant de la demande liée au devis */
+
     private Integer demandeId;
-    /** Date d'émission du devis */
+
     private Instant dateDevis;
-    /** Montant total du devis */
+
+    /** Prix total global du devis (main d'œuvre + pièces) */
     private BigDecimal montantTotal;
+
+    /** Montant de la main d'œuvre */
+    private BigDecimal montantMainOeuvre;
+
+    /** Montant des pièces */
+    private BigDecimal montantPieces;
 }

@@ -5,5 +5,5 @@ import com.jlh.jlhautopambackend.modeles.Client;
 import java.util.Optional;
 
 public interface ClientRepository extends JpaRepository<Client, Integer> {
-    Optional<Client> findByEmail(String email);
+    Optional<Client> findByEmailIgnoreCase(String email);
 }

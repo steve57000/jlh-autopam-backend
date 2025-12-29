@@ -25,7 +25,7 @@ public class UserService implements UserDetailsService {
                         .password(admin.getMotDePasse())
                         .roles("ADMIN")
                         .build())
-                .or(() -> clientRepo.findByEmail(email)
+                .or(() -> clientRepo.findByEmailIgnoreCase(email)
                         .map(cli -> User.withUsername(cli.getEmail())
                                 .password(cli.getMotDePasse())
                                 .roles("CLIENT")
@@ -33,4 +33,14 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "Utilisateur inconnu : " + email));
     }
+
+    public String getFirstnameFromEmail(String email) {
+        if (email == null) return null;
+
+        return adminRepo.findByEmail(email)
+                .map(a -> a.getPrenom())
+                .or(() -> clientRepo.findByEmailIgnoreCase(email).map(c -> c.getPrenom()))
+                .orElse(email); // fallback : on renvoie l’email si on trouve personne
+    }
+
 }

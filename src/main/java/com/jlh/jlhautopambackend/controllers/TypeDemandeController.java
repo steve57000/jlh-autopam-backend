@@ -10,7 +10,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/types-demande")
+@RequestMapping("/api/type-demandes")
 public class TypeDemandeController {
 
     private final TypeDemandeService service;
@@ -36,7 +36,7 @@ public class TypeDemandeController {
             @Valid @RequestBody TypeDemandeDto dto) {
         try {
             TypeDemandeDto created = service.create(dto);
-            URI uri = URI.create("/api/types-demande/" + created.getCodeType());
+            URI uri = URI.create("/api/type-demandes/" + created.getCodeType());
             return ResponseEntity.created(uri).body(created);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(409).build();

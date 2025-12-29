@@ -2,6 +2,7 @@ package com.jlh.jlhautopambackend.mapper;
 
 import com.jlh.jlhautopambackend.dto.*;
 import com.jlh.jlhautopambackend.modeles.*;
+import com.jlh.jlhautopambackend.services.UserService;
 import org.mapstruct.*;
 
 import java.util.List;
@@ -14,15 +15,24 @@ import java.util.List;
 )
 public interface DemandeMapper {
 
-    // ----------- ENTITY -> DTO -----------
+    // ----------- ENTITY -> RESPONSE DTO -----------
 
-    @Mapping(target = "client", source = "client") // utilisera toClientSummaryDto
+    @Mapping(target = "client", source = "client")
     @Mapping(target = "typeDemande", source = "typeDemande")
     @Mapping(target = "statutDemande", source = "statutDemande")
-    @Mapping(target = "services", source = "services") // utilisera toDemandeServiceDto
+    @Mapping(target = "services", source = "services")
     @Mapping(target = "documents", source = "documents")
-    @Mapping(target = "timeline", source = "timelineEntries")
-    DemandeResponse toResponse(Demande ent);
+    @Mapping(
+            target = "timeline",
+            expression = "java(ent.getTimelineEntries() == null ? null : ent.getTimelineEntries().stream().map(t -> demandeTimelineMapper.toDto(t, userService)).toList())"
+    )
+    DemandeResponse toResponse(
+            Demande ent,
+            @Context UserService userService,
+            @Context DemandeTimelineMapper demandeTimelineMapper
+    );
+
+    // ----------- ENTITY -> LIST DTO -----------
 
     @Mapping(target = "dateSoumission", source = "dateDemande")
     @Mapping(target = "codeType", source = "typeDemande.codeType")
@@ -35,7 +45,8 @@ public interface DemandeMapper {
 
     List<DemandeDto> toDtos(List<Demande> entities);
 
-    // Client -> ClientSummaryDto
+    // ----------- CLIENT -> DTO -----------
+
     @Mapping(target = "idClient", source = "idClient")
     @Mapping(target = "nom", source = "nom")
     @Mapping(target = "prenom", source = "prenom")
@@ -50,7 +61,8 @@ public interface DemandeMapper {
     @Mapping(target = "adresseVille", source = "adresseVille")
     ClientSummaryDto toClientSummaryDto(Client client);
 
-    // DemandeService -> DemandeServiceDto
+    // ----------- SERVICE -> DTO -----------
+
     @Mapping(target = "idDemande", source = "demande.idDemande")
     @Mapping(target = "idService", source = "id.idService")
     @Mapping(target = "libelle", source = "libelleService")
@@ -65,63 +77,41 @@ public interface DemandeMapper {
     @Mapping(target = "dateHeureService", ignore = true)
     DemandeServiceDto toDemandeServiceDto(DemandeService ds);
 
-    DemandeDocumentDto toDocumentDto(DemandeDocument document);
-
     @AfterMapping
     default void ensureServiceFallback(DemandeService source, @MappingTarget DemandeServiceDto target) {
-        if (source == null || target == null) {
-            return;
-        }
-        if (target.getIdService() == null && source.getService() != null) {
+        if (source == null || target == null) return;
+
+        if (target.getIdService() == null && source.getService() != null)
             target.setIdService(source.getService().getIdService());
-        }
-        if (target.getIdService() == null && source.getId() != null) {
+
+        if (target.getIdService() == null && source.getId() != null)
             target.setIdService(source.getId().getIdService());
-        }
-        if (target.getIdDemande() == null && source.getDemande() != null) {
+
+        if (target.getIdDemande() == null && source.getDemande() != null)
             target.setIdDemande(source.getDemande().getIdDemande());
-        }
-        if (target.getIdDemande() == null && source.getId() != null) {
+
+        if (target.getIdDemande() == null && source.getId() != null)
             target.setIdDemande(source.getId().getIdDemande());
-        }
-        if (target.getQuantiteMax() == null && source.getService() != null) {
+
+        if (target.getQuantiteMax() == null && source.getService() != null)
             target.setQuantiteMax(source.getService().getQuantiteMax());
-        }
-        if (target.getLibelle() == null && source.getService() != null) {
-            target.setLibelle(source.getService().getLibelle());
-        }
-        if (target.getLibelleService() == null && source.getService() != null) {
-            target.setLibelleService(source.getService().getLibelle());
-        }
-        if (target.getDescription() == null && source.getService() != null) {
-            target.setDescription(source.getService().getDescription());
-        }
-        if (target.getDescriptionService() == null && source.getService() != null) {
-            target.setDescriptionService(source.getService().getDescription());
-        }
-        if (target.getPrixUnitaire() == null && source.getService() != null) {
-            target.setPrixUnitaire(source.getService().getPrixUnitaire());
-        }
-        if (target.getPrixUnitaireService() == null && source.getService() != null) {
-            target.setPrixUnitaireService(source.getService().getPrixUnitaire());
-        }
     }
 
-    // TypeDemande -> TypeDemandeDto (si tu n’as pas déjà un mapper dédié)
+    // ----------- TYPE / STATUT -----------
+
     TypeDemandeDto toDto(TypeDemande td);
 
-    // StatutDemande -> StatutDemandeDto
     StatutDemandeDto toDto(StatutDemande sd);
 
-    // BONUS : si la demande est de type "RendezVous", on écrase le statutDemande par le statut du RDV
+    // ----------- OVERRIDE STATUT POUR RDV -----------
+
     @AfterMapping
     default void overrideStatutForRendezVous(Demande src, @MappingTarget DemandeResponse target) {
         if (src == null || src.getTypeDemande() == null) return;
         if (!"RendezVous".equals(src.getTypeDemande().getCodeType())) return;
 
-        RendezVous rdv = src.getRendezVous(); // suppose un champ OneToOne<->Demande
+        RendezVous rdv = src.getRendezVous();
         if (rdv != null && rdv.getStatut() != null) {
-            // On mappe le StatutRendezVous → StatutDemandeDto (mêmes champs code/libellé)
             target.setStatutDemande(new StatutDemandeDto(
                     rdv.getStatut().getCodeStatut(),
                     rdv.getStatut().getLibelle()
@@ -129,15 +119,15 @@ public interface DemandeMapper {
         }
     }
 
-    // ----------- DTO -> ENTITY (pour create/update) -----------
-    // On ignore les relations ; on les associe en Service (par codes/ids)
+    // ----------- DTO -> ENTITY -----------
+
     @Mapping(target = "idDemande", ignore = true)
     @Mapping(target = "client", ignore = true)
     @Mapping(target = "typeDemande", ignore = true)
     @Mapping(target = "statutDemande", ignore = true)
     @Mapping(target = "services", ignore = true)
     @Mapping(target = "documents", ignore = true)
-    @Mapping(target = "rendezVous", ignore = true) // si lien 1-1
+    @Mapping(target = "rendezVous", ignore = true)
     @Mapping(target = "timelineEntries", ignore = true)
     Demande toEntity(DemandeRequest req);
 }

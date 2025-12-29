@@ -25,15 +25,17 @@ public class DemandeTimelineServiceImpl implements DemandeTimelineService {
     private final DemandeTimelineRepository timelineRepository;
     private final StatutDemandeRepository statutRepository;
     private final DemandeTimelineMapper timelineMapper;
+    private final UserService userService;
 
     public DemandeTimelineServiceImpl(DemandeRepository demandeRepository,
                                       DemandeTimelineRepository timelineRepository,
                                       StatutDemandeRepository statutRepository,
-                                      DemandeTimelineMapper timelineMapper) {
+                                      DemandeTimelineMapper timelineMapper, UserService userService) {
         this.demandeRepository = demandeRepository;
         this.timelineRepository = timelineRepository;
         this.statutRepository = statutRepository;
         this.timelineMapper = timelineMapper;
+        this.userService = userService;
     }
 
     @Override
@@ -47,7 +49,7 @@ public class DemandeTimelineServiceImpl implements DemandeTimelineService {
                         .sorted(Comparator.comparing(DemandeTimeline::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
                         .forEach(entry -> {
                             if (includeInternal || entry.isVisibleClient()) {
-                                entries.add(timelineMapper.toDto(entry));
+                                entries.add(timelineMapper.toDto(entry, userService));
                             }
                         });
             }
@@ -97,28 +99,58 @@ public class DemandeTimelineServiceImpl implements DemandeTimelineService {
     }
 
     @Override
-    public DemandeTimelineEntryDto logAdminEvent(Integer demandeId, DemandeTimelineRequest request, String actorEmail) {
+    public DemandeTimelineEntryDto logAdminEvent(Integer demandeId,
+                                                 DemandeTimelineRequest request,
+                                                 String actorEmail) {
         Demande demande = demandeRepository.findById(demandeId)
                 .orElseThrow(() -> new NoSuchElementException("Demande introuvable"));
 
         DemandeTimelineType type = request.getType();
         DemandeTimeline saved;
+
         switch (type) {
             case STATUT -> saved = handleAdminStatusChange(demande, request, actorEmail);
-            case COMMENTAIRE -> saved = saveCommentEvent(demande, request.getCommentaire(), actorEmail, ROLE_ADMIN,
-                    request.getVisibleClient());
+
+            case COMMENTAIRE -> saved = saveCommentEvent(
+                    demande,
+                    request.getCommentaire(),
+                    actorEmail,
+                    ROLE_ADMIN,
+                    request.getVisibleClient()
+            );
+
             case MONTANT -> {
                 BigDecimal montant = request.getMontantValide();
                 if (montant == null) {
                     throw new IllegalArgumentException("Le montant est requis.");
                 }
-                saved = saveMontantEvent(demande, montant, request.getCommentaire(), actorEmail, ROLE_ADMIN,
-                        request.getVisibleClient());
+                saved = saveMontantEvent(
+                        demande,
+                        montant,
+                        request.getCommentaire(),
+                        actorEmail,
+                        ROLE_ADMIN,
+                        request.getVisibleClient()
+                );
             }
+
+            case DOCUMENT -> {
+                // create a document-type timeline entry that references the document
+                saved = saveDocumentEvent(
+                        demande,
+                        request.getDocumentId(),
+                        request.getDocumentNom(),
+                        request.getCommentaire(),
+                        actorEmail,
+                        ROLE_ADMIN,
+                        request.getVisibleClient()
+                );
+            }
+
             default -> throw new IllegalArgumentException("Type d'événement non supporté: " + type);
         }
 
-        return timelineMapper.toDto(saved);
+        return timelineMapper.toDto(saved, userService);
     }
 
     @Override
@@ -183,8 +215,8 @@ public class DemandeTimelineServiceImpl implements DemandeTimelineService {
 
     private DemandeTimeline saveCommentEvent(Demande demande,
                                              String commentaire,
+                                             String actorPrenom,
                                              String actorEmail,
-                                             String actorRole,
                                              Boolean visibleOverride) {
         if (demande == null) {
             return null;
@@ -192,7 +224,7 @@ public class DemandeTimelineServiceImpl implements DemandeTimelineService {
         if (commentaire == null || commentaire.isBlank()) {
             throw new IllegalArgumentException("Le commentaire ne peut pas être vide.");
         }
-        DemandeTimeline timeline = initEvent(demande, DemandeTimelineType.COMMENTAIRE, actorEmail, actorRole,
+        DemandeTimeline timeline = initEvent(demande, DemandeTimelineType.COMMENTAIRE, actorPrenom, actorEmail,
                 resolveVisible(visibleOverride, false));
         timeline.setCommentaire(commentaire.trim());
         DemandeTimeline saved = timelineRepository.save(timeline);
@@ -290,7 +322,6 @@ public class DemandeTimelineServiceImpl implements DemandeTimelineService {
                 .document(DemandeDocumentDto.builder()
                         .idDocument(document.getIdDocument())
                         .nomFichier(document.getNomFichier())
-                        .urlPublic(document.getUrlPublic())
                         .typeContenu(document.getTypeContenu())
                         .tailleOctets(document.getTailleOctets())
                         .visibleClient(document.isVisibleClient())
@@ -326,4 +357,33 @@ public class DemandeTimelineServiceImpl implements DemandeTimelineService {
                 .source("RENDEZVOUS")
                 .build();
     }
+
+    private DemandeTimeline saveDocumentEvent(Demande demande,
+                                              Long documentId,
+                                              String documentNom,
+                                              String commentaire,
+                                              String actorEmail,
+                                              String actorRole,
+                                              Boolean visibleOverride) {
+        if (demande == null) return null;
+        if (documentId == null) {
+            throw new IllegalArgumentException("documentId requis pour un événement DOCUMENT.");
+        }
+
+        DemandeTimeline timeline = initEvent(demande, DemandeTimelineType.DOCUMENT, actorEmail, actorRole,
+                resolveVisible(visibleOverride, true));
+
+        // renseigne les champs spécifiques DOCUMENT (assure-toi que DemandeTimeline a ces colonnes)
+        timeline.setDocumentId(documentId);
+        timeline.setDocumentNom(documentNom != null ? documentNom : ("Document " + documentId));
+        timeline.setCommentaire(commentaire != null ? commentaire : ("Document ajouté : " + documentNom));
+
+        DemandeTimeline saved = timelineRepository.save(timeline);
+
+        if (demande.getTimelineEntries() != null) {
+            demande.getTimelineEntries().add(saved);
+        }
+        return saved;
+    }
+
 }

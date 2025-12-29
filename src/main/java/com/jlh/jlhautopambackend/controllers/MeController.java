@@ -28,7 +28,7 @@ public class MeController {
     public ResponseEntity<?> changePassword(Authentication auth,
                                             @RequestBody @Valid ChangePasswordRequest req) {
         String email = auth.getName();
-        Client cli = clientRepo.findByEmail(email).orElseThrow();
+        Client cli = clientRepo.findByEmailIgnoreCase(email).orElseThrow();
 
         if (!req.newPassword().equals(req.confirmPassword())) {
             return ResponseEntity.badRequest().body(Map.of("message", "La confirmation ne correspond pas."));
@@ -46,7 +46,7 @@ public class MeController {
     @GetMapping
     public ResponseEntity<ClientMeDto> me(Authentication auth) {
         String email = auth.getName();
-        Client c = clientRepo.findByEmail(email).orElseThrow();
+        Client c = clientRepo.findByEmailIgnoreCase(email).orElseThrow();
 
         ClientMeDto dto = ClientMeDto.builder()
                 .idClient(c.getIdClient())
@@ -73,7 +73,7 @@ public class MeController {
     public ResponseEntity<ClientMeDto> updateMe(Authentication auth,
                                                 @RequestBody @Valid ClientMeUpdateRequest req) {
         String email = auth.getName();
-        Client c = clientRepo.findByEmail(email).orElseThrow();
+        Client c = clientRepo.findByEmailIgnoreCase(email).orElseThrow();
 
         c.setTelephone(nullIfBlank(req.getTelephone()));
         c.setImmatriculation(

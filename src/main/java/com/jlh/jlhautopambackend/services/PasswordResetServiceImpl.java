@@ -39,7 +39,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
     @Override
     public void requestReset(String email) {
-        Client cli = clientRepo.findByEmail(email)
+        Client cli = clientRepo.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new IllegalArgumentException("Aucun compte pour cet e-mail."));
 
         // nettoyer les anciens tokens de ce client

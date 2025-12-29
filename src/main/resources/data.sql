@@ -59,7 +59,7 @@ PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- Valorise username à partir de l'e-mail pour les administrateurs existants
 UPDATE administrateur
-SET username = email
+SET username = concat(prenom, '.', nom, substr(nom, 1,1))
 WHERE username IS NULL OR username = '';
 
 -- ==================================================
@@ -151,7 +151,7 @@ INSERT INTO client (
 -- 4) Admins
 -- ==================================================
 INSERT INTO administrateur (id_admin, username, email, mot_de_passe, nom, prenom) VALUES
-    (1,'test@admin.fr','test@admin.fr','$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW','Bongeot','Michael');
+    (1,'Michael.B','test@admin.fr','$2a$10$KIjgzG.nEJCuPd2Dx0.peuC4q1aQfHPHvv5ODXrzqMLe0QR7LhtGW','Bongeot','Michael');
 
 -- ==================================================
 -- 5) Créneaux
@@ -263,13 +263,13 @@ INSERT INTO rendez_vous (id_rdv, id_demande, id_admin, id_creneau, code_statut) 
 -- 10) Documents et timeline des demandes
 -- ==================================================
 INSERT INTO demande_document (
-    id_document, id_demande, nom_fichier, url_public, type_contenu,
+    id_document, id_demande, nom_fichier, url_private, type_contenu,
     taille_octets, visible_client, cree_par, cree_par_role, cree_le
 ) VALUES (
-    1, 1, 'controle-technique.pdf',
-    'https://exemple.com/docs/controle-technique.pdf',
+    1, 1, 'devis_jlh_autopam_test.pdf',
+    'documents/2b6409c4-8973-4446-ad79-d7a716a61006_devis_jlh_autopam_test.pdf',
     'application/pdf', 20480, 1,
-    'test@admin.fr', 'ADMIN', '2025-06-20 09:00:00'
+    'Michael', 'ADMIN', '2025-06-20 09:00:00'
 );
 
 INSERT INTO demande_timeline (
@@ -284,7 +284,7 @@ INSERT INTO demande_timeline (
      NULL, NULL, NULL, NULL, NULL),
     (2, 1, 'DOCUMENT', '2025-06-20 09:00:00', 'test@admin.fr', 'ADMIN', 1,
      NULL, NULL, 'Ajout du contrôle technique', NULL,
-     1, 'controle-technique.pdf', 'https://exemple.com/docs/controle-technique.pdf',
+     1, 'devis_jlh_autopam_test.pdf', 'uploads/documents/devis_jlh_autopam_test',
      NULL, NULL, NULL, NULL, NULL);
 
 -- ==================================================

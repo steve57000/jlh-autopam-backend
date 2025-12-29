@@ -14,11 +14,11 @@ public interface DemandeTimelineService {
 
     Optional<List<DemandeTimelineEntryDto>> listForDemande(Integer demandeId, boolean includeInternal);
 
-    DemandeTimelineEntryDto logAdminEvent(Integer demandeId, DemandeTimelineRequest request, String actorEmail);
+    DemandeTimelineEntryDto logAdminEvent(Integer demandeId, DemandeTimelineRequest request, String actorUsername);
 
-    void logStatusChange(Demande demande, StatutDemande newStatut, String previousCode, String actorEmail, String actorRole);
+    void logStatusChange(Demande demande, StatutDemande newStatut, String previousCode, String actorEmail, String actorUsername);
 
-    void logMontantValidation(Demande demande, BigDecimal montant, String commentaire, String actorEmail, String actorRole);
+    void logMontantValidation(Demande demande, BigDecimal montant, String commentaire, String actorEmail, String actorUsername);
 
-    void logRendezVousEvent(Demande demande, RendezVous rendezVous, String commentaire, String actorEmail, String actorRole);
+    void logRendezVousEvent(Demande demande, RendezVous rendezVous, String commentaire, String actorEmail, String actorUsername);
 }

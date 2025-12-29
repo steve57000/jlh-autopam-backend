@@ -28,8 +28,8 @@ public class DemandeDocument {
     @Column(name = "nom_fichier", nullable = false, length = 255)
     private String nomFichier;
 
-    @Column(name = "url_public", length = 512)
-    private String urlPublic;
+    @Column(name = "url_private", length = 512)
+    private String urlPrivate;
 
     @Column(name = "type_contenu", length = 100)
     private String typeContenu;

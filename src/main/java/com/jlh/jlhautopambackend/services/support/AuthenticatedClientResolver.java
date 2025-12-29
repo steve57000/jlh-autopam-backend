@@ -24,7 +24,7 @@ public class AuthenticatedClientResolver {
      */
     public Client requireCurrentClient(Authentication authentication) {
         String email = authentication.getName();
-        return clientRepository.findByEmail(email)
+        return clientRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new IllegalArgumentException("Client introuvable"));
     }
 }

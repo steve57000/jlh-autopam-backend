@@ -22,10 +22,7 @@ public interface DemandeMapper {
     @Mapping(target = "statutDemande", source = "statutDemande")
     @Mapping(target = "services", source = "services")
     @Mapping(target = "documents", source = "documents")
-    @Mapping(
-            target = "timeline",
-            expression = "java(ent.getTimelineEntries() == null ? null : ent.getTimelineEntries().stream().map(t -> demandeTimelineMapper.toDto(t, userService)).toList())"
-    )
+    @Mapping(target = "timeline", source = "timelineEntries")
     DemandeResponse toResponse(
             Demande ent,
             @Context UserService userService

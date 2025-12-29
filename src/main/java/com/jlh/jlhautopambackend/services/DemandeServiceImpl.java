@@ -95,7 +95,7 @@ public class DemandeServiceImpl implements DemandeService {
         entity.setStatutDemande(statut);
         Demande saved = repository.save(entity);
         timelineService.logStatusChange(saved, statut, null, null, "ADMIN");
-        return mapper.toResponse(saved);
+        return mapper.toResponse(saved, userService);
     }
 
     @Override
@@ -134,13 +134,13 @@ public class DemandeServiceImpl implements DemandeService {
 
         Demande saved = repository.save(entity);
         timelineService.logStatusChange(saved, statut, null, client.getEmail(), "CLIENT");
-        return mapper.toResponse(saved);
+        return mapper.toResponse(saved, userService);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<DemandeResponse> findById(Integer id) {
-        return repository.findById(id).map(mapper::toResponse);
+        return repository.findById(id).map(demande -> mapper.toResponse(demande, userService));
     }
 
     @Override
@@ -148,7 +148,7 @@ public class DemandeServiceImpl implements DemandeService {
     public List<DemandeResponse> findAll() {
         return repository.findAll()
                 .stream()
-                .map(mapper::toResponse)
+                .map(demande -> mapper.toResponse(demande, userService))
                 .collect(Collectors.toList());
     }
 
@@ -156,7 +156,7 @@ public class DemandeServiceImpl implements DemandeService {
     public List<DemandeResponse> findByClientId(Integer clientId) {
         return repository.findByClient_IdClientOrderByDateDemandeDesc(clientId)
                 .stream()
-                .map(mapper::toResponse)
+                .map(demande -> mapper.toResponse(demande, userService))
                 .collect(Collectors.toList());
     }
 
@@ -196,7 +196,7 @@ public class DemandeServiceImpl implements DemandeService {
                     if (statutChanged) {
                         timelineService.logStatusChange(saved, saved.getStatutDemande(), previousStatut, null, null);
                     }
-                    return mapper.toResponse(saved);
+                    return mapper.toResponse(saved, userService);
                 });
     }
 
@@ -232,7 +232,7 @@ public class DemandeServiceImpl implements DemandeService {
     public Optional<DemandeResponse> findCurrentForClient(Integer clientId) {
         return repository.findFirstByClient_IdClientAndStatutDemande_CodeStatutOrderByDateDemandeDesc(clientId, STATUT_BROUILLON)
                 .or(() -> repository.findFirstByClient_IdClientAndStatutDemande_CodeStatutOrderByDateDemandeDesc(clientId, STATUT_EN_ATTENTE))
-                .map(mapper::toResponse);
+                .map(demande -> mapper.toResponse(demande, userService));
     }
 
     @Override

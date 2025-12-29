@@ -2,16 +2,19 @@ package com.jlh.jlhautopambackend.mapper;
 
 import com.jlh.jlhautopambackend.dto.*;
 import com.jlh.jlhautopambackend.modeles.*;
+import com.jlh.jlhautopambackend.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class DemandeMapperTest {
 
@@ -37,11 +40,7 @@ class DemandeMapperTest {
         DemandeTimelineMapperImpl timelineMapper = new DemandeTimelineMapperImpl();
 
         // Mapper principal
-        mapper = new DemandeMapperImpl();
-
-        // Injection via setter (comme MapStruct le prévoir réellement)
-        ((DemandeMapperImpl) mapper).setClientMapper(clientMapper);
-        ((DemandeMapperImpl) mapper).setTimelineMapper(timelineMapper);
+        mapper = new DemandeMapperImpl(timelineMapper, clientMapper);
 
         // Mock UserService
         userService = mock(UserService.class);

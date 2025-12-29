@@ -28,8 +28,7 @@ public interface DemandeMapper {
     )
     DemandeResponse toResponse(
             Demande ent,
-            @Context UserService userService,
-            @Context DemandeTimelineMapper demandeTimelineMapper
+            @Context UserService userService
     );
 
     // ----------- ENTITY -> LIST DTO -----------

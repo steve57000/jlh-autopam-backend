@@ -44,6 +44,8 @@ class DemandeServiceImplTest {
     private DemandeTimelineService timelineService;
     @Mock
     private GarageProperties garageProperties;
+    @Mock
+    private UserService userService;
 
     @InjectMocks
     private DemandeServiceImpl service;
@@ -120,7 +122,7 @@ class DemandeServiceImplTest {
         when(typeRepo.findById("TYPE1")).thenReturn(Optional.of(type));
         when(statutRepo.findById("STAT1")).thenReturn(Optional.of(statut));
         when(repository.save(entity)).thenReturn(savedEntity);
-        when(mapper.toResponse(savedEntity)).thenReturn(response);
+        when(mapper.toResponse(savedEntity, userService)).thenReturn(response);
 
         DemandeResponse result = service.create(request);
 
@@ -135,7 +137,7 @@ class DemandeServiceImplTest {
         assertEquals(client, passed.getClient());
         assertEquals(type, passed.getTypeDemande());
         assertEquals(statut, passed.getStatutDemande());
-        verify(mapper).toResponse(savedEntity);
+        verify(mapper).toResponse(savedEntity, userService);
         verify(timelineService).logStatusChange(savedEntity, statut, null, null, "ADMIN");
     }
 
@@ -184,14 +186,14 @@ class DemandeServiceImplTest {
     @Test
     void testFindById_WhenFound() {
         when(repository.findById(1)).thenReturn(Optional.of(savedEntity));
-        when(mapper.toResponse(savedEntity)).thenReturn(response);
+        when(mapper.toResponse(savedEntity, userService)).thenReturn(response);
 
         Optional<DemandeResponse> result = service.findById(1);
 
         assertTrue(result.isPresent());
         assertEquals(response, result.get());
         verify(repository).findById(1);
-        verify(mapper).toResponse(savedEntity);
+        verify(mapper).toResponse(savedEntity, userService);
     }
 
     @Test
@@ -226,8 +228,8 @@ class DemandeServiceImplTest {
                 .build();
 
         when(repository.findAll()).thenReturn(Arrays.asList(savedEntity, other));
-        when(mapper.toResponse(savedEntity)).thenReturn(response);
-        when(mapper.toResponse(other)).thenReturn(otherResp);
+        when(mapper.toResponse(savedEntity, userService)).thenReturn(response);
+        when(mapper.toResponse(other, userService)).thenReturn(otherResp);
 
         List<DemandeResponse> results = service.findAll();
 
@@ -235,8 +237,8 @@ class DemandeServiceImplTest {
         assertEquals(response, results.get(0));
         assertEquals(otherResp, results.get(1));
         verify(repository).findAll();
-        verify(mapper).toResponse(savedEntity);
-        verify(mapper).toResponse(other);
+        verify(mapper).toResponse(savedEntity, userService);
+        verify(mapper).toResponse(other, userService);
     }
 
     @Test
@@ -274,7 +276,7 @@ class DemandeServiceImplTest {
         when(typeRepo.findById("TYPE2")).thenReturn(Optional.of(newType));
         when(statutRepo.findById("STAT2")).thenReturn(Optional.of(newStatut));
         when(repository.save(existing)).thenReturn(updatedEntity);
-        when(mapper.toResponse(updatedEntity)).thenReturn(updatedResp);
+        when(mapper.toResponse(updatedEntity, userService)).thenReturn(updatedResp);
 
         Optional<DemandeResponse> result = service.update(1, updateReq);
 
@@ -285,7 +287,7 @@ class DemandeServiceImplTest {
         verify(typeRepo).findById("TYPE2");
         verify(statutRepo).findById("STAT2");
         verify(repository).save(existing);
-        verify(mapper).toResponse(updatedEntity);
+        verify(mapper).toResponse(updatedEntity, userService);
         verify(timelineService).logStatusChange(updatedEntity, newStatut, "STAT1", null, null);
     }
 

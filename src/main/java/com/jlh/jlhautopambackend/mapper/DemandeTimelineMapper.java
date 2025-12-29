@@ -6,6 +6,8 @@ import com.jlh.jlhautopambackend.modeles.DemandeTimelineType;
 import com.jlh.jlhautopambackend.services.UserService;
 import org.mapstruct.*;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface DemandeTimelineMapper {
 
@@ -15,6 +17,8 @@ public interface DemandeTimelineMapper {
     @Mapping(target = "rendezVous", expression = "java(toRendezVousDto(entity))")
     @Mapping(target = "source", constant = "TIMELINE")
     DemandeTimelineEntryDto toDto(DemandeTimeline entity, @Context UserService userService);
+
+    List<DemandeTimelineEntryDto> toDtos(List<DemandeTimeline> entities, @Context UserService userService);
 
     default StatutDemandeDto toStatutDto(DemandeTimeline entity) {
         if (entity == null || entity.getStatutCode() == null) return null;
@@ -41,4 +45,3 @@ public interface DemandeTimelineMapper {
                 .build();
     }
 }
-

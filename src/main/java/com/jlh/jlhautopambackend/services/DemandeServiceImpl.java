@@ -13,6 +13,7 @@ import com.jlh.jlhautopambackend.modeles.StatutDemande;
 import com.jlh.jlhautopambackend.modeles.TypeDemande;
 import com.jlh.jlhautopambackend.repository.ClientRepository;
 import com.jlh.jlhautopambackend.repository.DemandeRepository;
+import com.jlh.jlhautopambackend.repository.DemandeServiceRepository;
 import com.jlh.jlhautopambackend.repository.RendezVousRepository;
 import com.jlh.jlhautopambackend.repository.StatutDemandeRepository;
 import com.jlh.jlhautopambackend.repository.TypeDemandeRepository;
@@ -39,6 +40,7 @@ public class DemandeServiceImpl implements DemandeService {
     private final TypeDemandeRepository typeRepo;
     private final StatutDemandeRepository statutRepo;
     private final RendezVousRepository rendezVousRepository;
+    private final DemandeServiceRepository demandeServiceRepository;
     private final DemandeMapper mapper;
     private final DemandeTimelineService timelineService;
     private final GarageProperties garageProperties;
@@ -50,6 +52,7 @@ public class DemandeServiceImpl implements DemandeService {
                               StatutDemandeRepository statutRepo,
                               DemandeMapper mapper,
                               RendezVousRepository rendezVousRepository,
+                              DemandeServiceRepository demandeServiceRepository,
                               DemandeTimelineService timelineService,
                               GarageProperties garageProperties, UserService userService) {
         this.repository = repository;
@@ -59,6 +62,7 @@ public class DemandeServiceImpl implements DemandeService {
         this.mapper = mapper;
         this.timelineService = timelineService;
         this.rendezVousRepository = rendezVousRepository;
+        this.demandeServiceRepository = demandeServiceRepository;
         this.garageProperties = garageProperties;
         this.userService = userService;
     }
@@ -190,6 +194,10 @@ public class DemandeServiceImpl implements DemandeService {
                                 .orElseThrow(() -> new IllegalArgumentException("StatutDemande introuvable: " + request.getCodeStatut()));
                         existing.setStatutDemande(statut);
                         statutChanged = previousStatut == null || !previousStatut.equals(statut.getCodeStatut());
+                    }
+
+                    if (request.getServices() != null && !request.getServices().isEmpty()) {
+                        applyServiceUpdates(existing, request.getServices());
                     }
 
                     Demande saved = repository.save(existing);
@@ -328,5 +336,37 @@ public class DemandeServiceImpl implements DemandeService {
         return garageProperties != null && garageProperties.getAddress() != null
                 ? garageProperties.getAddress()
                 : "JLH Auto Pam";
+    }
+
+    private void applyServiceUpdates(Demande demande, List<com.jlh.jlhautopambackend.dto.DemandeServiceDto> services) {
+        if (demande == null || services == null) {
+            return;
+        }
+        Integer demandeId = demande.getIdDemande();
+        services.forEach(serviceDto -> {
+            if (serviceDto == null) {
+                return;
+            }
+            Integer serviceId = serviceDto.getIdService();
+            if (serviceId == null) {
+                return;
+            }
+            Integer targetDemandeId = serviceDto.getIdDemande() != null ? serviceDto.getIdDemande() : demandeId;
+            if (targetDemandeId == null) {
+                return;
+            }
+            var key = new com.jlh.jlhautopambackend.modeles.DemandeServiceKey(targetDemandeId, serviceId);
+            demandeServiceRepository.findById(key).ifPresent(entity -> {
+                if (serviceDto.getQuantite() != null && serviceDto.getQuantite() > 0) {
+                    entity.setQuantite(serviceDto.getQuantite());
+                }
+                if (serviceDto.getPrixUnitaire() != null) {
+                    entity.setPrixUnitaireService(serviceDto.getPrixUnitaire());
+                } else if (serviceDto.getPrixUnitaireService() != null) {
+                    entity.setPrixUnitaireService(serviceDto.getPrixUnitaireService());
+                }
+                demandeServiceRepository.save(entity);
+            });
+        });
     }
 }

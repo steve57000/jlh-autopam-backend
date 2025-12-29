@@ -39,6 +39,8 @@ class DemandeServiceImplTest {
     @Mock
     private RendezVousRepository rendezVousRepository;
     @Mock
+    private DemandeServiceRepository demandeServiceRepository;
+    @Mock
     private DemandeMapper mapper;
     @Mock
     private DemandeTimelineService timelineService;

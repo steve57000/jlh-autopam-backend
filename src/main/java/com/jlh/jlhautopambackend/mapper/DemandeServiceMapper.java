@@ -10,6 +10,7 @@ public interface DemandeServiceMapper {
     @Mapping(source = "request.demandeId", target = "id.idDemande")
     @Mapping(source = "request.serviceId",  target = "id.idService")
     @Mapping(source = "request.quantite",   target = "quantite")
+    @Mapping(source = "request.prixUnitaire", target = "prixUnitaireService")
     @Mapping(target = "demande", ignore = true) // on les pose en service
     @Mapping(target = "service", ignore = true)
     DemandeService toEntity(DemandeServiceRequest request);
@@ -37,4 +38,3 @@ public interface DemandeServiceMapper {
         }
     }
 }
-

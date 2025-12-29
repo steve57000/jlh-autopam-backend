@@ -75,7 +75,11 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
                 throw new IllegalArgumentException("La quantité totale dépasse la limite pour ce service.");
             }
             existing.setQuantite(q);
-            existing.snapshotFromService(serviceEntity);
+            existing.setLibelleService(serviceEntity.getLibelle());
+            existing.setDescriptionService(serviceEntity.getDescription());
+            if (req.getPrixUnitaire() != null) {
+                existing.setPrixUnitaireService(req.getPrixUnitaire());
+            }
             return mapper.toDto(dsRepo.save(existing));
         }
 
@@ -85,6 +89,9 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
         entity.setDemande(demande);
         entity.setService(serviceEntity);
         entity.snapshotFromService(serviceEntity);
+        if (req.getPrixUnitaire() != null) {
+            entity.setPrixUnitaireService(req.getPrixUnitaire());
+        }
 
         return mapper.toDto(dsRepo.save(entity));
     }
@@ -101,7 +108,13 @@ public class DemandeServiceServiceImpl implements DemandeServiceService {
                     }
                     entity.setQuantite(requested);
                     if (entity.getService() != null) {
-                        entity.snapshotFromService(entity.getService());
+                        entity.setLibelleService(entity.getService().getLibelle());
+                        entity.setDescriptionService(entity.getService().getDescription());
+                        if (req.getPrixUnitaire() != null) {
+                            entity.setPrixUnitaireService(req.getPrixUnitaire());
+                        }
+                    } else if (req.getPrixUnitaire() != null) {
+                        entity.setPrixUnitaireService(req.getPrixUnitaire());
                     }
                     DemandeService saved = dsRepo.save(entity);
                     return mapper.toDto(saved);

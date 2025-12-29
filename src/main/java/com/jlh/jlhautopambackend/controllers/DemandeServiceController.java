@@ -52,17 +52,19 @@ public class DemandeServiceController {
     /* ==================== CLIENT (ownership) ==================== */
 
     @PostMapping
-    @PreAuthorize("hasRole('CLIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','CLIENT')")
     public ResponseEntity<DemandeServiceResponse> create(
             Authentication auth,
             @Valid @RequestBody DemandeServiceRequest req) {
 
-        Integer clientId = getClientIdFromAuth(auth);
-        // ownership: la demande doit appartenir au client
-        boolean ok = demandeRepo.findById(req.getDemandeId())
-                .map(d -> d.getClient() != null && Objects.equals(d.getClient().getIdClient(), clientId))
-                .orElse(false);
-        if (!ok) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        if (!isAdmin(auth)) {
+            Integer clientId = getClientIdFromAuth(auth);
+            // ownership: la demande doit appartenir au client
+            boolean ok = demandeRepo.findById(req.getDemandeId())
+                    .map(d -> d.getClient() != null && Objects.equals(d.getClient().getIdClient(), clientId))
+                    .orElse(false);
+            if (!ok) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         DemandeServiceResponse resp = service.create(req);
         String path = String.format("/api/demandes-services/%d/%d",
@@ -72,18 +74,20 @@ public class DemandeServiceController {
     }
 
     @PutMapping("/{demandeId}/{serviceId}")
-    @PreAuthorize("hasRole('CLIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','CLIENT')")
     public ResponseEntity<DemandeServiceResponse> update(
             Authentication auth,
             @PathVariable Integer demandeId,
             @PathVariable Integer serviceId,
             @Valid @RequestBody DemandeServiceRequest req) {
 
-        Integer clientId = getClientIdFromAuth(auth);
-        boolean ok = demandeRepo.findById(demandeId)
-                .map(d -> d.getClient() != null && Objects.equals(d.getClient().getIdClient(), clientId))
-                .orElse(false);
-        if (!ok) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        if (!isAdmin(auth)) {
+            Integer clientId = getClientIdFromAuth(auth);
+            boolean ok = demandeRepo.findById(demandeId)
+                    .map(d -> d.getClient() != null && Objects.equals(d.getClient().getIdClient(), clientId))
+                    .orElse(false);
+            if (!ok) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         return service.update(demandeId, serviceId, req)
                 .map(ResponseEntity::ok)
@@ -91,17 +95,19 @@ public class DemandeServiceController {
     }
 
     @DeleteMapping("/{demandeId}/{serviceId}")
-    @PreAuthorize("hasRole('CLIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','CLIENT')")
     public ResponseEntity<Void> delete(
             Authentication auth,
             @PathVariable Integer demandeId,
             @PathVariable Integer serviceId) {
 
-        Integer clientId = getClientIdFromAuth(auth);
-        boolean ok = demandeRepo.findById(demandeId)
-                .map(d -> d.getClient() != null && Objects.equals(d.getClient().getIdClient(), clientId))
-                .orElse(false);
-        if (!ok) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        if (!isAdmin(auth)) {
+            Integer clientId = getClientIdFromAuth(auth);
+            boolean ok = demandeRepo.findById(demandeId)
+                    .map(d -> d.getClient() != null && Objects.equals(d.getClient().getIdClient(), clientId))
+                    .orElse(false);
+            if (!ok) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         return service.delete(demandeId, serviceId)
                 ? ResponseEntity.noContent().build()
@@ -112,5 +118,13 @@ public class DemandeServiceController {
 
     private Integer getClientIdFromAuth(Authentication auth) {
         return clientResolver.requireCurrentClient(auth).getIdClient();
+    }
+
+    private boolean isAdmin(Authentication auth) {
+        if (auth == null || auth.getAuthorities() == null) {
+            return false;
+        }
+        return auth.getAuthorities().stream()
+                .anyMatch(granted -> "ROLE_ADMIN".equals(granted.getAuthority()));
     }
 }

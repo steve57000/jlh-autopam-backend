@@ -26,28 +26,27 @@ public class PromotionCleanupService {
 
     private final PromotionRepository promoRepo;
     private final Path uploadDir;
-    private final ZoneId systemZone;
+    private final ZoneId zoneId;
 
     public PromotionCleanupService(PromotionRepository promoRepo,
-                                   @Value("${app.upload-dir}") String uploadDir) {
+                                   @Value("${app.upload-dir}") String uploadDir,
+                                   @Value("${garage.timezone:Europe/Paris}") String timezone) {
         this.promoRepo = promoRepo;
         this.uploadDir = Paths.get(uploadDir);
-        this.systemZone = ZoneId.systemDefault();
+        this.zoneId = ZoneId.of(timezone);
     }
 
     /**
      * Supprime chaque jour à 23h59 toutes les promotions expirées
      * et leurs images stockées sur le disque.
      */
-    @Scheduled(cron = "0 59 23 * * *")
+    @Scheduled(cron = "0 59 23 * * *", zone = "${garage.timezone:Europe/Paris}")
     @Transactional
     public void removeExpiredPromotions() {
-        // On supprime uniquement les promotions dont la fin de validité est strictement avant
-        // le début de la journée en cours. Ainsi, une promotion valable jusqu'à 23h59 reste
-        // visible toute la journée et n'est supprimée qu'au passage au jour suivant.
-        Instant cutoff = startOfToday();
+        // Supprime les promotions expirées à 23h59 heure locale (Europe/Paris par défaut).
+        Instant cutoff = endOfToday();
         // 1. Récupère d'abord les promotions expirées
-        List<Promotion> expired = promoRepo.findByValidToBefore(cutoff);
+        List<Promotion> expired = promoRepo.findByValidToLessThanEqual(cutoff);
 
         for (Promotion promo : expired) {
             String imageUrl = promo.getImageUrl();
@@ -60,7 +59,7 @@ public class PromotionCleanupService {
                 continue;
             }
 
-            Path filePath = uploadDir.resolve(filename);
+            Path filePath = uploadDir.resolve("images").resolve(filename);
             try {
                 if (Files.deleteIfExists(filePath)) {
                     log.info("Image supprimée : {}", filePath);
@@ -74,7 +73,7 @@ public class PromotionCleanupService {
 
         // 2. Puis supprime définitivement les promotions en base
         promoRepo.deleteAll(expired);
-        log.info("{} promotions expirées supprimées (validTo < {}).", expired.size(), cutoff);
+        log.info("{} promotions expirées supprimées (validTo <= {}).", expired.size(), cutoff);
     }
 
     /**
@@ -96,8 +95,8 @@ public class PromotionCleanupService {
         }
     }
 
-    private Instant startOfToday() {
-        LocalDate today = ZonedDateTime.now(systemZone).toLocalDate();
-        return today.atStartOfDay(systemZone).toInstant();
+    private Instant endOfToday() {
+        LocalDate today = ZonedDateTime.now(zoneId).toLocalDate();
+        return today.plusDays(1).atStartOfDay(zoneId).toInstant().minusNanos(1);
     }
 }

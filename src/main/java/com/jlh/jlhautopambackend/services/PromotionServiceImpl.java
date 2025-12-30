@@ -32,6 +32,7 @@ public class PromotionServiceImpl implements PromotionService {
     /** Chemin absolu sur le disque où stocker les images */
     @Value("${app.upload-dir}")
     private String uploadDir;
+    private static final String IMAGES_SUBDIR = "images";
 
     public PromotionServiceImpl(PromotionRepository promoRepo,
                                 AdministrateurRepository adminRepo,
@@ -99,7 +100,7 @@ public class PromotionServiceImpl implements PromotionService {
         // si un fichier est fourni, on le stocke
         if (file != null && !file.isEmpty()) {
             String filename = storeFile(file);
-            req.setImageUrl(uploadDir + filename);
+            req.setImageUrl(filename);
         }
         return create(req);
     }
@@ -111,13 +112,14 @@ public class PromotionServiceImpl implements PromotionService {
             // charger l'ancienne entité pour récupérer l'URL
             promoRepo.findById(id).ifPresent(old -> {
                 String oldUrl = old.getImageUrl();
-                if (oldUrl != null && oldUrl.startsWith(uploadDir)) {
-                    Path oldPath = Paths.get(uploadDir, oldUrl.substring(uploadDir.length()));
-                    try { Files.deleteIfExists(oldPath); } catch (IOException ignored) {}
+                if (oldUrl != null) {
+                    Path oldPath = imagePathFor(oldUrl);
+                    try { Files.deleteIfExists(oldPath); } catch (IOException ignored) {
+                    }
                 }
             });
             String filename = storeFile(file);
-            req.setImageUrl(uploadDir + filename);
+            req.setImageUrl(filename);
         }
         return update(id, req);
     }
@@ -156,12 +158,17 @@ public class PromotionServiceImpl implements PromotionService {
                 + (safeName.isEmpty() ? "" : "-" + safeName);
 
         // Crée le dossier si besoin
-        Path targetDir = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path targetDir = Paths.get(uploadDir).resolve(IMAGES_SUBDIR).toAbsolutePath().normalize();
         Files.createDirectories(targetDir);
 
         // Transfère le fichier
         Path target = targetDir.resolve(filename);
         file.transferTo(target);
         return filename;
+    }
+
+    private Path imagePathFor(String imageUrl) {
+        String filename = Paths.get(imageUrl).getFileName().toString();
+        return Paths.get(uploadDir).resolve(IMAGES_SUBDIR).resolve(filename).toAbsolutePath().normalize();
     }
 }

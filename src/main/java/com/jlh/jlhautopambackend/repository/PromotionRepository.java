@@ -8,5 +8,6 @@ import java.util.List;
 
 public interface PromotionRepository extends JpaRepository<Promotion, Integer> {
     List<Promotion> findByValidToBefore(Instant dateTime);
+    List<Promotion> findByValidToLessThanEqual(Instant dateTime);
     void deleteByValidToBefore(Instant dateTime);
 }

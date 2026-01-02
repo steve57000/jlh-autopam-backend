@@ -22,8 +22,8 @@ Ce guide décrit les piles Docker de **JLH AutoPam** telles qu'elles sont codée
 
 ```bash
 # Arrêter/supprimer les piles existantes
-docker compose -f docker-compose.prod.yml down
-docker compose -f docker-compose.dev.yml  down
+docker compose -f ../docker-compose.prod.yml down
+docker compose -f ../docker-compose.dev.yml  down
 
 # Nettoyer les ressources orphelines (utiliser avec précaution)
 docker container prune -f

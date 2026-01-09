@@ -6,7 +6,7 @@ import com.jlh.jlhautopambackend.dto.DemandeResponse;
 import com.jlh.jlhautopambackend.dto.DemandeTimelineEntryDto;
 import com.jlh.jlhautopambackend.dto.ProchainRdvDto;
 import com.jlh.jlhautopambackend.modeles.Client;
-import com.jlh.jlhautopambackend.services.DemandeService;
+import com.jlh.jlhautopambackend.services.DemandeWorkflowService;
 import com.jlh.jlhautopambackend.services.support.AuthenticatedClientResolver;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -22,10 +22,10 @@ import java.util.Map;
 @RequestMapping("/api/demandes")
 public class DemandeController {
 
-    private final DemandeService service;
+    private final DemandeWorkflowService service;
     private final AuthenticatedClientResolver clientResolver;
 
-    public DemandeController(DemandeService service,
+    public DemandeController(DemandeWorkflowService service,
                              AuthenticatedClientResolver clientResolver) {
         this.service = service;
         this.clientResolver = clientResolver;
@@ -48,11 +48,11 @@ public class DemandeController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public List<DemandeResponse> getAll() { return service.findAll(); }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<DemandeResponse> getById(@PathVariable Integer id) {
         return service.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
@@ -112,7 +112,7 @@ public class DemandeController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<DemandeResponse> update(@PathVariable Integer id, @Valid @RequestBody DemandeRequest req) {
         return service.update(id, req).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
@@ -142,7 +142,7 @@ public class DemandeController {
     }
 
     @GetMapping(value = "/rendezvous/{id}/ics", produces = "text/calendar; charset=UTF-8")
-    @PreAuthorize("hasAnyRole('CLIENT','ADMIN')")
+    @PreAuthorize("hasAnyRole('CLIENT','ADMIN','MANAGER')")
     public ResponseEntity<byte[]> rdvIcs(@PathVariable Integer id, Authentication auth) { /* ... identique ... */
         Integer clientId = null;
         boolean isClient = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_CLIENT"));
@@ -179,7 +179,7 @@ public class DemandeController {
     }
 
     @PatchMapping("/{id}/type")
-    @PreAuthorize("hasAnyRole('CLIENT','ADMIN')")
+    @PreAuthorize("hasAnyRole('CLIENT','ADMIN','MANAGER')")
     public ResponseEntity<DemandeResponse> changeType(
             @PathVariable Integer id,
             @RequestBody Map<String,String> body,

@@ -3,6 +3,7 @@ package com.jlh.jlhautopambackend.modeles;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
+import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Table(name = "administrateur")
@@ -22,6 +23,11 @@ public class Administrateur {
 
     @Column(unique=true)
     private String email;
+
+    @Enumerated(EnumType.STRING)
+    @ColumnDefault("'ADMIN'")
+    @Column(name = "niveau_acces", nullable = false, length = 30)
+    private NiveauAccesAdministrateur niveauAcces;
 
     @OneToMany(mappedBy = "administrateur", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Disponibilite> disponibilites;

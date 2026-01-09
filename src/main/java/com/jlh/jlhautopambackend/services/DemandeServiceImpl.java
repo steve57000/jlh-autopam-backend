@@ -5,13 +5,16 @@ import com.jlh.jlhautopambackend.dto.ClientStatsDto;
 import com.jlh.jlhautopambackend.dto.DemandeRequest;
 import com.jlh.jlhautopambackend.dto.DemandeResponse;
 import com.jlh.jlhautopambackend.dto.ProchainRdvDto;
+import com.jlh.jlhautopambackend.mapper.DevisMapper;
 import com.jlh.jlhautopambackend.mapper.DemandeMapper;
+import com.jlh.jlhautopambackend.mapper.RendezVousMapper;
 import com.jlh.jlhautopambackend.modeles.Client;
 import com.jlh.jlhautopambackend.modeles.Demande;
 import com.jlh.jlhautopambackend.modeles.RendezVous;
 import com.jlh.jlhautopambackend.modeles.StatutDemande;
 import com.jlh.jlhautopambackend.modeles.TypeDemande;
 import com.jlh.jlhautopambackend.repository.ClientRepository;
+import com.jlh.jlhautopambackend.repository.DevisRepository;
 import com.jlh.jlhautopambackend.repository.DemandeRepository;
 import com.jlh.jlhautopambackend.repository.DemandeServiceRepository;
 import com.jlh.jlhautopambackend.repository.RendezVousRepository;
@@ -28,12 +31,15 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class DemandeServiceImpl implements DemandeService {
+public class DemandeServiceImpl implements DemandeWorkflowService {
     private static final String TYPE_DEFAULT = "Devis";
     private static final String STATUT_BROUILLON = "Brouillon";
     private static final String STATUT_EN_ATTENTE = "En_attente";
     private static final String STATUT_TRAITEE = "Traitee";
     private static final String STATUT_ANNULEE = "Annulee";
+    private static final String TYPE_RENDEZ_VOUS = "RendezVous";
+    private static final String TYPE_SERVICE = "Service";
+    private static final String TYPE_DEVIS = "Devis";
 
     private final DemandeRepository repository;
     private final ClientRepository clientRepo;
@@ -41,7 +47,10 @@ public class DemandeServiceImpl implements DemandeService {
     private final StatutDemandeRepository statutRepo;
     private final RendezVousRepository rendezVousRepository;
     private final DemandeServiceRepository demandeServiceRepository;
+    private final DevisRepository devisRepository;
     private final DemandeMapper mapper;
+    private final DevisMapper devisMapper;
+    private final RendezVousMapper rendezVousMapper;
     private final DemandeTimelineService timelineService;
     private final GarageProperties garageProperties;
     private final UserService userService;
@@ -53,6 +62,9 @@ public class DemandeServiceImpl implements DemandeService {
                               DemandeMapper mapper,
                               RendezVousRepository rendezVousRepository,
                               DemandeServiceRepository demandeServiceRepository,
+                              DevisRepository devisRepository,
+                              DevisMapper devisMapper,
+                              RendezVousMapper rendezVousMapper,
                               DemandeTimelineService timelineService,
                               GarageProperties garageProperties, UserService userService) {
         this.repository = repository;
@@ -63,6 +75,9 @@ public class DemandeServiceImpl implements DemandeService {
         this.timelineService = timelineService;
         this.rendezVousRepository = rendezVousRepository;
         this.demandeServiceRepository = demandeServiceRepository;
+        this.devisRepository = devisRepository;
+        this.devisMapper = devisMapper;
+        this.rendezVousMapper = rendezVousMapper;
         this.garageProperties = garageProperties;
         this.userService = userService;
     }
@@ -73,7 +88,13 @@ public class DemandeServiceImpl implements DemandeService {
         long traitees = repository.countByClient_IdClientAndStatutDemande_CodeStatut(clientId, STATUT_TRAITEE);
         long annulees = repository.countByClient_IdClientAndStatutDemande_CodeStatut(clientId, STATUT_ANNULEE);
         long rdvAvenir = rendezVousRepository.countUpcomingByClientId(clientId, Instant.now());
-        return new ClientStatsDto(enAttente, traitees, annulees, rdvAvenir);
+        long demandesLibres = repository.countByClient_IdClientAndTypeDemande_CodeType(clientId, TYPE_RENDEZ_VOUS);
+        long demandesService = repository.countByClient_IdClientAndTypeDemande_CodeType(clientId, TYPE_SERVICE);
+        long demandesDevis = repository.countByClient_IdClientAndTypeDemande_CodeType(clientId, TYPE_DEVIS);
+        long rdvNonLies = rendezVousRepository.countByDemande_Client_IdClientAndDemandeServiceIsNullAndDevisIsNull(clientId);
+        long rdvLies = rendezVousRepository.countLinkedByClientId(clientId);
+        return new ClientStatsDto(enAttente, traitees, annulees, rdvAvenir,
+                demandesLibres, demandesService, demandesDevis, rdvLies, rdvNonLies);
     }
 
     @Override
@@ -99,7 +120,7 @@ public class DemandeServiceImpl implements DemandeService {
         entity.setStatutDemande(statut);
         Demande saved = repository.save(entity);
         timelineService.logStatusChange(saved, statut, null, null, "ADMIN");
-        return mapper.toResponse(saved, userService);
+        return enrichDemandeResponse(saved, mapper.toResponse(saved, userService));
     }
 
     @Override
@@ -138,13 +159,14 @@ public class DemandeServiceImpl implements DemandeService {
 
         Demande saved = repository.save(entity);
         timelineService.logStatusChange(saved, statut, null, client.getEmail(), "CLIENT");
-        return mapper.toResponse(saved, userService);
+        return enrichDemandeResponse(saved, mapper.toResponse(saved, userService));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<DemandeResponse> findById(Integer id) {
-        return repository.findById(id).map(demande -> mapper.toResponse(demande, userService));
+        return repository.findById(id)
+                .map(demande -> enrichDemandeResponse(demande, mapper.toResponse(demande, userService)));
     }
 
     @Override
@@ -152,7 +174,7 @@ public class DemandeServiceImpl implements DemandeService {
     public List<DemandeResponse> findAll() {
         return repository.findAll()
                 .stream()
-                .map(demande -> mapper.toResponse(demande, userService))
+                .map(demande -> enrichDemandeResponse(demande, mapper.toResponse(demande, userService)))
                 .collect(Collectors.toList());
     }
 
@@ -160,7 +182,7 @@ public class DemandeServiceImpl implements DemandeService {
     public List<DemandeResponse> findByClientId(Integer clientId) {
         return repository.findByClient_IdClientOrderByDateDemandeDesc(clientId)
                 .stream()
-                .map(demande -> mapper.toResponse(demande, userService))
+                .map(demande -> enrichDemandeResponse(demande, mapper.toResponse(demande, userService)))
                 .collect(Collectors.toList());
     }
 
@@ -204,7 +226,7 @@ public class DemandeServiceImpl implements DemandeService {
                     if (statutChanged) {
                         timelineService.logStatusChange(saved, saved.getStatutDemande(), previousStatut, null, null);
                     }
-                    return mapper.toResponse(saved, userService);
+                    return enrichDemandeResponse(saved, mapper.toResponse(saved, userService));
                 });
     }
 
@@ -240,7 +262,7 @@ public class DemandeServiceImpl implements DemandeService {
     public Optional<DemandeResponse> findCurrentForClient(Integer clientId) {
         return repository.findFirstByClient_IdClientAndStatutDemande_CodeStatutOrderByDateDemandeDesc(clientId, STATUT_BROUILLON)
                 .or(() -> repository.findFirstByClient_IdClientAndStatutDemande_CodeStatutOrderByDateDemandeDesc(clientId, STATUT_EN_ATTENTE))
-                .map(demande -> mapper.toResponse(demande, userService));
+                .map(demande -> enrichDemandeResponse(demande, mapper.toResponse(demande, userService)));
     }
 
     @Override
@@ -338,6 +360,21 @@ public class DemandeServiceImpl implements DemandeService {
                 : "JLH Auto Pam";
     }
 
+    private DemandeResponse enrichDemandeResponse(Demande demande, DemandeResponse response) {
+        if (demande == null || response == null) {
+            return response;
+        }
+        devisRepository.findByDemande_IdDemande(demande.getIdDemande())
+                .map(devisMapper::toResponse)
+                .ifPresent(response::setDevis);
+
+        RendezVous rendezVous = demande.getRendezVous();
+        if (rendezVous != null) {
+            response.setRendezVous(rendezVousMapper.toResponse(rendezVous));
+        }
+        return response;
+    }
+
     private void applyServiceUpdates(Demande demande, List<com.jlh.jlhautopambackend.dto.DemandeServiceDto> services) {
         if (demande == null || services == null) {
             return;
@@ -364,6 +401,9 @@ public class DemandeServiceImpl implements DemandeService {
                     entity.setPrixUnitaireService(serviceDto.getPrixUnitaire());
                 } else if (serviceDto.getPrixUnitaireService() != null) {
                     entity.setPrixUnitaireService(serviceDto.getPrixUnitaireService());
+                }
+                if (serviceDto.getRendezVousId() != null) {
+                    entity.setRendezVousId(serviceDto.getRendezVousId());
                 }
                 demandeServiceRepository.save(entity);
             });

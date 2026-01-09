@@ -29,7 +29,9 @@ public class Service {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Lob
+    @Column(name = "description_longue", columnDefinition = "TEXT")
+    private String descriptionLongue;
+
     @Column(columnDefinition = "TEXT")
     private String icon;
 

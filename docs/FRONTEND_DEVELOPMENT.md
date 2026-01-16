@@ -7,7 +7,7 @@
   - **Prod** : les mêmes bases sont paramétrées en HTTPS (`https://api.jlh-auto.fr/...`).【F:src/main/resources/application-prod.properties†L14-L16】
 
 ## 2) Démarrage local (backend + assets)
-- **Backend** : le compose dev expose le backend sur `localhost:8080` et démarre Postgres + MailHog (SMTP).【F:docker-compose.dev.yml†L1-L64】
+- **Backend** : le compose dev expose le backend sur `localhost:8080` et démarre PostgreSQL 16 + MailHog (SMTP).【F:docker-compose.dev.yml†L1-L64】
 - **Nginx** : expose les assets statiques (images de promotions, icônes) sur `localhost:80` via `/promotions/images/` et `/icons/` et reverse-proxy les autres requêtes vers le backend.【F:docker-compose.dev.yml†L65-L76】【F:nginx/conf.d/promotions.conf†L1-L22】
 
 ## 3) Authentification & sécurité (JWT)
@@ -57,3 +57,7 @@
 ## 8) Conseils rapides d’intégration front
 - **Base API locale** : utiliser `http://localhost:8080` pour l’API et `http://localhost:80` pour les assets servis par Nginx (promotions, icônes).【F:src/main/resources/application.yml†L7-L13】【F:docker-compose.dev.yml†L52-L76】【F:nginx/conf.d/promotions.conf†L1-L22】
 - **JWT** : stocker le token renvoyé par `/api/auth/login` et l’envoyer sur toutes les routes protégées via `Authorization: Bearer …`.【F:src/main/java/com/jlh/jlhautopambackend/controllers/AuthController.java†L45-L69】【F:src/main/java/com/jlh/jlhautopambackend/config/JwtAuthenticationFilter.java†L34-L66】
+
+## 9) Voir aussi
+- **Docker & environnement** : `DOCKER.md` récapitule le compose dev/prod, les variables attendues et les ports exposés.【F:docs/DOCKER.md†L1-L121】
+- **Modèle de données** : `BACKEND_DATA_MODEL.md` détaille les entités, DTO et workflows fonctionnels clés.【F:docs/BACKEND_DATA_MODEL.md†L1-L117】
